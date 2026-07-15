@@ -1,5 +1,5 @@
 # Use NVIDIA CUDA base image
-FROM nvidia/cuda:12.1.0-base-ubuntu22.04
+FROM nvidia/cuda:12.6.3-devel-ubuntu22.04
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
@@ -52,8 +52,13 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # TODO: this is a hack until vllm is fixed upstream
 # Apply Gemma 4 LoRA deduplication patch
 RUN uv run python /app/src/server/scripts/patch_vllm_lora_dedup.py
-# Apply Open-RL delta sync weight transfer config and factory patch
-RUN uv run python /app/src/server/scripts/patch_vllm_weight_transfer.py
+
+# Patch vLLM 0.25.1 gpu_worker.py to handle multi-tenant time-sliced GPU memory fluctuations without crashing
+RUN sed -i 's/assert self.init_snapshot.free_memory >= free_gpu_memory,.*/if free_gpu_memory > self.init_snapshot.free_memory: self.init_snapshot.free_memory = free_gpu_memory/' /app/.venv/lib/python3.12/site-packages/vllm/v1/worker/gpu_worker.py && \
+    sed -i '/Error in memory profiling/,+7d' /app/.venv/lib/python3.12/site-packages/vllm/v1/worker/gpu_worker.py
+
+ENV PATH="/usr/local/cuda/bin:/app/.venv/lib/python3.12/site-packages/nvidia/cu13/bin:$PATH" \
+    CUDA_HOME="/usr/local/cuda"
 
 # Expose ports (Gateway: 8000, vLLM Worker: 8001)
 EXPOSE 8000

@@ -1,10 +1,15 @@
 """Unit tests for DeltaSnapshotWeightTransferEngine."""
 
+import json
 import os
+import sys
 import tempfile
 import unittest
+from unittest.mock import MagicMock, patch
 
+import safetensors
 import torch
+from safetensors.torch import save_file
 
 from src.server.delta_weight_transfer_engine import (
   DeltaSnapshotInitInfo,
@@ -193,13 +198,6 @@ class DeltaSnapshotWeightTransferEngineTest(unittest.TestCase):
 
   def test_receive_weights_base_model_directory_loading(self):
     """Test that receive_weights directly populates CPU snapshot from base_model_path when provided."""
-    import json
-    import sys
-    from unittest.mock import MagicMock, patch
-
-    import safetensors
-    from safetensors.torch import save_file
-
     with tempfile.TemporaryDirectory() as tmpdir:
       base_dir = os.path.join(tmpdir, "base_model")
       os.makedirs(base_dir)
@@ -224,7 +222,7 @@ class DeltaSnapshotWeightTransferEngineTest(unittest.TestCase):
         for p in hf_weights_files:
           if os.path.exists(p):
             with safetensors.safe_open(p, framework="pt", device="cpu") as f:
-              for key in f:
+              for key in f.keys():  # noqa: SIM118
                 yield key, f.get_tensor(key)
 
       mock_utils.safetensors_weights_iterator.side_effect = fake_iterator
@@ -256,13 +254,6 @@ class DeltaSnapshotWeightTransferEngineTest(unittest.TestCase):
 
   def test_receive_weights_hf_cache_and_env_loading(self):
     """Test that _ensure_cpu_snapshot resolves HF model IDs from OPEN_RL_BASE_MODEL (e.g. Qwen/Test-4B -> models--Qwen--Test-4B)."""
-    import json
-    import sys
-    from unittest.mock import MagicMock, patch
-
-    import safetensors
-    from safetensors.torch import save_file
-
     with tempfile.TemporaryDirectory() as tmpdir:
       # Mock HF hub cache structure: ~/.cache/huggingface/hub/models--Qwen--Test-4B/snapshots/commit123/
       hf_folder = os.path.join(tmpdir, "models--Qwen--Test-4B", "snapshots", "commit123")
@@ -287,7 +278,7 @@ class DeltaSnapshotWeightTransferEngineTest(unittest.TestCase):
         for p in hf_weights_files:
           if os.path.exists(p):
             with safetensors.safe_open(p, framework="pt", device="cpu") as f:
-              for key in f:
+              for key in f.keys():  # noqa: SIM118
                 yield key, f.get_tensor(key)
 
       mock_utils.safetensors_weights_iterator.side_effect = fake_iterator

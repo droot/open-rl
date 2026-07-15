@@ -54,6 +54,12 @@ tracer = trace.get_tracer("vllm.inference.worker")
 engine: Any = None
 CURRENT_LOADED_SAMPLER_WEIGHTS: str | None = None
 IS_ENGINE_SLEEPING: bool = True
+
+
+def _get_sleep_level() -> int:
+  return 1 if os.getenv("OPEN_RL_WEIGHT_SYNC_STRATEGY", "delta").lower() == "delta" else 2
+
+
 reload_lock = asyncio.Lock()
 
 
@@ -232,8 +238,9 @@ async def process_sampling_request(req: dict, store: Any) -> None:
           if weights_path != CURRENT_LOADED_SAMPLER_WEIGHTS:
             print(f"[vLLM Worker] Weight change detected. Current: {CURRENT_LOADED_SAMPLER_WEIGHTS}, Target: {weights_path}")
             if engine is not None:
-              print("[vLLM Worker] Triggering sleep level 1 (CPU offload weights)...")
-              await engine.sleep(level=1)
+              sleep_lvl = _get_sleep_level()
+              print(f"[vLLM Worker] Triggering sleep level {sleep_lvl} (CPU offload)...")
+              await engine.sleep(level=sleep_lvl)
               print("[vLLM Worker] Waking up weights...")
               await engine.wake_up(tags=["weights"])
               if os.getenv("OPEN_RL_WEIGHT_SYNC_STRATEGY", "delta").lower() == "delta":
@@ -384,8 +391,9 @@ async def run_sampling_worker(model_id: str) -> None:
         init_engine()
         print("[vLLM Worker] Engine initialized successfully.")
         if engine is not None:
-          print("[vLLM Worker] Sleeping engine after init to yield GPU memory (CPU offload)...")
-          await engine.sleep(level=1)
+          sleep_lvl = _get_sleep_level()
+          print(f"[vLLM Worker] Sleeping engine (level {sleep_lvl}) after init to yield GPU memory...")
+          await engine.sleep(level=sleep_lvl)
           IS_ENGINE_SLEEPING = True
     except Exception as exc:
       print(f"[vLLM Worker] Failed to perform coordinated initialization: {exc}")
@@ -466,8 +474,9 @@ async def run_sampling_worker(model_id: str) -> None:
               if has_shutdown:
                 await exit_gracefully()
               if engine is not None:
-                print("[vLLM Worker] Exiting batch: sleeping engine (CPU offload weights) to yield GPU memory...")
-                await engine.sleep(level=1)
+                sleep_lvl = _get_sleep_level()
+                print(f"[vLLM Worker] Exiting batch: sleeping engine (level {sleep_lvl}) to yield GPU memory...")
+                await engine.sleep(level=sleep_lvl)
                 IS_ENGINE_SLEEPING = True
           else:
             if engine is not None and IS_ENGINE_SLEEPING:

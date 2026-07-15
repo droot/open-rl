@@ -58,6 +58,8 @@ spec:
           value: "vllm"
         - name: OPEN_RL_ENABLE_FFT
           value: "true"
+        - name: OPEN_RL_WORKER_IMAGE
+          value: "ghcr.io/gke-labs/open-rl/server:latest"
         - name: OPEN_RL_WORKER_MANAGER
           value: "kubernetes"
         - name: OPEN_RL_WORKER_NAMESPACE

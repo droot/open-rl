@@ -19,6 +19,10 @@ try:
     WeightTransferInitInfo,
     WeightTransferUpdateInfo,
   )
+  from vllm.model_executor.model_loader.weight_utils import (
+    download_weights_from_hf,
+    safetensors_weights_iterator,
+  )
 except ImportError:
 
   @dataclass
@@ -40,6 +44,12 @@ except ImportError:
     @classmethod
     def parse_update_info(cls, update_dict: dict[str, Any]):
       return cls.update_info_cls(**update_dict)
+
+  def download_weights_from_hf(*args: Any, **kwargs: Any) -> str:
+    raise ImportError("vLLM is not installed.")
+
+  def safetensors_weights_iterator(*args: Any, **kwargs: Any) -> Iterator[tuple[str, torch.Tensor]]:
+    raise ImportError("vLLM is not installed.")
 
 
 @dataclass
@@ -69,13 +79,28 @@ class DeltaSnapshotWeightTransferEngine(WeightTransferEngine):
   init_info_cls = DeltaSnapshotInitInfo
   update_info_cls = DeltaSnapshotUpdateInfo
 
-  def __init__(self, *args, **kwargs) -> None:
-    super().__init__(*args, **kwargs)
+  def __init__(
+    self,
+    config: Any = None,
+    vllm_config: Any = None,
+    device: Any = None,
+    model: Any = None,
+    *args: Any,
+    **kwargs: Any,
+  ) -> None:
+    if vllm_config is None:
+      from unittest.mock import MagicMock
+
+      vllm_config = MagicMock(parallel_config=kwargs.get("parallel_config"))
+    super().__init__(config, vllm_config, device, model)
     self.current_weights_path: str | None = None
     self._cpu_snapshot: dict[str, torch.Tensor] = {}
     self._base_model: str = os.getenv("OPEN_RL_BASE_MODEL", os.getenv("BASE_MODEL", ""))
-    if args and hasattr(args[0], "model"):
-      self._base_model = args[0].model
+    if vllm_config and hasattr(vllm_config, "model"):
+      model_cfg = vllm_config.model
+      candidate = getattr(model_cfg, "model", None) if hasattr(model_cfg, "model") else getattr(vllm_config, "model", None)
+      if isinstance(candidate, str) and candidate:
+        self._base_model = candidate
 
   @staticmethod
   def _get_real_tensor(model: torch.nn.Module, name: str, tensor: torch.Tensor) -> torch.Tensor:
@@ -103,6 +128,11 @@ class DeltaSnapshotWeightTransferEngine(WeightTransferEngine):
     return tensor
 
   def _ensure_cpu_snapshot(self, base_model: str, model: torch.nn.Module | None) -> None:
+    try:
+      from vllm.model_executor.model_loader.weight_utils import download_weights_from_hf, safetensors_weights_iterator
+    except ImportError:
+      pass
+
     if self._cpu_snapshot:
       return
     base_model = base_model or self._base_model or os.getenv("OPEN_RL_BASE_MODEL", os.getenv("BASE_MODEL", ""))
@@ -110,11 +140,6 @@ class DeltaSnapshotWeightTransferEngine(WeightTransferEngine):
 
     if base_model:
       start_t = time.perf_counter()
-      from vllm.model_executor.model_loader.weight_utils import (
-        download_weights_from_hf,
-        safetensors_weights_iterator,
-      )
-
       if os.path.isdir(base_model):
         hf_folder = base_model
       else:
@@ -281,8 +306,10 @@ class DeltaSnapshotWeightTransferEngine(WeightTransferEngine):
     pass
 
   def shutdown(self) -> None:
-    """Clean up engine resources."""
-    pass
+    """Clean up engine resources and release pinned CPU buffers."""
+    self._cpu_snapshot.clear()
+    if hasattr(super(), "shutdown"):
+      super().shutdown()
 
   @staticmethod
   def trainer_send_weights(

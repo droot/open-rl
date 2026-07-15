@@ -73,7 +73,13 @@ class SocketTimeSlicerClient:
     try:
       yield
     finally:
-      await self.request({"command": "RELEASE", **payload})
+      try:
+        await self.request({"command": "RELEASE", **payload})
+      except RuntimeError as exc:
+        if "no GPU PIDs found" in str(exc) or "is failed" in str(exc):
+          print(f"[TimeSlicer] Note: RELEASE encountered benign status after voluntary sleep/offload: {exc}")
+        else:
+          raise
 
   async def request(self, payload: dict[str, Any]) -> dict[str, Any]:
     await self.connect()
