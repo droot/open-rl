@@ -111,8 +111,10 @@ test:
 	  uv run --extra "$(TRAINING_TEST_EXTRA)" python scripts/run_training_e2e.py "$$@" $(TRAINING_TEST_ARGS); \
 	elif [ "$$mode" = "piglatin" ]; then \
 	  PYTHONPATH="$(PIGLATIN_TEST_PYTHONPATH)" uv --project examples run python -m unittest tests.test_piglatin_qwen tests.test_piglatin_gemma; \
+	elif [ "$$mode" = "examples" ]; then \
+	  PYTHONPATH="examples:examples/text-to-sql" uv --project examples run python -m unittest tests.test_agent_sandbox; \
 	else \
-	  echo "Unknown test mode '$$mode'. Expected unit, e2e, or piglatin."; \
+	  echo "Unknown test mode '$$mode'. Expected unit, e2e, piglatin, or examples."; \
 	  exit 2; \
 	fi
 
