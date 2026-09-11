@@ -73,30 +73,40 @@ LossValue = float | int
 
 
 class SandboxStats:
-  """Per-step latency and error counts for the reward executor."""
+  """Per-step latency and error counts for the reward executor.
+
+  ``exec`` is the sandbox round trip itself; ``wait`` is time spent queueing
+  for a lease when more rollouts are being scored than the pool has sandboxes.
+  """
 
   def __init__(self) -> None:
-    self.durations_ms: list[float] = []
+    self.exec_ms: list[float] = []
+    self.wait_ms: list[float] = []
     self.errors = 0
 
-  def record(self, duration_ms: float, error: str | None) -> None:
-    self.durations_ms.append(duration_ms)
+  def record(self, *, exec_ms: float, wait_ms: float, error: str | None) -> None:
+    self.exec_ms.append(exec_ms)
+    self.wait_ms.append(wait_ms)
     if error is not None and error.startswith("sandbox:"):
       self.errors += 1
 
   def snapshot(self) -> dict[str, float]:
     """Metrics for the calls since the last snapshot; empty when nothing ran."""
-    if not self.durations_ms:
+    if not self.exec_ms:
       return {}
-    ordered = sorted(self.durations_ms)
-    pick = lambda q: ordered[min(len(ordered) - 1, int(q * len(ordered)))]  # noqa: E731
+
+    def pct(values: list[float], q: float) -> float:
+      ordered = sorted(values)
+      return ordered[min(len(ordered) - 1, int(q * len(ordered)))]
+
     out = {
-      "sandbox_exec_calls": float(len(ordered)),
-      "sandbox_exec_p50_ms": pick(0.50),
-      "sandbox_exec_p95_ms": pick(0.95),
+      "sandbox_exec_calls": float(len(self.exec_ms)),
+      "sandbox_exec_p50_ms": pct(self.exec_ms, 0.50),
+      "sandbox_exec_p95_ms": pct(self.exec_ms, 0.95),
+      "sandbox_wait_p95_ms": pct(self.wait_ms, 0.95),
       "sandbox_errors": float(self.errors),
     }
-    self.durations_ms, self.errors = [], 0
+    self.exec_ms, self.wait_ms, self.errors = [], [], 0
     return out
 
 
@@ -119,10 +129,12 @@ async def reward_executor(reward: RewardConfig) -> AsyncIterator[Executor]:
   async with pool:
 
     async def sandboxed(context: str, query: str) -> tuple[list[tuple[Any, ...]] | None, str | None]:
-      started = time.monotonic()
+      queued = time.monotonic()
       async with pool.lease() as sandbox:
+        started = time.monotonic()
         rows, error = await run_sql_in_sandbox(sandbox, context, query, timeout=reward.exec_timeout)
-      sandbox_stats.record((time.monotonic() - started) * 1000.0, error)
+      done = time.monotonic()
+      sandbox_stats.record(exec_ms=(done - started) * 1000.0, wait_ms=(started - queued) * 1000.0, error=error)
       return rows, error
 
     yield sandboxed
@@ -288,7 +300,10 @@ async def run_rl_phase(
       num_rollouts=len(rollouts),
       **exec_metrics,
     )
-    exec_str = f" sandbox_p95={exec_metrics['sandbox_exec_p95_ms']:.0f}ms errors={int(exec_metrics['sandbox_errors'])}" if exec_metrics else ""
+    exec_str = ""
+    if exec_metrics:
+      exec_str = f" sandbox_exec_p95={exec_metrics['sandbox_exec_p95_ms']:.0f}ms wait_p95={exec_metrics['sandbox_wait_p95_ms']:.0f}ms"
+      exec_str += f" errors={int(exec_metrics['sandbox_errors'])}"
     progress = f"reward={reward:.3f} compile={compile_rate * 100:.1f}% exec={exec_rate * 100:.1f}% rollouts={len(rollouts)}{exec_str}"
     log_progress("rl step", local_step, progress)
 
