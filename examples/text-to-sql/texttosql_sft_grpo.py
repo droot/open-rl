@@ -7,16 +7,26 @@ Common phase modes:
 - `phase=sft_only`: stop after SFT; saves `{preset}-sft` adapter for later
 - `phase=rl_only`: run RL only. If a `{preset}-sft` adapter was saved by a prior
   sft_only run it's picked up automatically; otherwise RL starts from a fresh LoRA.
+
+Reward execution (`reward.executor`):
+- `local` (default): model-written SQL runs in-process with sqlite3.
+- `agent_sandbox`: model-written SQL runs in gVisor sandboxes leased from a
+  Kubernetes SandboxWarmPool (see examples/common/agent_sandbox.py and
+  k8s/agent-sandbox/). Requires running in-cluster with the `sandbox` extra.
+  Dataset filtering and target queries stay local: the trust boundary is the
+  model's output, not the dataset.
 """
 
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 import os
 import statistics
 import sys
-from collections.abc import Sequence
+import time
+from collections.abc import AsyncIterator, Sequence
 from pathlib import Path
 from typing import Any, cast
 
@@ -31,12 +41,18 @@ from utils.helpers import (
   shuffled_batches,
 )
 from utils.rewards import (
+  Executor,
   aggregate_eval_scores,
   empty_eval_metrics,
   load_dataset_splits,
+  local_executor,
   normalize_sql,
-  score_eval_prediction,
+  score_eval_prediction_with,
 )
+
+# examples/common is importable as `common` when the examples project is
+# installed or PYTHONPATH includes examples/; make the script self-sufficient.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 BASE_URL = "http://127.0.0.1:9003"
 DATASET = "philschmid/gretel-synthetic-text-to-sql"
@@ -51,8 +67,65 @@ config: Config
 ml_logger: ml_log.Logger
 service_client: tinker.ServiceClient
 tokenizer: PreTrainedTokenizerBase
+executor: Executor = local_executor
 EvalMetrics = dict[str, float]
 LossValue = float | int
+
+
+class SandboxStats:
+  """Per-step latency and error counts for the reward executor."""
+
+  def __init__(self) -> None:
+    self.durations_ms: list[float] = []
+    self.errors = 0
+
+  def record(self, duration_ms: float, error: str | None) -> None:
+    self.durations_ms.append(duration_ms)
+    if error is not None and error.startswith("sandbox:"):
+      self.errors += 1
+
+  def snapshot(self) -> dict[str, float]:
+    """Metrics for the calls since the last snapshot; empty when nothing ran."""
+    if not self.durations_ms:
+      return {}
+    ordered = sorted(self.durations_ms)
+    pick = lambda q: ordered[min(len(ordered) - 1, int(q * len(ordered)))]  # noqa: E731
+    out = {
+      "sandbox_exec_calls": float(len(ordered)),
+      "sandbox_exec_p50_ms": pick(0.50),
+      "sandbox_exec_p95_ms": pick(0.95),
+      "sandbox_errors": float(self.errors),
+    }
+    self.durations_ms, self.errors = [], 0
+    return out
+
+
+sandbox_stats = SandboxStats()
+
+
+@contextlib.asynccontextmanager
+async def reward_executor(reward: RewardConfig) -> AsyncIterator[Executor]:
+  """Yield the callable that executes model-written SQL for scoring."""
+  if reward.executor == "local":
+    yield local_executor
+    return
+  if reward.executor != "agent_sandbox":
+    raise ValueError(f"reward.executor must be 'local' or 'agent_sandbox', got {reward.executor!r}")
+
+  from common.agent_sandbox import AgentSandboxPool, run_sql_in_sandbox
+
+  logging.info("Reward executor: agent_sandbox pool=%d warm_pool=%s/%s", reward.pool_size, reward.namespace, reward.warm_pool)
+  pool = AgentSandboxPool(size=reward.pool_size, warm_pool=reward.warm_pool, namespace=reward.namespace, ready_timeout=reward.ready_timeout)
+  async with pool:
+
+    async def sandboxed(context: str, query: str) -> tuple[list[tuple[Any, ...]] | None, str | None]:
+      started = time.monotonic()
+      async with pool.lease() as sandbox:
+        rows, error = await run_sql_in_sandbox(sandbox, context, query, timeout=reward.exec_timeout)
+      sandbox_stats.record((time.monotonic() - started) * 1000.0, error)
+      return rows, error
+
+    yield sandboxed
 
 
 # *** Training phases (SFT + PPO+KL RL) ***
@@ -142,10 +215,15 @@ async def run_rl_phase(
       futures.append(sampler.sample_async(prompt=prompt, num_samples=config.rl.samples_per_prompt, sampling_params=sampling_params))
     responses = await bounded(asyncio.gather(*futures), f"sampling step {local_step}")
 
+    scored = await bounded(
+      asyncio.gather(*(build_rollout(example, seq, tokenizer) for example, response in zip(examples, responses) for seq in response.sequences)),
+      f"scoring step {local_step}",
+    )
+    groups = iter(scored)
     datums: list[types.Datum] = []
     rollouts: list[dict[str, Any]] = []
-    for example, response in zip(examples, responses):
-      group = [build_rollout(example, seq, tokenizer) for seq in response.sequences]
+    for response in responses:
+      group = [next(groups) for _ in response.sequences]
       rewards = [rr["reward"] for rr in group]
       # Standardize rewards within each sampled group before the PPO update.
       mean, std = statistics.fmean(rewards), statistics.pstdev(rewards)
@@ -170,8 +248,9 @@ async def run_rl_phase(
         )
 
     global_step = step_offset + local_step
+    exec_metrics = sandbox_stats.snapshot()
     if not datums:
-      log_step("rl_train", global_step, loss=0.0, reward=0.0, compile_rate=0.0, execution_match=0.0, similarity=0.0, num_rollouts=0)
+      log_step("rl_train", global_step, loss=0.0, reward=0.0, compile_rate=0.0, execution_match=0.0, similarity=0.0, num_rollouts=0, **exec_metrics)
       continue
 
     # --- Train: one PPO+KL step on the scored rollouts ---
@@ -207,8 +286,11 @@ async def run_rl_phase(
       execution_match=exec_rate,
       similarity=sim_rate,
       num_rollouts=len(rollouts),
+      **exec_metrics,
     )
-    log_progress("rl step", local_step, f"reward={reward:.3f} compile={compile_rate * 100:.1f}% exec={exec_rate * 100:.1f}% rollouts={len(rollouts)}")
+    exec_str = f" sandbox_p95={exec_metrics['sandbox_exec_p95_ms']:.0f}ms errors={int(exec_metrics['sandbox_errors'])}" if exec_metrics else ""
+    progress = f"reward={reward:.3f} compile={compile_rate * 100:.1f}% exec={exec_rate * 100:.1f}% rollouts={len(rollouts)}{exec_str}"
+    log_progress("rl step", local_step, progress)
 
     if local_step % config.rl.eval_every == 0 or local_step == config.rl.steps:
       metrics = await snapshot_eval(trainer, f"texttosql_rl_s{local_step}", eval_examples)
@@ -220,6 +302,12 @@ async def run_rl_phase(
 
 async def run_training(preset: str, metrics_path: Path) -> dict[str, float | str]:
   """Orchestrate the configured phases. Reads config/service_client/tokenizer from module scope."""
+  global executor
+  async with reward_executor(config.reward) as executor:
+    return await _run_training(preset, metrics_path)
+
+
+async def _run_training(preset: str, metrics_path: Path) -> dict[str, float | str]:
   server_model = await require_server(service_client, config.base_url)
   logging.info("Server ready at %s | model=%s", config.base_url, server_model or "unset")
 
@@ -390,14 +478,14 @@ async def snapshot_eval(trainer: tinker.TrainingClient, alias: str, eval_example
   return await sample_eval_metrics(sampler, tokenizer, alias, eval_examples, max_tokens=config.dataset.eval_max_tokens, seed=config.seed)
 
 
-def build_rollout(
+async def build_rollout(
   example: dict[str, Any],
   sequence: Any,
   tokenizer: PreTrainedTokenizerBase,
 ) -> dict[str, Any]:
-  """Decode one sampled sequence and attach token/logprob fields for PPO."""
+  """Decode one sampled sequence, score it through the executor, attach token/logprob fields for PPO."""
   predicted_sql = tokenizer.decode(sequence.tokens, skip_special_tokens=True)
-  score = score_eval_prediction(predicted_sql, example)
+  score = await score_eval_prediction_with(executor, predicted_sql, example)
   return {
     **score,
     "prompt_tokens": example["prompt_tokens"],
@@ -425,10 +513,11 @@ async def sample_eval_metrics(
     for idx, example in enumerate(examples)
   ]
   responses = await asyncio.gather(*futures)
+  predictions = [tokenizer.decode(response.sequences[0].tokens if response.sequences else [], skip_special_tokens=True) for response in responses]
+  infos = await asyncio.gather(*(score_eval_prediction_with(executor, sql, example) for sql, example in zip(predictions, examples)))
+  sandbox_stats.snapshot()  # eval latency is not a training-step metric
 
-  for idx, (example, response) in enumerate(zip(examples, responses)):
-    predicted_sql = tokenizer.decode(response.sequences[0].tokens if response.sequences else [], skip_special_tokens=True)
-    info = score_eval_prediction(predicted_sql, example)
+  for idx, (example, info) in enumerate(zip(examples, infos)):
     predicted = normalize_sql(info["predicted_sql"])
     target = normalize_sql(example["target"])
     matches_execution = bool(info["execution_match"])
@@ -495,6 +584,18 @@ class RlConfig:
 
 
 @chz.chz
+class RewardConfig:
+  # "local": in-process sqlite3. "agent_sandbox": gVisor sandboxes leased from a
+  # Kubernetes SandboxWarmPool through examples/common/agent_sandbox.py.
+  executor: str = "local"
+  warm_pool: str = "text-to-sql-executor"
+  namespace: str = "openrl-system"
+  pool_size: int = 4
+  ready_timeout: int = 180
+  exec_timeout: int = 30
+
+
+@chz.chz
 class Config:
   model: ModelConfig
   phase: str = "full"  # "full" | "sft_only" | "rl_only"
@@ -510,6 +611,7 @@ class Config:
   dataset: DatasetConfig = chz.field(default_factory=DatasetConfig)
   sft: SftConfig = chz.field(default_factory=SftConfig)
   rl: RlConfig = chz.field(default_factory=RlConfig)
+  reward: RewardConfig = chz.field(default_factory=RewardConfig)
 
 
 GEMMA4_E2B = {"model.base_model": "google/gemma-4-e2b", "model.tokenizer_name": "google/gemma-4-e2b"}
