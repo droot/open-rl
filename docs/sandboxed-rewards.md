@@ -126,6 +126,20 @@ Measured on GKE (`open-rl-dra`, e2-standard-4 gVisor node, in-cluster client):
 | runaway query (`WITH RECURSIVE` bomb) | interrupted at 250 ms, scored as an error |
 | 64 rollouts per step against 4 sandboxes | ≈ 2 s of scoring per step; lease wait dominates, so raise `pool_size` (and the warm pool) before anything else |
 
+Acceptance run (Gemma-4-e2b LoRA, `phase=rl_only`, 80 steps, 8 prompts × 8
+samples, lr 5e-6, eval every 10 steps on 100 held-out examples; 50 minutes
+wall clock, 5,488 rollouts, 0 sandbox errors) against the same recipe with
+in-process execution, run the same day:
+
+| Eval step | 0 | 10 | 20 | 30 | 40 | 50 | 60 | 70 | 80 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| execution match, sandboxed | 6% | 8% | 10% | 13% | 14% | 14% | 18% | 24% | 25% |
+| execution match, local | 6% | 9% | 10% | 13% | 16% | 15% | 19% | 19% | 26% |
+| similarity, sandboxed | 37% | 37% | 38% | 44% | 48% | 52% | 58% | 62% | 65% |
+
+Same curve within eval noise: moving execution into the sandbox changes where
+the SQL runs, not what the model learns.
+
 ## Phase B: a cookbook `rl_train` recipe
 
 ```bash
@@ -143,6 +157,20 @@ rollout, not the group. `sandbox=local` runs the SQL in-process for smoke tests.
 
 Qwen3-1.7B with the `qwen3_disable_thinking` renderer is the cookbook path
 because the cookbook ships no Gemma renderer.
+
+Measured (40 batches of 8 groups × 8 samples, lr 1e-5, eval every 10 batches
+on 100 held-out examples): 21 minutes wall clock, about 31 s per batch of
+which sandbox rollouts take 12–16 s; 324 claims created and 324 terminated,
+none left after the pod exited; warm-pool claims 0.2–0.3 s, the slowest 10 s
+while the pool replenished. Held-out execution match 54% → 58% → 60% → 60%
+at batches 0, 10, 20, 30; Qwen3-1.7B already solves most of this task, so
+the headroom is small.
+
+The first run claimed one sandbox per held-out *example* as well: 100 claims
+at once against a 4-replica pool, most cold-starting a gVisor pod at ~80 s,
+and the eval took longer than the training. Evals now lease from a shared
+pool (`eval_pool_size`); training groups keep one claim each, which is the
+behaviour the demo is about.
 
 ## Using the backend elsewhere
 
