@@ -2,7 +2,10 @@
 
 ``TextToSqlGroupBuilder.make_envs`` claims a sandbox through the injected
 ``sandbox_factory`` and hands it to ``group_size`` envs; ``cleanup`` deletes the
-claim after the group's rollouts and rewards are done. The model's SQL is the
+claim after the group's rollouts and rewards are done. A builder given a
+``pool`` instead leases a sandbox per call and never claims: that is what the
+held-out eval uses, where one claim per example would mean a hundred cold
+starts per eval. The model's SQL is the
 only thing that runs in the sandbox; the target query's rows come precomputed
 from the dataset filter, which executes trusted dataset content locally.
 """
@@ -86,13 +89,22 @@ class TextToSqlGroupBuilder(EnvGroupBuilder):
   renderer_name: str
   group_size: int
   sandbox_factory: SandboxFactory | None = None
+  # An entered AgentSandboxPool; when set, envs lease per call instead of claiming.
+  pool: Any = None
   exec_timeout: int = 30
   _sandbox: list[SandboxInterface] = field(default_factory=list, compare=False, repr=False)
 
   async def make_envs(self) -> Sequence[Env]:
     renderer = renderers.get_renderer(self.renderer_name, get_tokenizer(self.model_name_for_tokenizer))
     executor: Executor = local_executor
-    if self.sandbox_factory is not None:
+    if self.pool is not None:
+      pool = self.pool
+
+      async def executor(context: str, query: str) -> tuple[list[tuple[Any, ...]] | None, str | None]:
+        async with pool.lease() as sandbox:
+          return await run_sql_in_sandbox(sandbox, context, query, timeout=self.exec_timeout)
+
+    elif self.sandbox_factory is not None:
       started = time.monotonic()
       sandbox = await self.sandbox_factory()
       self._sandbox.append(sandbox)

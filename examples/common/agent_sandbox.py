@@ -192,14 +192,19 @@ class AgentSandboxBackend:
         await self._on_cleanup()
 
 
-def make_client(connection: Any | None = None) -> Any:
-  """An ``AsyncSandboxClient`` that talks to pod IPs unless told otherwise."""
+def make_client(connection: Any | None = None, *, cleanup_at_exit: bool = False) -> Any:
+  """An ``AsyncSandboxClient`` that talks to pod IPs unless told otherwise.
+
+  ``cleanup_at_exit`` registers the SDK's atexit sweep, which deletes every
+  claim the client made using the synchronous Kubernetes client. Use it for a
+  pool that lives as long as the process and has no natural close point (for
+  example one shared by a cookbook dataset); leave it off when the owner
+  deletes its own claims, so the sweep cannot race the event loop shutdown.
+  """
   from k8s_agent_sandbox.async_sandbox_client import AsyncSandboxClient
   from k8s_agent_sandbox.models import SandboxInClusterConnectionConfig
 
-  # cleanup=False: the pool and the group builders delete their own claims;
-  # the SDK's atexit sweep would race the event loop shutdown.
-  return AsyncSandboxClient(connection_config=connection or SandboxInClusterConnectionConfig(), cleanup=False)
+  return AsyncSandboxClient(connection_config=connection or SandboxInClusterConnectionConfig(), cleanup=cleanup_at_exit)
 
 
 class AgentSandboxPool:

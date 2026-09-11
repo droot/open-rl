@@ -62,13 +62,15 @@ class CLIConfig:
   # OpenRL has no durable checkpoint store for cookbook saves yet (issue #83).
   save_every: int = 0
 
-  # Reward execution: "agent_sandbox" claims one sandbox per prompt group;
-  # "local" runs the model's SQL in-process.
+  # Reward execution: "agent_sandbox" claims one sandbox per training prompt
+  # group and leases eval sandboxes from a pool of eval_pool_size; "local"
+  # runs the model's SQL in-process.
   sandbox: str = "agent_sandbox"
   warm_pool: str = "text-to-sql-executor"
   namespace: str = "openrl-system"
   sandbox_ready_timeout: int = 180
   exec_timeout: int = 30
+  eval_pool_size: int = 4
 
   # Service / logging
   base_url: str | None = os.getenv("TINKER_BASE_URL")
@@ -76,16 +78,6 @@ class CLIConfig:
   behavior_if_log_dir_exists: cli_utils.LogdirBehavior = "delete"
   wandb_project: str | None = None
   wandb_name: str | None = None
-
-
-def sandbox_factory_from(cli: CLIConfig):
-  if cli.sandbox == "local":
-    return None
-  if cli.sandbox != "agent_sandbox":
-    raise ValueError(f"sandbox must be 'agent_sandbox' or 'local', got {cli.sandbox!r}")
-  from common.agent_sandbox import make_sandbox_factory
-
-  return make_sandbox_factory(warm_pool=cli.warm_pool, namespace=cli.namespace, ready_timeout=cli.sandbox_ready_timeout)
 
 
 async def cli_main(cli: CLIConfig) -> None:
@@ -104,7 +96,11 @@ async def cli_main(cli: CLIConfig) -> None:
     eval_limit=cli.eval_limit,
     seed=cli.seed,
     exec_timeout=cli.exec_timeout,
-    sandbox_factory=sandbox_factory_from(cli),
+    sandbox=cli.sandbox,
+    warm_pool=cli.warm_pool,
+    namespace=cli.namespace,
+    sandbox_ready_timeout=cli.sandbox_ready_timeout,
+    eval_pool_size=cli.eval_pool_size,
   )
   config = Config(
     learning_rate=cli.learning_rate,
