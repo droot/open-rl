@@ -161,8 +161,8 @@ because the cookbook ships no Gemma renderer.
 Measured (40 batches of 8 groups × 8 samples, lr 1e-5, eval every 10 batches
 on 100 held-out examples): 21 minutes wall clock, about 31 s per batch of
 which the sandboxed rollouts take 6 s on average (16 s on the first batches); 324 claims created and 324 terminated,
-none left after the pod exited; warm-pool claims 0.2–0.3 s, the slowest 10 s
-while the pool replenished. Held-out execution match 54% → 58% → 60% → 60%
+none left after the pod exited; claim latency 0.2 s when a pre-warmed pod is
+free, median 2.6 s over the run, worst 10 s while the pool replenished. Held-out execution match 54% → 58% → 60% → 60%
 at batches 0, 10, 20, 30; Qwen3-1.7B already solves most of this task, so
 the headroom is small.
 
