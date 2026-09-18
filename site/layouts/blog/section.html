@@ -1,0 +1,16 @@
+{{ define "main" }}
+<div class="wrap narrow">
+  <h1 class="page-title">{{ .Title }}</h1>
+  <p class="intro">Notes from building OpenRL. The introduction is on the <a href="https://opensource.googleblog.com/2026/06/introducing-openrl-a-self-hosted-post-training-api-for-fine-tuning-llms.html">Google Open Source Blog</a>.</p>
+  <ul class="posts">
+  {{ range .Pages.ByDate.Reverse }}
+    <li>
+      <time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "Jan 2, 2006" }}</time>
+      <h2><a href="{{ .RelPermalink }}">{{ .Title }}</a></h2>
+      {{ with .Params.summary }}<p>{{ . }}</p>{{ end }}
+      {{ with .Params.authors }}<p class="by">{{ delimit . ", " }}</p>{{ end }}
+    </li>
+  {{ end }}
+  </ul>
+</div>
+{{ end }}
