@@ -13,18 +13,12 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 import torch
-from pydantic import BaseModel
 from transformers import AutoModelForCausalLM, AutoTokenizer, PreTrainedModel
 
 from training.trainer_worker import BaseTrainerWorker, Datum
+from training.types import FFTConfig
 
 ENABLE_GRADIENT_CHECKPOINTING = os.getenv("ENABLE_GRADIENT_CHECKPOINTING", "1") == "1"
-
-
-class FFTConfig(BaseModel):
-  seed: int | None = None
-  cpu_offload: bool = True
-  weight_sync_strategy: str | None = None
 
 
 def trainable_model_parameters(model: PreTrainedModel) -> list[torch.nn.Parameter]:
@@ -307,6 +301,15 @@ class FFTTrainingWorker(BaseTrainerWorker):
     print(f"Saved sparse delta ({metadata['density_pct']}% changed elements, {total_changed}/{total_elements}) to {state_path}")
     return {"path": state_path, "density_pct": metadata["density_pct"]}
 
+  def save_for_sampler(self, model_id: str, alias: str | None, ref: str | None) -> str:
+    """Write a checkpoint under a versioned path the samplers reload from."""
+    if not ref:
+      raise ValueError("save_weights_for_sampler requires path or sampling_session_id")
+    rel_path = ref[len("tinker://") :] if ref.startswith("tinker://") else ref.lstrip("/")
+    local_path = os.path.join(os.getenv("OPEN_RL_TMP_DIR", "/tmp/open-rl"), "sampler_full", rel_path)
+    self.save_state(model_id, local_path, False, "sampler")
+    return local_path
+
   def load_from_state(self, model_id: str, state_path: str, restore_optimizer: bool = False) -> dict[str, Any]:
     metadata_path = os.path.join(state_path, "metadata.json")
     if not os.path.exists(metadata_path):
@@ -337,9 +340,11 @@ class FFTTrainingWorker(BaseTrainerWorker):
     print(f"Loaded full fine-tuning state from {state_path}")
     return {"model_id": model_id, "base_model": base_model}
 
-  def forward_backward(self, data: list[Datum], loss_fn: str, loss_config: dict | None = None, model_id: str | None = None) -> dict[str, Any]:
+  def forward_backward(
+    self, data: list[Datum], loss_fn: str, loss_config: dict | None = None, model_id: str | None = None, forward_only: bool = False
+  ) -> dict[str, Any]:
     assert self.model is not None, "Model must be loaded first."
-    res = super().forward_backward(self.model, data, loss_fn, loss_config)
+    res = super().forward_backward(self.model, data, loss_fn, loss_config, forward_only=forward_only)
     if torch.cuda.is_available():
       torch.cuda.empty_cache()
     return res

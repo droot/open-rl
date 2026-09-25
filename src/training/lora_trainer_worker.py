@@ -11,22 +11,12 @@ from typing import Any
 import torch
 from peft import LoraConfig as PeftLoraConfig
 from peft import PeftModelForCausalLM, get_peft_model
-from pydantic import BaseModel
 from transformers import AutoModelForCausalLM, AutoTokenizer, PreTrainedModel
 
 from training.trainer_worker import BaseTrainerWorker, Datum
+from training.types import LoraConfig
 
 ENABLE_GRADIENT_CHECKPOINTING = os.getenv("ENABLE_GRADIENT_CHECKPOINTING", "1") == "1"
-
-
-class LoraConfig(BaseModel):
-  rank: int = 16
-  seed: int | None = None
-  lora_alpha: int = 16
-  lora_dropout: float = 0.05
-  train_attn: bool = True
-  train_mlp: bool = True
-  train_unembed: bool = False
 
 
 def active_adapter_parameters(model: PeftModelForCausalLM, adapter_id: str) -> list[torch.nn.Parameter]:
@@ -207,6 +197,11 @@ class LoraTrainingWorker(BaseTrainerWorker):
     print(f"Saved state for '{model_id}' to {state_path}")
     return {"path": state_path}
 
+  def save_for_sampler(self, model_id: str, alias: str | None, ref: str | None) -> str | None:
+    """The sampler hot-loads the adapter from its directory, so there is no checkpoint to announce."""
+    self.save_adapter(model_id, alias)
+    return None
+
   def load_from_state(self, model_id: str, state_path: str, restore_optimizer: bool = False) -> dict[str, Any]:
     """Create an adapter from a saved state directory.
 
@@ -268,11 +263,13 @@ class LoraTrainingWorker(BaseTrainerWorker):
     print(f"Loaded state for '{model_id}' from {state_path}")
     return {"model_id": model_id, "is_lora": True, "base_model": base_model}
 
-  def forward_backward(self, data: list[Datum], loss_fn: str, loss_config: dict | None = None, model_id: str | None = None) -> dict[str, Any]:
+  def forward_backward(
+    self, data: list[Datum], loss_fn: str, loss_config: dict | None = None, model_id: str | None = None, forward_only: bool = False
+  ) -> dict[str, Any]:
     assert self.peft_model is not None, "Model must be loaded first."
     if model_id:
       self.peft_model.set_adapter(model_id)
-    return super().forward_backward(self.peft_model, data, loss_fn, loss_config)
+    return super().forward_backward(self.peft_model, data, loss_fn, loss_config, forward_only=forward_only)
 
   def optim_step(self, adam_params: dict[str, Any], model_id: str) -> dict[str, Any]:
     """Apply accumulated gradients and update model weights."""
