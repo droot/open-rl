@@ -6,6 +6,14 @@ on:
       - main
     tags:
       - 'v*'
+    # docs and website changes do not touch the images; path filters never apply to tag pushes
+    paths-ignore:
+      - "site/**"
+      - "decks/**"
+      - "docs/**"
+      - "runs/**"
+      - "**/*.md"
+      - ".github/workflows/site.yml"
   workflow_dispatch:
 
 jobs:

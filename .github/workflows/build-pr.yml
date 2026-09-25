@@ -1,7 +1,15 @@
 name: build images on PR
 
 on:
+  # docs and website changes do not touch the images
   pull_request:
+    paths-ignore:
+      - "site/**"
+      - "decks/**"
+      - "docs/**"
+      - "runs/**"
+      - "**/*.md"
+      - ".github/workflows/site.yml"
 
 jobs:
   build-only:

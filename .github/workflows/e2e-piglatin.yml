@@ -1,9 +1,24 @@
 name: Pig-latin E2E
 
 on:
+  # docs and website changes do not touch the code under test
   pull_request:
+    paths-ignore:
+      - "site/**"
+      - "decks/**"
+      - "docs/**"
+      - "runs/**"
+      - "**/*.md"
+      - ".github/workflows/site.yml"
   push:
     branches: [main]
+    paths-ignore:
+      - "site/**"
+      - "decks/**"
+      - "docs/**"
+      - "runs/**"
+      - "**/*.md"
+      - ".github/workflows/site.yml"
 
 # Cancel in-flight runs on the same PR when a new commit lands.
 concurrency:
