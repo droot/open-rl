@@ -211,6 +211,12 @@ It needs no `kubectl` and takes a few seconds:
 uv --project examples run openrl-doctor
 ```
 
+If an AI coding agent is doing the work, give it
+[`skills/openrl/SKILL.md`](../skills/openrl/SKILL.md) from this clone. The
+same skill ships with each release as `openrl-skill.tar.gz`, stamped with the
+version it describes; Claude Code users can install it with
+`/plugin marketplace add gke-labs/open-rl` and `/plugin install openrl@open-rl`.
+
 The examples talk to `http://127.0.0.1:9003` by default.
 
 ## 4. Supervised fine-tuning

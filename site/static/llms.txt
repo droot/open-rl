@@ -1,0 +1,18 @@
+# OpenRL
+
+> A self-hosted, Kubernetes-native post-training API for fine-tuning LLMs. It serves the Tinker API, so Tinker SDK clients and tinker-cookbook recipes run against your own GPUs unchanged.
+
+Repository: https://github.com/gke-labs/open-rl
+
+## For AI coding agents
+
+- [OpenRL skill](https://github.com/gke-labs/open-rl/blob/main/skills/openrl/SKILL.md): how to connect, the openrl.* settings, worker lifecycle, and a symptom-first runbook. Each release ships the same skill as `openrl-skill.tar.gz`; a running server reports the matching URL as `openrl.skill_url` in `GET /api/v1/get_server_capabilities`.
+- [Getting started](https://github.com/gke-labs/open-rl/blob/main/docs/getting-started.md): deploy on a Kubernetes cluster, then run SFT and RL from a laptop.
+- A deployed server describes itself: `GET /api/v1/get_server_capabilities` (version, settings, limits), `GET /api/v1/openrl/status` (workers and fleet), `GET /openapi.json`.
+
+## Docs
+
+- [Architecture](https://github.com/gke-labs/open-rl/blob/main/docs/architecture.md)
+- [Tinker client compatibility](https://github.com/gke-labs/open-rl/blob/main/docs/tinker-client-compatibility.md)
+- [Configuration](https://github.com/gke-labs/open-rl/blob/main/docs/configuration.md)
+- [Releases](https://github.com/gke-labs/open-rl/releases)

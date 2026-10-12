@@ -350,7 +350,13 @@ E2E: drop the port-forward for three minutes during `tiny_sft` and assert
 the client gets the released-workers error within one TTL plus one reaper
 interval.
 
-**Phase 3: the reference.** Settings generator and its test, the skill,
+**Phase 3: the reference.** Implemented on this branch on 2026-10-12,
+ahead of phase 2 by decision: `skills/openrl/` (SKILL.md, connect,
+lifecycle, runbook, generated settings table), `scripts/gen_settings_doc.py`
+with `tests/test_skill_docs.py`, `make skill-bundle` inside
+`release-bundle`, `.claude-plugin/marketplace.json`, `site/static/llms.txt`,
+links from the landing page, README and getting-started, and the
+`RELEASING.md` step. Settings generator and its test, the skill,
 the release bundle target and `skill_url`, the marketplace manifest,
 `llms.txt`, links from the landing page, README and getting-started, the
 `RELEASING.md` step, doctor in the client image (5.5, 5.6). Re-verify

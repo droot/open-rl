@@ -340,7 +340,17 @@ release-bundle:
 	@rm -rf $(DIST_DIR) && mkdir -p $(DIST_DIR)
 	@$(MAKE) --no-print-directory render OVERLAY=k8s/deploy/lora VERSION=$(VERSION) > $(DIST_DIR)/openrl-lora.yaml
 	@$(MAKE) --no-print-directory render OVERLAY=k8s/deploy/fft VERSION=$(VERSION) > $(DIST_DIR)/openrl-fft.yaml
-	@cd $(DIST_DIR) && { command -v sha256sum >/dev/null && sha256sum *.yaml || shasum -a 256 *.yaml; } > checksums.sha256
+	@$(MAKE) --no-print-directory skill-bundle VERSION=$(VERSION)
+	@cd $(DIST_DIR) && { command -v sha256sum >/dev/null && sha256sum *.yaml *.tar.gz || shasum -a 256 *.yaml *.tar.gz; } > checksums.sha256
+
+# The agent skill, stamped with the release it describes. Unpacks to openrl/,
+# ready for a skills directory. The server points at this asset as skill_url.
+skill-bundle:
+	@test -n "$(VERSION)" || { echo "Set VERSION=<tag>, e.g. VERSION=v0.0.1"; exit 2; }
+	@mkdir -p $(DIST_DIR) && rm -rf $(DIST_DIR)/skill && mkdir -p $(DIST_DIR)/skill
+	@cp -R skills/openrl $(DIST_DIR)/skill/openrl
+	@sed -i.bak 's/^OpenRL release: .*/OpenRL release: $(VERSION)/' $(DIST_DIR)/skill/openrl/SKILL.md && rm -f $(DIST_DIR)/skill/openrl/SKILL.md.bak
+	@tar -C $(DIST_DIR)/skill -czf $(DIST_DIR)/openrl-skill.tar.gz openrl && rm -rf $(DIST_DIR)/skill
 
 # ---------------------------------------------------------------------------
 # Misc
