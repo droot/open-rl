@@ -67,14 +67,25 @@ async def workers_of_owner(ctx: StatusContext, owner: str) -> tuple[list[dict[st
   return out, None
 
 
+async def any_live(ctx: StatusContext, key: str) -> bool:
+  # Read-only: in_use() drops dead sessions, this only looks.
+  for session_id in await ctx.state.set_members(key):
+    if await ctx.registry.live(session_id):
+      return True
+  return False
+
+
 async def model_has_live_session(ctx: StatusContext, model_id: str) -> bool:
   """Whether a session that created or restored this model is still live.
   Scoped to the model, not to the owner: on a shared LoRA runtime another
   client's session keeps the workers up but says nothing about this one."""
-  for session_id in await ctx.state.set_members(f"open_rl:model_sessions:{model_id}"):
-    if await ctx.registry.live(session_id):
-      return True
-  return False
+  return await any_live(ctx, f"open_rl:model_sessions:{model_id}")
+
+
+async def workers_in_use_by_others(ctx: StatusContext, owner: str) -> bool:
+  """Whether any session still holds the owner's workers. Used only to word
+  the summary; which session it is stays out of the response."""
+  return await any_live(ctx, f"open_rl:owner:{owner}")
 
 
 def settings_of(meta: TrainingModelMetadata) -> dict[str, Any]:
@@ -90,7 +101,7 @@ def settings_of(meta: TrainingModelMetadata) -> dict[str, Any]:
   }
 
 
-def summarize(ctx: StatusContext, entry: dict[str, Any], workers: list[dict[str, Any]]) -> str:
+def summarize(ctx: StatusContext, entry: dict[str, Any], workers: list[dict[str, Any]], others_hold_workers: bool) -> str:
   """What an agent should know first, in one line."""
   if entry["status"] != "active":
     return f"model {entry['status']}"
@@ -105,7 +116,7 @@ def summarize(ctx: StatusContext, entry: dict[str, Any], workers: list[dict[str,
       return "no workers yet; the API server has not created them or they were released"
     return "no live session and no workers; the model's workers were released"
   if not entry["session_live"]:
-    if entry["shares_workers"]:
+    if entry["shares_workers"] and others_hold_workers:
       then = "the workers stay up while other jobs use them, but this model's session is gone"
     else:
       then = "the reaper releases unused workers within about two minutes"
@@ -117,7 +128,8 @@ async def model_status(ctx: StatusContext, model_id: str) -> dict[str, Any] | No
   meta = await get_model_metadata(ctx.state, model_id)
   if meta is None:
     return None
-  workers, workers_error = await workers_of_owner(ctx, owner_id(meta.runtime(model_id)))
+  owner = owner_id(meta.runtime(model_id))
+  workers, workers_error = await workers_of_owner(ctx, owner)
   entry: dict[str, Any] = {
     "model_id": model_id,
     "base_model": meta.base_model,
@@ -130,5 +142,5 @@ async def model_status(ctx: StatusContext, model_id: str) -> dict[str, Any] | No
     "workers": workers,
     "workers_error": workers_error,
   }
-  entry["summary"] = summarize(ctx, entry, workers)
+  entry["summary"] = summarize(ctx, entry, workers, await workers_in_use_by_others(ctx, owner))
   return entry

@@ -109,7 +109,7 @@ class StatusViewsTest(unittest.IsolatedAsyncioTestCase):
   async def test_session_live_is_the_models_own_session_not_the_shared_runtimes(self):
     # Two LoRA jobs on one base model share workers (one owner) but have their own sessions.
     session_a, model_a = await self.create_model()
-    _, model_b = await self.create_model()
+    session_b, model_b = await self.create_model()
     await self.state.delete_values(f"open_rl:session:{session_a}")
     a = (await self.get(f"openrl/models/{model_a}")).json()
     b = (await self.get(f"openrl/models/{model_b}")).json()
@@ -118,6 +118,10 @@ class StatusViewsTest(unittest.IsolatedAsyncioTestCase):
     self.assertTrue(a["shares_workers"])
     self.assertIn("workers stay up while other jobs use them", a["summary"])
     self.assertNotIn("expired", b["summary"])
+    # Once the last session on the shared workers is gone too, the reaper is what happens next.
+    await self.state.delete_values(f"open_rl:session:{session_b}")
+    a = (await self.get(f"openrl/models/{model_a}")).json()
+    self.assertIn("the reaper releases unused workers", a["summary"])
 
   async def test_a_launcher_error_degrades_the_view_instead_of_failing_it(self):
     _, model_id = await self.create_model()
