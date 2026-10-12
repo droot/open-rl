@@ -21,10 +21,12 @@ hung without an error. This document proposes:
    release, the `openrl.*` settings with their types and defaults, the
    worker launcher mode, and limits. The OpenAPI document gets a real title
    and version.
-2. **Status without kubectl.** New read-only endpoints under
-   `/api/v1/openrl/` return what the API server already knows: a model's
-   workers and their Workload phase and reason, live sessions, queue depth,
-   and a fleet summary.
+2. **Status without kubectl.** One read-only endpoint,
+   `GET /api/v1/openrl/models/{model_id}`, returns what the API server
+   already knows about a model: its workers, each in one of five
+   launcher-independent states with a human-readable detail, whether its
+   session is live, and a one-line summary. Fleet-wide and list views are
+   deferred until tenancy is designed (section 10).
 3. **Every failure reaches the client, with the fix in the message.** When
    workers are released, pending futures fail instead of polling forever.
    While a worker is starting, `try_again` says what it is waiting on.
@@ -77,9 +79,11 @@ Non-goals for this round:
 - An MCP server. REST plus OpenAPI plus a skill is enough for every agent
   that can call HTTP. Revisit when there are operations that do not map
   to the API, such as streaming worker logs.
-- Authentication or per-user authorization. The new endpoints expose
-  cluster details (node names, pod names) to anyone who can reach the API
-  server, which is already true of the API as a whole.
+- Authentication or per-user authorization. The model view exposes node
+  and Workload names to whoever holds the model id, which is the same
+  capability every Tinker call on that model already requires. Views that
+  would list other clients' models or the fleet are deferred for exactly
+  this reason (section 10).
 - Changing the session TTL or the reaper policy (#247). This document makes
   the consequences visible; the policy is a separate decision.
 - A log streaming endpoint.
@@ -132,7 +136,7 @@ version OpenRL supports.
        "description": "A workload no other workload shares. ..."}
     ],
     "limits": {"vllm_max_model_len": 8192, "train_token_budget": 65536, "session_ttl_seconds": 120},
-    "endpoints": {"status": "/api/v1/openrl/status", "models": "/api/v1/openrl/models", "openapi": "/openapi.json"}
+    "skill_url": "https://github.com/gke-labs/open-rl/releases/download/v0.0.6/openrl-skill.tar.gz"
   }
 }
 ```
@@ -163,48 +167,70 @@ repository and the skill. `/openapi.json` and `/docs` already exist; this
 makes them worth reading. Endpoint docstrings are already good; a few
 request models gain field descriptions.
 
-### 5.2 Status endpoints
+### 5.2 The model view
 
-New read-only endpoints, all under `/api/v1/openrl/`, all JSON, none used
-by the Tinker SDK:
+One read-only endpoint, JSON, not used by the Tinker SDK:
 
 | Endpoint | Returns |
 |---|---|
-| `GET /api/v1/openrl/status` | `version`, `worker_launcher`, store reachable, live session count, owners with workers, Workload counts by phase, fleet summary |
-| `GET /api/v1/openrl/models` | Every model the store knows with `base_model`, `fine_tuning_type`, owner, whether its session is live, worker phases |
-| `GET /api/v1/openrl/models/{model_id}` | The model's metadata and resolved settings, its sessions, and one entry per worker (below) |
-| `GET /api/v1/openrl/sessions/{session_id}` | Live or expired, TTL remaining, owners attached, user_metadata |
-
-A worker entry:
+| `GET /api/v1/openrl/models/{model_id}` | the model's metadata and resolved `settings`, `session_live`, `shares_workers`, one entry per worker (below), and `summary`, one line saying what to know first |
 
 ```json
 {
-  "role": "trainer", "index": 0,
-  "workload": "lora-google-gemma-4-e2b-0-trainer",
-  "phase": "Placing", "reason": "PodCreated",
-  "pod": "orw-lora-google-gemma-4-e2b-0-trainer", "pod_phase": "Pending",
-  "pod_waiting": "ContainerCreating",
-  "node": "gke-open-rl-dra-l4-trainer-2x-ed601d8b-lvw8",
-  "age_seconds": 128,
-  "ready": false
+  "model_id": "df85...", "base_model": "google/gemma-4-e2b", "fine_tuning_type": "lora",
+  "status": "active", "created_at": 1760227200.0, "shares_workers": true, "session_live": true,
+  "settings": {"openrl.fine_tuning_type": "lora", "openrl.weight_sync": "delta", "...": "..."},
+  "workers": [
+    {"role": "trainer", "state": "ready",
+     "detail": "Running (PodCreated) on gke-open-rl-dra-l4-trainer-2x-ed601d8b-lvw8",
+     "workload": "lora-google-gemma-4-e2b-0-trainer", "node": "gke-...-lvw8", "age_seconds": 252,
+     "summary": "trainer ready: Running (PodCreated) on gke-...-lvw8, 252s"},
+    {"role": "sampler", "state": "starting",
+     "detail": "Placing (PodCreated) on gke-...-2208, pod ContainerCreating",
+     "workload": "lora-google-gemma-4-e2b-0-sampler", "node": "gke-...-2208", "age_seconds": 48,
+     "summary": "sampler starting: Placing (PodCreated) on gke-...-2208, pod ContainerCreating, 48s"}
+  ],
+  "summary": "trainer ready: ...; sampler starting: ..."
 }
 ```
 
-Sources: the Workload's `status.phase`, `status.reason`, `status.podName`,
-`status.nodeName`, and `metadata.creationTimestamp`; the pod's phase and
-first container waiting reason; `open_rl:sampler_ready:<model>` for
-samplers. The API server's service account already has `get`, `list`,
-`watch` on Workloads (namespaced), and on pods, nodes and ResourceSlices
-(cluster-scoped, `open-rl-fleet-reader`), so no RBAC change is needed.
+**Scope.** The view is scoped to one model, and the response contains
+nothing that is not that model's: no owner key, no session ids, no pod
+names or pids, no other models. A model id is a random UUID the server
+minted for the client that created it, so knowing it is the capability,
+exactly as for `forward_backward` or `sample` on that model. This is why
+the view can ship before a tenancy design and the fleet view cannot.
 
-The fleet summary in `/status` counts devices per accelerator type from
-ResourceSlices and how many are claimed, using the same reads the fleet
-reader role was created for. It answers "is there a free GPU" without
-`kubectl`. It is best-effort: if the reads fail, the field is absent and
-`status` says why.
+**State vocabulary.** A client branches on `state`, one of five values
+that every launcher reports:
 
-In `process` and `single_process` modes the endpoints return the same
-shape with the worker fields the process launcher knows (pid, alive).
+| `state` | Meaning | Scheduler mode | Process mode |
+|---|---|---|---|
+| `waiting_for_placement` | no accelerator assigned yet | Workload without a `nodeName` (`Pending`, early `Placing`) | never |
+| `starting` | placed; pulling the image, mounting volumes, loading the model | node assigned, pod not yet `Running`; or pod `Running` but the sampler has not announced itself | process alive, sampler not announced |
+| `ready` | serving requests | Workload `Running`, pod `Running`, sampler announced (`open_rl:sampler_ready:<model>`) | process alive |
+| `failed` | exited with an error, or the pod cannot start | Workload `Failed`, pod `Failed`, or a container waiting in `CrashLoopBackOff`, `ImagePullBackOff` and the like | exit code not zero |
+| `stopped` | exited normally, or being released | Workload `Succeeded`, or a deletion timestamp | exit code zero |
+
+The scheduler's phase names, reasons, pod states and restart counts
+reach the client only inside `detail`, a free-text string documented as
+for humans and not a contract, the same split Kubernetes conditions make
+between `reason` and `message`. Renaming a Workload phase changes a
+string an agent shows to a user; it does not break a branch. The field is
+`state`, not `status`, because the model metadata already has a `status`
+of `active` or `deleted`.
+
+The mapping lives in one function per launcher (`worker_state` in
+`scheduler_worker_manager.py`; the process launcher's is three lines) and
+is table-tested. The node assignment is the placement boundary; a running
+pod is the readiness boundary, refined for samplers by the ready key the
+sampler writes when vLLM can serve.
+
+**Sources and cost.** Workloads and pods in the namespace, read with the
+RBAC the API server already has, joined in process and cached for 5
+seconds since the examples poll the view once a minute. No RBAC change,
+no watches. Without a worker manager (`single_process`) the view answers
+with no workers and a summary that says so.
 
 ### 5.3 Failures reach the client
 
@@ -228,13 +254,16 @@ started later for the same owner does not execute stale work.
 **A heartbeat after expiry does not revive the session.** An unknown
 session id gets a `200` whose body carries `openrl.expired: true`, the key
 is not recreated, and one unfiltered log line records it. Requests that
-name an expired session get a 400 that says so and points at
-`/api/v1/openrl/sessions/{id}`.
+name an expired session get a 400 that says so and names the model view
+of the affected model when there is one.
 
 **`try_again` says what it is waiting on.** While a future is pending,
 the poll response gains an `openrl` object: the stage (`launching
-trainer`, `queued`, `running`), the worker's Workload phase and reason,
-and how long the request has waited. If the Workload is `Pending` with a
+trainer`, `queued`, `running`), the worker's `state` and `detail` in the
+vocabulary of 5.2, and how long the request has waited. This also closes
+the one gap the model view leaves: during `create_model` the client has
+only a request id, not a model id, so the first and longest wait cannot be
+looked up; the pending response carries the answer instead. If the Workload is `Pending` with a
 `NoCapacity` reason for longer than a configurable limit (default 10
 minutes), the future fails with that reason. `WaitingForCapacity` keeps
 waiting, because the scheduler expects a seat to free up.
@@ -253,13 +282,15 @@ by Claude Code and compatible agents, and linked from
 `docs/getting-started.md` and the README. Contents:
 
 - Connect: the endpoint, the port-forward, what to check first
-  (`healthz`, `get_server_capabilities`, `/api/v1/openrl/status`).
+  (`healthz`, `get_server_capabilities`), the model view and its state
+  vocabulary.
 - Settings table, generated from `class Settings` by
   `scripts/gen_settings_doc.py`; a unit test fails when the checked-in
   table is stale.
-- Workload phases and normal durations: `Pending` to `Running` for a cold
-  node (image pull), a warm node, and a reused worker; vLLM start time;
-  the 120 s idle release.
+- Worker states and normal durations: `waiting_for_placement` to `ready`
+  for a cold node (image pull), a warm node, and a reused worker; vLLM
+  start time; the 120 s idle release. The skill tells agents to branch on
+  `state` and show `detail`.
 - Runbook, symptom first: no output for N minutes, `NoCapacity`,
   `WaitingForCapacity`, a 400 naming a setting, a released-workers error.
   Each entry: what to check from the client, the fix, what to tell the
@@ -300,25 +331,30 @@ README each get a plain link to the skill near the top, and a
 the client image) runs in under a minute without a GPU:
 
 1. `healthz` and `get_server_capabilities`; prints version, launcher mode,
-   settings count.
-2. `/api/v1/openrl/status`; prints free devices per accelerator type and
-   anything already running.
-3. Optional `--train`: a 3-step `tiny_sft` round trip with cleanup, timing
-   each stage, so an agent learns what "normal" takes on this cluster.
+   the settings, the limits, and whether `/openapi.json` answers.
+2. Optional `--train`: a 3-step `tiny_sft` round trip with cleanup, timing
+   each stage, so an agent learns what "normal" takes on this cluster. It
+   is the only check that proves a worker can start; whether the GPU
+   nodes have room is not visible from the endpoint until the fleet view
+   lands (section 10).
 
 One line per check, `OK`/`WARN`/`FAIL` with the reason, non-zero exit on
 `FAIL`.
 
 The tiny examples switch stdout to line buffering, exit non-zero on
 failure, silence the deprecation and Hugging Face warnings, and when a
-call has waited more than 60 s print one line from the model's status
-endpoint ("waiting on cluster: trainer Placing (PodCreated), 2m10s").
+call has waited more than 60 s print one line per minute. Once the
+example has its model id (`trainer.model_id`) the line carries the model
+view's `summary`; during `create_model` it only says how long it has
+waited (see 5.3 for the fix).
 
 ## 6. Decisions
 
 | Decision | Recommendation | Why | Status |
 | --- | --- | --- | --- |
-| API change scope | Additive only: new fields nested under `openrl`, new paths under `/api/v1/openrl/` | SDK response models ignore unknown fields; Tinker wire paths stay identical | open |
+| API change scope | Additive only: new fields nested under `openrl` in capabilities, and one new path, `/api/v1/openrl/models/{model_id}` | SDK response models ignore unknown fields; Tinker wire paths stay identical. Fewer new paths means fewer contracts to keep | decided (narrowed 2026-10-12, PR #328 review) |
+| Which status views ship now | Only the model view, scoped to one model id | A model id is a per-client capability, so the view adds no tenancy assumption; list and fleet views would expose every client's ids and need a tenancy design first | decided |
+| Worker state contract | Five OpenRL-owned states in `state`; scheduler words only in free-text `detail` | Workload phases and pod states are scheduler internals; a rename must not break clients | decided |
 | Where OpenRL-specific data lives in Tinker responses | One `openrl` object | Easy to find, easy to strip, never collides with SDK fields | open |
 | Settings documentation | Generated from `class Settings`, checked by a test | One source of truth; the 400 messages already derive from it | open |
 | Version source | Build arg `OPEN_RL_VERSION`, env var at runtime | `/app/VERSION` holds the internal counter, not the release tag | open |
@@ -327,21 +363,21 @@ endpoint ("waiting on cluster: trainer Placing (PodCreated), 2m10s").
 | Expired session semantics | No revival; 200 with `expired: true` on heartbeat, 400 on other calls | Avoids a live-looking session with no workers | decided |
 | Version source | Build arg `OPEN_RL_VERSION`, env var at runtime | `/app/VERSION` holds the internal counter, not the release tag | decided |
 | MCP server | Not now | REST plus skill covers current agents | decided |
-| Fleet summary from ResourceSlices | Best-effort field in `/status` | Uses existing RBAC; absence is reported, not fatal | open |
+| Fleet summary from ResourceSlices | Deferred with the fleet view | Needs the tenancy decision; the code exists on a side branch | deferred |
 
 ## 7. Phases
 
-**Phase 1: see what is happening.** Implemented on this branch and
-verified on 2026-10-12 against `open-rl-dra` (api-server image
-`agent1-27de66b` over the v0.0.6 bundle): `openrl-doctor` reports the
-fleet, `tiny_sft` prints the cluster's state while it waits, and a client
-stranded by a port-forward outage shows up as "no live session and no
-workers; the model's workers were released" in its model view. API server
-only, no cluster or RBAC change. Capabilities `openrl` object and OpenAPI metadata (5.1); the four
-status endpoints (5.2); build arg for the version; tiny examples flush and
-exit codes; a first `openrl-doctor` using the new endpoints. Unit tests
-with a fake `CustomObjectsApi`. Verified on `open-rl-dra` with a dev
-api-server image, re-running the getting-started steps.
+**Phase 1: see what is happening.** Implemented on this branch. The
+first cut (verified on 2026-10-12 against `open-rl-dra`, api-server image
+`agent1-27de66b` over the v0.0.6 bundle) had four endpoints and a fleet
+summary; review of PR #328 raised tenancy and the scheduler-internals
+contract, and the scope was narrowed the same day to the capabilities
+`openrl` object and OpenAPI metadata (5.1), the model view with the state
+vocabulary (5.2), the version build arg, the tiny examples' flushing, exit
+codes and per-minute lines, and `openrl-doctor` on capabilities alone.
+Unit tests with a fake `CustomObjectsApi` cover the state mapping and the
+view. API server only, no cluster or RBAC change. The narrowed cut is to
+be re-verified on `open-rl-dra` before release.
 
 **Phase 2: failures reach the client.** Fail futures on release, drain
 queues, expired-session semantics, `try_again` detail, `NoCapacity`
@@ -368,9 +404,11 @@ phase 1.
 
 ## 8. Testing
 
-- Unit: each new endpoint against a fake Kubernetes client and the
-  in-memory store; settings generator against `class Settings`; future
-  failure on release; heartbeat after expiry.
+- Unit: the model view against a fake Kubernetes client and the
+  in-memory store, with a table test over the state mapping and a test
+  that the response has only the model's own fields; settings generator
+  against `class Settings`; future failure on release; heartbeat after
+  expiry.
 - Compatibility: `tiny_sft`, `tiny_rl` and one cookbook recipe against the
   changed server with the pinned SDK and the newest SDK, confirming the
   added fields are ignored.
@@ -381,8 +419,31 @@ phase 1.
 
 - The SDK could one day validate `try_again` strictly. Mitigation: the
   compatibility run above, and the `openrl` object is the only addition.
-- Status endpoints add Kubernetes reads on a path agents may poll.
+- The model view adds Kubernetes reads on a path agents may poll.
   Mitigation: a short in-process cache (5 s) and no watches.
+- `detail` will be parsed by someone despite the documentation.
+  Mitigation: the skill says so twice, and every example branches on
+  `state`; if a need to branch on more appears, add a state, do not
+  promote the string.
 - Failing futures on release changes behaviour for clients that relied on
   waiting through a worker restart. No such path exists today: a released
   worker never comes back for the same session.
+
+## 10. Deferred
+
+Removed from the first cut on 2026-10-12 after review of PR #328, kept on
+the branch `feat/agent-friendly-fleet-views` for when the questions below
+are answered.
+
+| Deferred | What it did | Open question |
+|---|---|---|
+| `GET /api/v1/openrl/status` | every worker with phase, node and pod state; live session count; store health; a fleet summary from ResourceSlices (devices per accelerator type, how many run an OpenRL worker) | OpenRL is multi-tenant in practice and has no auth. Which workers, sessions and fleet numbers may a given client see? A per-client scope needs an identity on the request, which nothing supplies today |
+| `GET /api/v1/openrl/models` | every model, newest first, with owner and session liveness | same: listing other clients' model ids is a disclosure, and the ids are capabilities |
+| `GET /api/v1/openrl/sessions/{session_id}` | live or expired, TTL, `user_metadata`, owners attached | session ids are not exposed by the SDK, so no client could use it without reading server state; revisit with phase 2 if the expired-session 400 needs a pointer |
+| `openrl.endpoints` in capabilities | advertised the paths above | nothing to advertise with one path; the skill names it |
+| `openrl-doctor` fleet and store checks | "is there a free GPU", "is the store reachable" | both come back with the fleet view. The store check could return earlier as a field in capabilities if a deployment needs it |
+| the per-minute line during `create_model` | showed the trainer's progress before the client had a model id | phase 2 puts `state` and `detail` into the pending `try_again` response, which needs no new path |
+
+When the fleet view returns, it should report the same five worker
+states and the same `detail` split as the model view, so a client that
+learned one view can read the other.

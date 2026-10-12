@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import sys
 import threading
+import time
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -20,6 +21,16 @@ from server.store import get_state_store
 PROJECT_DIR = Path(__file__).resolve().parents[2]
 
 logger = logging.getLogger(__name__)
+
+# Worker states a client may branch on (design 016, section 5.2). Every
+# launcher reports the same five values; Workload phases, pod states and exit
+# codes map onto them and reach the client only inside the free-text `detail`.
+WAITING_FOR_PLACEMENT = "waiting_for_placement"  # no accelerator assigned yet
+STARTING = "starting"  # placed; pulling the image, mounting volumes or loading the model
+READY = "ready"  # serving requests
+FAILED = "failed"  # exited with an error, or the pod cannot start
+STOPPED = "stopped"  # exited normally, or being released
+WORKER_STATES = (WAITING_FOR_PLACEMENT, STARTING, READY, FAILED, STOPPED)
 
 
 # -- what is being run ------------------------------------------------------------
@@ -136,17 +147,10 @@ class WorkerManager(Protocol):
     ...
 
   def inspect_owner(self, owner: str) -> list[dict[str, Any]]:
-    """One entry per worker serving this owner: role, where it is in its
-    lifecycle (phase, reason) and where it runs. Read-only."""
-    ...
-
-  def inspect_all(self) -> list[dict[str, Any]]:
-    """Every worker this API server launched, in the same shape."""
-    ...
-
-  def fleet(self) -> dict[str, Any] | None:
-    """The accelerators workers can land on and how many OpenRL uses, or
-    None when the launcher has no view of a fleet."""
+    """One entry per worker serving this owner, read-only: `role`, `model_id`,
+    `state` (one of WORKER_STATES), `detail` (free text for a human: the
+    launcher's own reason, node and pod state), and `workload`, `node` and
+    `age_seconds` where the launcher knows them."""
     ...
 
 
@@ -158,6 +162,7 @@ class LocalWorkerManager:
       raise RuntimeError("OPEN_RL_ENABLE_FFT=true requires REDIS_URL so launched workers can share queues and futures")
     self.project_dir = project_dir
     self.processes: dict[tuple[str, str], subprocess.Popen] = {}
+    self.started: dict[tuple[str, str], float] = {}
     self.lock = threading.Lock()
 
   def ensure(self, model_id: str, role: str) -> None:
@@ -183,6 +188,7 @@ class LocalWorkerManager:
         self.processes[(role, runtime)] = subprocess.Popen(
           command, cwd=self.project_dir, env=env, stdout=log, stderr=subprocess.STDOUT, start_new_session=True
         )
+        self.started[(role, runtime)] = time.time()
 
   def release(self, model_id: str) -> None:
     try:
@@ -211,29 +217,31 @@ class LocalWorkerManager:
       proc.terminate()
 
   def inspect_owner(self, owner: str) -> list[dict[str, Any]]:
-    return [worker for worker in self.inspect_all() if worker["owner"] == owner]
-
-  def inspect_all(self) -> list[dict[str, Any]]:
+    now = time.time()
     with self.lock:
       workers = []
       for (role, runtime), proc in self.processes.items():
+        if owner_id(runtime) != owner:
+          continue
         code = proc.poll()
+        if code is None:
+          state, detail = READY, f"pid {proc.pid}"
+        elif code:
+          state, detail = FAILED, f"exited with code {code}"
+        else:
+          state, detail = STOPPED, "exited"
         workers.append(
           {
             "role": role,
-            "runtime": runtime,
-            "owner": owner_id(runtime),
             "model_id": runtime,
-            "pid": proc.pid,
-            "phase": "Running" if code is None else "Failed" if code else "Succeeded",
-            "reason": "" if code is None else f"exited with code {code}",
+            "state": state,
+            "detail": detail,
+            "workload": None,
             "node": None,
+            "age_seconds": now - self.started.get((role, runtime), now),
           }
         )
       return workers
-
-  def fleet(self) -> dict[str, Any] | None:
-    return None
 
 
 def python_command(extras: list[str], module: str, args: list[str]) -> list[str]:

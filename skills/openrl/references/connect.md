@@ -26,8 +26,8 @@ curl -s http://127.0.0.1:9003/api/v1/get_server_capabilities | python3 -m json.t
 The `openrl` object holds `version` (the release tag, or `sha-<commit>` for a build from
 main), `worker_launcher` (`scheduler` on Kubernetes, `process` or `single_process` for local
 servers), `sampler_backend`, `fft_enabled`, `models`, `settings` (the same table as
-`settings.md`), `limits`, `endpoints` and, on releases, `skill_url` for the copy of this
-skill that matches the server. A response without `openrl` is a server older than v0.0.7.
+`settings.md`), `limits` and, on releases, `skill_url` for the copy of this skill that
+matches the server. A response without `openrl` is a server older than v0.0.7.
 
 ## OpenRL-only endpoints
 
@@ -35,15 +35,25 @@ Not part of the Tinker API; plain HTTP GET/POST with JSON.
 
 | Endpoint | Use |
 |---|---|
-| `GET /api/v1/openrl/status` | every worker this server runs, with Workload phase, reason, node, pod state and age; live sessions; the fleet: accelerator type and memory per node and how many run an OpenRL worker |
-| `GET /api/v1/openrl/models` | every model created, newest first, with owner and whether its session is live |
-| `GET /api/v1/openrl/models/{model_id}` | one model: settings, sessions, workers, and `summary`, one line that says what to know first |
-| `GET /api/v1/openrl/sessions/{session_id}` | live or not, TTL, settings the session was opened with, owners attached |
+| `GET /api/v1/openrl/models/{model_id}` | one model: `settings`, `session_live`, `shares_workers`, `workers` (below), and `summary`, one line that says what to know first |
 | `POST /api/v1/delete_model` | `{"model_id": "..."}`; releases the model's workers now (an FFT or exclusive job) or frees its adapter (a shared LoRA runtime) |
 | `GET /openapi.json`, `/docs` | the full API |
 
-The SDK's training client gives you the model id as `trainer._guaranteed_model_id()`;
-the session id is not exposed, read it from the model view's `sessions`.
+A worker entry in the model view:
+
+| Field | Meaning |
+|---|---|
+| `role` | `trainer` or `sampler` |
+| `state` | one of `waiting_for_placement`, `starting`, `ready`, `failed`, `stopped`; the same five on every server, branch on this |
+| `detail` | free text for a human: the scheduler's own words (Workload phase and reason, node, pod state, restarts); wording can change, do not parse it |
+| `workload`, `node` | names to give the platform owner; `null` on a server that runs workers as processes |
+| `age_seconds` | since the worker was requested |
+| `summary` | `role state: detail, age` in one line |
+
+The SDK's training client exposes the model id as `trainer.model_id`. The view is scoped
+to one model: a model id is a random UUID the server minted for the client that created
+it, so knowing it is the capability, as for every Tinker call. There is no list of models
+or sessions and no fleet view; those wait for a tenancy design (design 016, deferred).
 
 ## SDK versions
 

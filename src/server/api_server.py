@@ -692,8 +692,8 @@ app = FastAPI(
   version=OPEN_RL_VERSION,
   description=(
     "A self-hosted, Kubernetes-native post-training API that serves the Tinker API. "
-    "Tinker SDK clients use the /api/v1 paths; the read-only /api/v1/openrl paths show what "
-    "the server knows about models, sessions, workers and the fleet. "
+    "Tinker SDK clients use the /api/v1 paths. GET /api/v1/openrl/models/{model_id} is OpenRL's own: "
+    "what the server knows about one model, its settings, its workers and whether its session is live. "
     "Repository and docs: https://github.com/gke-labs/open-rl"
   ),
   lifespan=lifespan,
@@ -790,14 +790,6 @@ def openrl_info() -> dict[str, Any]:
       "session_ttl_seconds": session_registry.ttl_seconds,
       "session_reap_interval_seconds": SESSION_REAP_INTERVAL_SEC,
     },
-    "endpoints": {
-      "status": "/api/v1/openrl/status",
-      "models": "/api/v1/openrl/models",
-      "model": "/api/v1/openrl/models/{model_id}",
-      "session": "/api/v1/openrl/sessions/{session_id}",
-      "openapi": "/openapi.json",
-      "docs": "/docs",
-    },
     "skill_url": f"{RELEASES_URL}/download/{OPEN_RL_VERSION}/openrl-skill.tar.gz" if release else None,
     "getting_started_url": "https://github.com/gke-labs/open-rl/blob/main/docs/getting-started.md",
   }
@@ -814,40 +806,14 @@ async def get_server_capabilities():
   }
 
 
-# *** OpenRL status endpoints: read-only, not part of the Tinker API ***
-def status_context() -> openrl_status.StatusContext:
-  return openrl_status.StatusContext(
-    state=state, store=store, registry=session_registry, manager=worker_manager, worker_launcher=worker_launcher_mode(), version=OPEN_RL_VERSION
-  )
-
-
-@app.get("/api/v1/openrl/status")
-async def openrl_cluster_status():
-  """Workers, the sessions using them, and the fleet, for clients without kubectl."""
-  return await openrl_status.cluster_status(status_context())
-
-
-@app.get("/api/v1/openrl/models")
-async def openrl_list_models():
-  """Every model this server created, newest first."""
-  return await openrl_status.list_models(status_context())
-
-
+# *** The OpenRL model view: read-only, not part of the Tinker API ***
 @app.get("/api/v1/openrl/models/{model_id}")
 async def openrl_model_status(model_id: str):
-  """One model: its settings, sessions, workers and a one-line summary."""
-  result = await openrl_status.model_status(status_context(), model_id)
+  """One model: its settings, its workers with their state, whether its session is live, and a one-line summary."""
+  ctx = openrl_status.StatusContext(state=state, registry=session_registry, manager=worker_manager)
+  result = await openrl_status.model_status(ctx, model_id)
   if result is None:
     raise HTTPException(status_code=404, detail=f"Unknown model: {model_id}")
-  return result
-
-
-@app.get("/api/v1/openrl/sessions/{session_id}")
-async def openrl_session_status(session_id: str):
-  """Whether a session is live, its settings, and the owners it is attached to."""
-  result = await openrl_status.session_status(status_context(), session_id)
-  if result is None:
-    raise HTTPException(status_code=404, detail=f"Unknown or expired session: {session_id}")
   return result
 
 

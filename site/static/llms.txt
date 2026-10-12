@@ -8,7 +8,7 @@ Repository: https://github.com/gke-labs/open-rl
 
 - [OpenRL skill](https://github.com/gke-labs/open-rl/blob/main/skills/openrl/SKILL.md): how to connect, the openrl.* settings, worker lifecycle, and a symptom-first runbook. Each release ships the same skill as `openrl-skill.tar.gz`; a running server reports the matching URL as `openrl.skill_url` in `GET /api/v1/get_server_capabilities`.
 - [Getting started](https://github.com/gke-labs/open-rl/blob/main/docs/getting-started.md): deploy on a Kubernetes cluster, then run SFT and RL from a laptop.
-- A deployed server describes itself: `GET /api/v1/get_server_capabilities` (version, settings, limits), `GET /api/v1/openrl/status` (workers and fleet), `GET /openapi.json`.
+- A deployed server describes itself: `GET /api/v1/get_server_capabilities` (version, settings, limits), `GET /api/v1/openrl/models/<model_id>` (one model's workers and their state), `GET /openapi.json`.
 
 ## Docs
 

@@ -204,8 +204,8 @@ uv --project examples sync
 ```
 
 `openrl-doctor` checks the deployment from where you sit: the endpoint, the
-release, the store, any running workers, and whether the GPU nodes have room.
-It needs no `kubectl` and takes a few seconds:
+release and its settings; with `--train`, a three-step round trip that proves
+a worker can start. It needs no `kubectl` and takes a few seconds:
 
 ```bash
 uv --project examples run openrl-doctor
@@ -300,13 +300,13 @@ Any Tinker SDK client works against OpenRL, so the larger examples carry over:
 ## Troubleshooting
 
 - **A step hangs before the first loss line.** The cluster is starting a
-  worker. The examples print one line per minute saying what it is doing;
-  for any client, `curl http://127.0.0.1:9003/api/v1/openrl/status` shows
-  every worker's phase, reason and node without `kubectl`, and
-  `/api/v1/openrl/models/<model_id>` shows one model's. The same appears in
-  `kubectl -n openrl-system get workloads,pods`. A Workload stuck with
-  `NoCapacity` means no labeled node has a free GPU large enough;
-  `WaitingForCapacity` means one exists but is busy.
+  worker. The examples print one line per minute saying how long they have
+  waited and, once they have a model id, what the model's workers are doing.
+  For any client, `curl http://127.0.0.1:9003/api/v1/openrl/models/<model_id>`
+  shows the model's workers, each with a `state` and a `detail`, without
+  `kubectl`. `kubectl -n openrl-system get workloads,pods` shows the whole
+  cluster. A Workload stuck with `NoCapacity` means no labeled node has a
+  free GPU large enough; `WaitingForCapacity` means one exists but is busy.
 - **A worker pod stays Pending.** `kubectl -n openrl-system describe pod <pod>`
   shows why: image pulls, volume attach limits, taints, or host memory.
 - **The client gets an error back.** The API server log has the details:

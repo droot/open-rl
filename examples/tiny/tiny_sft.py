@@ -105,7 +105,7 @@ def main(config: Config) -> None:
   tokenizer = trainer.get_tokenizer()
   datum, active_tokens = build_datum(tokenizer, config.prompt, config.completion)
 
-  with waiting("tiny-sft", config.base_url, "the first forward_backward"):
+  with waiting("tiny-sft", config.base_url, "the first forward_backward", trainer.model_id):
     initial_loss = measure_loss(trainer, datum, active_tokens, config.grad_clip_norm)
   write_metric(log_dir, {"phase": "initial", "loss": initial_loss, "step": 0})
   print(f"[tiny-sft] initial_loss={initial_loss:.6f}")
@@ -140,7 +140,7 @@ def main(config: Config) -> None:
 
   if config.sample_after_train:
     # The first sample starts a sampler on the cluster, which can take minutes.
-    with waiting("tiny-sft", config.base_url, "the first sample (the cluster is starting a sampler)"):
+    with waiting("tiny-sft", config.base_url, "the first sample (the cluster is starting a sampler)", trainer.model_id):
       sampler = trainer.save_weights_and_get_sampling_client()
       result = sampler.sample(
         prompt=types.ModelInput.from_ints(tokenizer.encode(config.prompt, add_special_tokens=False)),

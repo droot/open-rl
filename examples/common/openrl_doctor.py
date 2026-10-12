@@ -4,9 +4,11 @@
 
 Each check prints one line: OK, WARN or FAIL, then what was found. Exit code
 is 1 if any check failed. --train runs a 3-step tiny_sft round trip and times
-it, so you learn what "normal" takes on this cluster.
+it, so you learn what "normal" takes on this cluster; it is the only check
+that proves a worker can start.
 
-Only the HTTP endpoint is used; no kubectl.
+Only the HTTP endpoint is used; no kubectl. Whether the GPU nodes have room
+is not visible from the endpoint yet (design 016, deferred work).
 """
 
 from __future__ import annotations
@@ -64,7 +66,7 @@ def check_endpoint(report: Report, base_url: str) -> dict[str, Any] | None:
     return None
   info = caps.get("openrl")
   if not info:
-    report.line("WARN", "capabilities", "no openrl section: this server predates v0.0.7; status checks below are skipped")
+    report.line("WARN", "capabilities", "no openrl section: this server predates v0.0.7 and does not describe itself")
     return {}
   settings = ", ".join(s["name"].removeprefix("openrl.") for s in info.get("settings", []))
   report.line(
@@ -78,42 +80,6 @@ def check_endpoint(report: Report, base_url: str) -> dict[str, Any] | None:
   status, _, _ = get(base_url, "/openapi.json")
   report.line("OK" if status == 200 else "WARN", "openapi", f"/openapi.json HTTP {status}")
   return info
-
-
-def check_status(report: Report, base_url: str) -> None:
-  status, body, took = get(base_url, "/api/v1/openrl/status")
-  if status != 200 or body is None:
-    report.line("FAIL", "status", f"HTTP {status}")
-    return
-  store = body.get("store", {})
-  report.line("OK" if store.get("ok") else "FAIL", "store", "reachable" if store.get("ok") else store.get("error", "unreachable"))
-  workers = [w for owner in body.get("owners", []) for w in owner.get("workers", [])]
-  phases = body.get("workers_by_phase", {})
-  if workers:
-    report.line(
-      "OK",
-      "workers",
-      f"{len(workers)} running or starting ({', '.join(f'{k}={v}' for k, v in phases.items())}), {body['sessions']['live']} live session(s)",
-    )
-    for worker in workers:
-      report.line("OK" if worker["phase"] == "Running" else "WARN", "worker", worker["summary"])
-  else:
-    report.line("OK", "workers", "none; the first create_model starts them")
-  fleet = body.get("fleet")
-  if fleet is None:
-    report.line("OK", "fleet", f"not applicable for worker launcher {body['worker_launcher']}")
-  elif "error" in fleet:
-    report.line("WARN", "fleet", f"could not read the fleet: {fleet['error']}")
-  elif not fleet.get("accelerators"):
-    report.line("FAIL", "fleet", "no node labeled openrl.io/enabled=true has a GPU ResourceSlice; label the GPU nodes and check the DRA driver")
-  else:
-    for acc in fleet["accelerators"]:
-      free = acc["devices"] - acc["openrl_workers"]
-      level = "OK" if free > 0 else "WARN"
-      name = f"{acc['accelerator'] or 'unknown accelerator'} {acc['memory'] or ''}".strip()
-      report.line(level, "fleet", f"{name}: {acc['devices']} device(s) on {acc['nodes']} node(s), {free} not running an OpenRL worker")
-    if sum(a["devices"] for a in fleet["accelerators"]) < 2:
-      report.line("WARN", "fleet", "fewer than two accelerators: a trainer and a sampler each need one")
 
 
 def check_train(report: Report, base_url: str) -> None:
@@ -140,8 +106,6 @@ def main() -> None:
 
   report = Report()
   info = check_endpoint(report, base_url)
-  if info:
-    check_status(report, base_url)
   if args.train and info is not None:
     check_train(report, base_url)
   sys.exit(1 if report.failed else 0)

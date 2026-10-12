@@ -28,7 +28,19 @@ from typing import Any
 from kubernetes import client, config
 
 from server.estimator import Footprint, footprint
-from server.worker_manager import base_model_of, owner_id, runtime_of, worker_args, worker_env, worker_module
+from server.worker_manager import (
+  FAILED,
+  READY,
+  STARTING,
+  STOPPED,
+  WAITING_FOR_PLACEMENT,
+  base_model_of,
+  owner_id,
+  runtime_of,
+  worker_args,
+  worker_env,
+  worker_module,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -198,7 +210,7 @@ def workload_body(worker: Worker) -> dict[str, Any]:
 class SchedulerWorkerManager:
   """Runs trainer and sampler workers by creating Workload objects."""
 
-  def __init__(self, custom_api: Any = None, core_api: Any = None, resource_api: Any = None):
+  def __init__(self, custom_api: Any = None, core_api: Any = None):
     if not os.getenv("REDIS_URL"):
       raise RuntimeError("OPEN_RL_ENABLE_FFT=true requires REDIS_URL so launched workers can share queues and futures")
     self.namespace = os.getenv("OPEN_RL_WORKER_NAMESPACE", "openrl-system")
@@ -206,12 +218,10 @@ class SchedulerWorkerManager:
       config.load_incluster_config()
       custom_api = client.CustomObjectsApi()
       core_api = client.CoreV1Api()
-      resource_api = client.ResourceV1Api()
     self.custom_api = custom_api
     self.core_api = core_api
-    self.resource_api = resource_api
-    # Status views may be polled; one read per few seconds is plenty.
-    self._view_cache: dict[str, tuple[float, Any]] = {}
+    # The model view may be polled; one read per few seconds is plenty.
+    self._workers_cache: tuple[float, list[dict[str, Any]]] | None = None
     self.view_cache_seconds = 5.0
 
   def ensure(self, model_id: str, role: str) -> None:
@@ -274,26 +284,22 @@ class SchedulerWorkerManager:
       if getattr(exc, "status", None) != 404:
         raise
 
-  # -- read-only views (design 016) -----------------------------------------
-
-  def cached(self, key: str, load: Any) -> Any:
-    now = time.monotonic()
-    hit = self._view_cache.get(key)
-    if hit is not None and now - hit[0] < self.view_cache_seconds:
-      return hit[1]
-    value = load()
-    self._view_cache[key] = (now, value)
-    return value
+  # -- the read-only model view (design 016, section 5.2) ---------------------
 
   def inspect_owner(self, owner: str) -> list[dict[str, Any]]:
-    return [worker for worker in self.inspect_all() if worker["owner"] == owner]
+    return [worker for worker in self.workers() if worker["owner"] == owner]
 
-  def inspect_all(self) -> list[dict[str, Any]]:
-    """Our Workloads joined with their pods: what kubectl get workloads,pods
-    shows, as one entry per worker."""
-    return self.cached("workers", self.load_workers)
+  def workers(self) -> list[dict[str, Any]]:
+    now = time.monotonic()
+    if self._workers_cache is not None and now - self._workers_cache[0] < self.view_cache_seconds:
+      return self._workers_cache[1]
+    workers = self.load_workers()
+    self._workers_cache = (now, workers)
+    return workers
 
   def load_workers(self) -> list[dict[str, Any]]:
+    """Our Workloads joined with their pods, one entry per worker, in the
+    client vocabulary."""
     selector = "app.kubernetes.io/managed-by=open-rl-api-server"
     found = self.custom_api.list_namespaced_custom_object(GROUP, VERSION, self.namespace, PLURAL, label_selector=selector)
     pods = {pod.metadata.name: pod for pod in self.core_api.list_namespaced_pod(self.namespace).items}
@@ -301,69 +307,76 @@ class SchedulerWorkerManager:
     workers = []
     for item in found["items"]:
       spec, status, meta = item["spec"], item.get("status") or {}, item["metadata"]
-      worker: dict[str, Any] = {
-        "workload": meta["name"],
-        "role": spec["role"],
-        "owner": spec.get("ownerID"),
-        "model_id": spec["modelID"],
-        "phase": status.get("phase") or "Pending",
-        "reason": status.get("reason") or "",
-        "node": status.get("nodeName"),
-        "pod": status.get("podName"),
-        "devices": status.get("deviceCount"),
-        "memory_per_device": status.get("memoryPerDevice"),
-        "age_seconds": age_seconds(meta.get("creationTimestamp"), now),
-        "deleting": bool(meta.get("deletionTimestamp")),
-      }
-      pod = pods.get(worker["pod"]) if worker["pod"] else None
+      pod = pods.get(status["podName"]) if status.get("podName") else None
+      pod_phase = pod_waiting = None
+      restarts = 0
       if pod is not None:
-        worker["pod_phase"] = pod.status.phase
+        pod_phase = pod.status.phase
         waiting = [c.state.waiting.reason for c in pod.status.container_statuses or [] if c.state and c.state.waiting]
-        worker["pod_waiting"] = waiting[0] if waiting else None
-        worker["restarts"] = sum(c.restart_count for c in pod.status.container_statuses or [])
-      workers.append(worker)
+        pod_waiting = waiting[0] if waiting else None
+        restarts = sum(c.restart_count for c in pod.status.container_statuses or [])
+      state, detail = worker_state(
+        phase=status.get("phase") or "Pending",
+        reason=status.get("reason") or "",
+        node=status.get("nodeName"),
+        deleting=bool(meta.get("deletionTimestamp")),
+        pod_phase=pod_phase,
+        pod_waiting=pod_waiting,
+        restarts=restarts,
+      )
+      workers.append(
+        {
+          "workload": meta["name"],
+          "role": spec["role"],
+          "owner": spec.get("ownerID"),
+          "model_id": spec["modelID"],
+          "state": state,
+          "detail": detail,
+          "node": status.get("nodeName"),
+          "age_seconds": age_seconds(meta.get("creationTimestamp"), now),
+        }
+      )
     return workers
 
-  def fleet(self) -> dict[str, Any] | None:
-    """Accelerators on nodes the scheduler may use, from the DRA driver's
-    ResourceSlices, and how many of them run an OpenRL worker. The API server
-    cannot read ResourceClaims, so occupancy counts our Running workers, not
-    every claim on the node."""
-    try:
-      return self.cached("fleet", self.load_fleet)
-    except Exception as exc:
-      return {"error": f"{type(exc).__name__}: {exc}"}
 
-  def load_fleet(self) -> dict[str, Any]:
-    nodes = {}
-    for node in self.core_api.list_node(label_selector="openrl.io/enabled=true").items:
-      labels = node.metadata.labels or {}
-      # A node naming neither role accepts both; otherwise only the roles set to true.
-      named = {role for role in ("trainer", "sampler") if f"openrl.io/{role}" in labels}
-      roles = [role for role in ("trainer", "sampler") if not named or labels.get(f"openrl.io/{role}") == "true"]
-      nodes[node.metadata.name] = {"name": node.metadata.name, "roles": roles, "accelerator": None, "memory": None, "devices": 0, "openrl_workers": 0}
-    for s in self.resource_api.list_resource_slice().items:
-      if s.spec.driver != "gpu.nvidia.com" or s.spec.node_name not in nodes:
-        continue
-      entry = nodes[s.spec.node_name]
-      for device in s.spec.devices or []:
-        attrs = device.attributes or {}
-        if "productName" in attrs:
-          entry["accelerator"] = attrs["productName"].string
-        if device.capacity and "memory" in device.capacity:
-          entry["memory"] = device.capacity["memory"].value
-        entry["devices"] += 1
-    for worker in self.inspect_all():
-      if worker["phase"] == "Running" and worker["node"] in nodes:
-        nodes[worker["node"]]["openrl_workers"] += worker.get("devices") or 1
-    accelerators: dict[tuple[str | None, str | None], dict[str, Any]] = {}
-    for entry in nodes.values():
-      key = (entry["accelerator"], entry["memory"])
-      acc = accelerators.setdefault(key, {"accelerator": key[0], "memory": key[1], "nodes": 0, "devices": 0, "openrl_workers": 0})
-      acc["nodes"] += 1
-      acc["devices"] += entry["devices"]
-      acc["openrl_workers"] += entry["openrl_workers"]
-    return {"nodes": sorted(nodes.values(), key=lambda n: n["name"]), "accelerators": list(accelerators.values())}
+# Container waiting reasons that will not clear on their own.
+POD_WAITING_FAILURES = {
+  "CrashLoopBackOff",
+  "ImagePullBackOff",
+  "ErrImagePull",
+  "InvalidImageName",
+  "CreateContainerError",
+  "CreateContainerConfigError",
+}
+
+
+def worker_state(
+  phase: str, reason: str, node: str | None, deleting: bool, pod_phase: str | None, pod_waiting: str | None, restarts: int
+) -> tuple[str, str]:
+  """Map a Workload and its pod onto the client vocabulary. The raw facts go
+  into `detail`, for a human; `state` is what a client branches on. A node
+  assignment is the placement boundary; a running pod is the readiness
+  boundary (the model view refines it for samplers)."""
+  facts = phase + (f" ({reason})" if reason else "")
+  if node:
+    facts += f" on {node}"
+  if pod_waiting:
+    facts += f", pod {pod_waiting}"
+  elif pod_phase and pod_phase != "Running":
+    facts += f", pod {pod_phase}"
+  if restarts:
+    facts += f", {restarts} restart(s)"
+  if deleting:
+    return STOPPED, f"being released; {facts}"
+  if phase == "Succeeded" or pod_phase == "Succeeded":
+    return STOPPED, facts
+  if phase == "Failed" or pod_phase == "Failed" or pod_waiting in POD_WAITING_FAILURES:
+    return FAILED, facts
+  if not node:
+    return WAITING_FOR_PLACEMENT, facts
+  if phase == "Running" and pod_phase == "Running":
+    return READY, facts
+  return STARTING, facts
 
 
 def age_seconds(timestamp: str | None, now: float) -> float | None:

@@ -112,7 +112,8 @@ def main(config: Config) -> None:
     mean_reward = 0.0
     for step in range(1, config.steps + 1):
       # The first sample starts a sampler on the cluster, which can take minutes.
-      with waiting("tiny-rl", config.base_url, f"step {step} sampling" + (" (the cluster is starting a sampler)" if step == 1 else "")):
+      what = f"step {step} sampling" + (" (the cluster is starting a sampler)" if step == 1 else "")
+      with waiting("tiny-rl", config.base_url, what, trainer.model_id):
         sampler = trainer.save_weights_and_get_sampling_client()
         sequences = sampler.sample(prompt=prompt, num_samples=config.samples_per_prompt, sampling_params=sampling_params).result().sequences
 

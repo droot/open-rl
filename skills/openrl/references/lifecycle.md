@@ -12,24 +12,28 @@ an image pull (the worker image is several GiB) and a model download.
 | first `sample` or `save_weights_and_get_sampling_client` | one sampler, `lora-<base>-0-sampler` (plus `-1`, `-2`... with `openrl.sampler_replicas`) | same |
 | `create_lora_training_client` with `openrl.fine_tuning_type=full`, or `openrl.exclusive=true`, or `openrl.trainer_gpus>1` | a trainer of its own, `fft-<model_id>-trainer`, and later `fft-<model_id>-sampler` | nothing; full fine-tuning workers take turns on a GPU with other jobs' workers unless exclusive |
 
-The pair of workers that serve one job share an *owner*; the model view's `owner` names it.
+The workers that serve one job appear together in the job's model view,
+`GET /api/v1/openrl/models/{model_id}`.
 
-## Phases
+## Worker states
 
-`/api/v1/openrl/status` and `/models/{id}` report each worker's Workload `phase` and
-`reason`, plus the pod's state once it exists.
+Each worker in the model view has a `state`, the same five values on every server, and a
+`detail` in the scheduler's own words (Workload phase and reason, node, pod state). Branch
+on `state`; show `detail` to a human. `kubectl -n openrl-system get workloads,pods` shows
+the same facts `detail` quotes.
 
-| Phase | Meaning | Normal duration |
-|---|---|---|
-| `Pending` | no accelerator assigned yet; `reason` starts with `NoCapacity` (nothing fits) or `WaitingForCapacity` (something fits but is busy) | seconds; longer only when the cluster is full |
-| `Placing` | a claim and a pod exist, the allocation is not yet observed; pod `ContainerCreating` is the image pull and volume mount | under a minute on a warm node; 5 to 10 minutes on a cold node |
-| `Running` | the pod runs; `ready` is false until the worker announces itself | trainer: ready about 2 minutes after `create_model`; sampler: `Running` within a minute, ready 3 to 4 minutes later while vLLM starts |
-| `Succeeded` / `Failed` | the process exited; `reason` says why | |
+| State | Meaning | What `detail` says | Normal duration |
+|---|---|---|---|
+| `waiting_for_placement` | no accelerator assigned yet | `Pending (NoCapacity: ...)`: nothing in the cluster fits; `Pending (WaitingForCapacity)`: something fits but is busy | seconds; longer only when the cluster is full |
+| `starting` | placed on a node; pulling the image, mounting volumes, or loading the model | `Placing ... pod ContainerCreating` is the image pull and volume mount; `Running ..., loading the model` is vLLM starting | under a minute on a warm node; 5 to 10 minutes on a cold node. Trainer: `ready` about 2 minutes after `create_model`; sampler: 3 to 4 minutes more while vLLM starts |
+| `ready` | serving requests | node name | |
+| `failed` | the process exited with an error, or the pod cannot start | the reason, `pod CrashLoopBackOff` or `pod ImagePullBackOff`, restart count | |
+| `stopped` | exited normally, or being released | `being released; ...` while the reaper or `delete_model` tears it down | |
 
 What the examples print while they wait is the same information:
 
 ```
-[tiny-sft] waiting 2m00s on the first sample (the cluster is starting a sampler); sampler lora-google-gemma-4-e2b-0-sampler Running on gke-...-2208, 120s; trainer ... Running on gke-...-lvw8, 201s
+[tiny-sft] waiting 2m00s on the first sample (the cluster is starting a sampler); trainer ready: Running (PodCreated) on gke-...-lvw8, 201s; sampler starting: Running on gke-...-2208, loading the model, 120s
 ```
 
 So, from a laptop against a warm cluster: about 2 minutes to the first loss line and about
@@ -57,5 +61,5 @@ of the first finds both workers up and starts in seconds.
   run at once; their sampling overlaps with training.
 - Full fine-tuning jobs each get a trainer; on the FFT release they time-slice a GPU, parking
   state in host memory between turns, so concurrent FFT jobs slow each other down.
-- A sampler that is still loading a model shows `Running` with `ready: false`; requests
-  queue until it is ready.
+- A sampler that is still loading a model is `starting` with a `detail` that ends in
+  `loading the model`; requests queue until it is `ready`.

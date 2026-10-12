@@ -11,7 +11,7 @@ OpenRL (github.com/gke-labs/open-rl) serves the Tinker API on a Kubernetes
 cluster your platform team runs. Any `tinker` SDK client or `tinker-cookbook`
 recipe works against it; your training loop runs on your machine and the
 GPUs do the work on the cluster. Facts here were verified on v0.0.6 plus the
-status endpoints added by design 016, on 2026-10-12. The line above is
+model view added by design 016, on 2026-10-12. The line above is
 replaced with the release tag when the skill ships with a release.
 
 ## Quick card
@@ -22,7 +22,7 @@ replaced with the release tag when the skill ships with a release.
 | Endpoint in the cluster | `http://open-rl-api-server-service.openrl-system.svc.cluster.local:8000` |
 | Auth | None. The SDK insists on a key: `TINKER_API_KEY=tml-dummy-key`. |
 | Is it up, which release | `GET /api/v1/healthz`; `GET /api/v1/get_server_capabilities` -> `openrl.version`, `openrl.worker_launcher`, `openrl.fft_enabled`, `openrl.settings` |
-| What is the cluster doing | `GET /api/v1/openrl/status` (every worker, its phase and node, free accelerators); `GET /api/v1/openrl/models/<model_id>` (one model's workers, sessions, a one-line summary) |
+| What is my run doing | `GET /api/v1/openrl/models/<model_id>`: the model's workers, each with a `state` (`waiting_for_placement`, `starting`, `ready`, `failed`, `stopped`) and a human-readable `detail`; whether its session is live; a one-line `summary`. The model id is `trainer.model_id`. Before you have one, or for the whole cluster, only `kubectl -n openrl-system get workloads,pods` (needs cluster access). |
 | One-command check | `uv --project examples run openrl-doctor` from a clone, or `python -m common.openrl_doctor` in the client image |
 | Base models | Any Hugging Face model id. `supported_models` lists only the configured default. First use of a model downloads it on the cluster. |
 | LoRA or full fine-tuning | `openrl.fine_tuning_type=lora` (default) or `full`; full needs `openrl.fft_enabled: true` in capabilities |
@@ -32,23 +32,24 @@ replaced with the release tag when the skill ships with a release.
 
 ## Start here
 
-1. **Check the deployment.** `openrl-doctor`, or curl `healthz`, `get_server_capabilities`
-   and `/api/v1/openrl/status`. Read `openrl.version`; a server without an `openrl` section
-   predates v0.0.7 and has no status views.
+1. **Check the deployment.** `openrl-doctor`, or curl `healthz` and `get_server_capabilities`.
+   Read `openrl.version`; a server without an `openrl` section predates v0.0.7 and has no
+   model view.
 2. **Pick the settings.** `references/settings.md` is the complete list with defaults.
    Most runs need none. Full fine-tuning, exclusive GPUs, more sampler replicas and the
    Automodel trainer are settings, not code.
 3. **Write or run the loop.** `examples/tiny/tiny_sft.py` and `tiny_rl.py` in the repository
    are complete; cookbook recipes run unchanged with `base_url=` pointing at the server.
 4. **Know what waiting looks like.** `references/lifecycle.md`: which worker starts when,
-   how long each phase normally takes, and when workers go away.
+   what each worker state means, how long each normally lasts, and when workers go away.
 5. **When something is wrong**, start from the symptom in `references/runbook.md`. Every
    entry says what to check from the client, the fix, and what to tell the platform owner.
 
 ## Rules that save runs
 
 - Read `summary` from `/api/v1/openrl/models/<id>` before deciding a run is hung. The
-  examples print it every minute while a call blocks.
+  examples print it every minute while a call blocks, once they have a model id. Branch on
+  a worker's `state`; `detail` is for a human and its wording can change.
 - A port-forward that is down for more than two minutes ends the run: the server releases
   the workers and the adapter state in them. Save state (`save_state`) if a run must survive
   that, and restart the forward before relaunching.
@@ -62,5 +63,5 @@ replaced with the release tag when the skill ships with a release.
 |---|---|
 | `references/settings.md` | every `openrl.*` setting, generated from the server code and tested |
 | `references/connect.md` | URLs, SDK versions, the supported Tinker surface, OpenRL-only endpoints |
-| `references/lifecycle.md` | workers, Workload phases, normal durations, release and cleanup |
+| `references/lifecycle.md` | workers, their states, normal durations, release and cleanup |
 | `references/runbook.md` | symptom -> check -> fix -> what to tell the platform owner |

@@ -2,12 +2,16 @@
 
 The SDK blocks inside create_lora_training_client() and .result() while the
 API server starts workers, which on a cold node takes minutes. Without this
-the example prints nothing for that long and looks hung. A thread polls the
-API server's status view and prints one line per minute, for example:
+the example prints nothing for that long and looks hung. A thread prints one
+line per minute. Once the example knows its model id, the line carries the
+model view's summary, for example:
 
-  [tiny-sft] waiting 2m0s on create_model; trainer lora-google-gemma-4-e2b-0-trainer Placing (PodCreated) on gke-...-lvw8, pod ContainerCreating, 118s
+  [tiny-sft] waiting 2m00s on the first sample; trainer ready: Running on gke-...-lvw8, 201s;
+  sampler starting: Placing on gke-...-2208, pod ContainerCreating, 118s
 
-The status view is OpenRL's; against another Tinker server the thread stays quiet.
+During create_model the client has no model id yet, so the line only says
+how long it has waited. The model view is OpenRL's; against another Tinker
+server the line stays plain.
 """
 
 from __future__ import annotations
@@ -35,23 +39,15 @@ def fetch_json(url: str, timeout: float = 5.0) -> dict[str, Any] | None:
     return None
 
 
-def cluster_summary(base_url: str) -> str:
-  status = fetch_json(f"{base_url}/api/v1/openrl/status")
-  if status is None:
-    return "status view unavailable"
-  lines = [worker["summary"] for owner in status.get("owners", []) for worker in owner.get("workers", [])]
-  if lines:
-    return "; ".join(lines)
-  fleet = status.get("fleet") or {}
-  if fleet.get("accelerators"):
-    free = sum(a["devices"] - a["openrl_workers"] for a in fleet["accelerators"])
-    return f"no workers yet; {free} free accelerator(s) in the fleet"
-  return "no workers yet"
+def model_summary(base_url: str, model_id: str) -> str:
+  body = fetch_json(f"{base_url}/api/v1/openrl/models/{model_id}")
+  return body.get("summary", "model view unavailable") if body else "model view unavailable"
 
 
 @contextmanager
-def waiting(tag: str, base_url: str, what: str, after: float = 60.0, every: float = 60.0):
-  """Print the cluster's view every `every` seconds once a call has blocked for `after`."""
+def waiting(tag: str, base_url: str, what: str, model_id: str | None = None, after: float = 60.0, every: float = 60.0):
+  """Print one line every `every` seconds once a call has blocked for `after`;
+  with a `model_id`, the line carries the model view's summary."""
   done = threading.Event()
   started = time.monotonic()
 
@@ -60,7 +56,10 @@ def waiting(tag: str, base_url: str, what: str, after: float = 60.0, every: floa
       return
     while not done.is_set():
       elapsed = int(time.monotonic() - started)
-      print(f"[{tag}] waiting {elapsed // 60}m{elapsed % 60:02d}s on {what}; {cluster_summary(base_url)}")
+      line = f"[{tag}] waiting {elapsed // 60}m{elapsed % 60:02d}s on {what}"
+      if model_id:
+        line += f"; {model_summary(base_url, model_id)}"
+      print(line)
       if done.wait(every):
         return
 
