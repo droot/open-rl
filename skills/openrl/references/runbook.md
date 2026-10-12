@@ -1,6 +1,8 @@
 # Runbook: symptom -> check from the client -> fix -> what to tell the platform owner
 
-Check first, always: `GET /api/v1/openrl/models/<model_id>` and read `summary`. Compare
+This runbook is for symptoms the deployment causes. Once the workers are `ready`, a slow
+step, a hang, a renderer problem or an SDK error is `/tinker:debug`'s territory; the row
+below that matches says so. Check first, always: `GET /api/v1/openrl/models/<model_id>` and read `summary`. Compare
 worker ages with the durations in `lifecycle.md` before calling anything hung. Without a
 model id (the client is still inside `create_model`) the only view is
 `kubectl -n openrl-system get workloads,pods`, which needs cluster access; without that,
@@ -14,14 +16,15 @@ wait out the normal duration, then ask the platform owner.
 | `starting` for over 10 minutes, `detail` says `pod ContainerCreating` | `detail` and `age_seconds` | wait; it is pulling the worker image or mounting the shared volume | the entry's `node` and `workload` if it exceeds 15 minutes |
 | Worker `failed` | `detail`: the reason, the pod's waiting reason and restart count; a sampler failing on a small GPU usually ran out of memory | smaller model, or a larger device via `openrl.exclusive` on a bigger node pool | the `workload` name; the owner reads the pod log |
 | Client logs `Retrying request ... because of try_again` for many minutes; model view says `no live session and no workers; the model's workers were released` | `session_live: false` in the model view: the session expired once | the run is lost on servers up to v0.0.6. Stop the client, make sure the port-forward is up, start a new run; restore from the last `save_state` path if there is one | time of the gap, so they can see whether the server restarted |
-| `Session heartbeat failed for N seconds` in the client log | `curl .../healthz` through the same URL the client uses | the connection, not the server: restart the port-forward loop. Under 120 s the run continues; over 120 s see the row above | nothing, unless `healthz` itself fails |
+| `Session heartbeat failed for N seconds` in the client log | `curl .../healthz` through the same URL the client uses | if `healthz` fails: the connection, restart the port-forward loop. Under 120 s the run continues; over 120 s see the row above. If `healthz` is fine, the SDK's own thread is blocked: `/tinker:debug`, GIL contention | nothing, unless `healthz` itself fails |
 | HTTP 400 `The x-open-rl-fine-tuning-type header was removed; set openrl.fine_tuning_type ...` | the client sets a removed header or `full_config` | pass the setting named in the message as `user_metadata` or `TINKER_TAGS` | nothing |
 | HTTP 400 `openrl.<name>: unknown setting` or `must be ...` | spelling and value against `settings.md` | fix the value; values are strings | nothing |
 | HTTP 400 `openrl.exclusive needs a server that launches workers per model` (or `sampler_replicas`, `trainer_backend`, `trainer_gpus`) | `openrl.worker_launcher` in capabilities is not `scheduler` | run against the Kubernetes deployment; these settings need it | nothing |
 | HTTP 400 on `create_model` with `openrl.fine_tuning_type=full` saying FFT is disabled | `openrl.fft_enabled` in capabilities | use LoRA, or ask for the FFT release | "please deploy `openrl-fft.yaml`" |
-| Samples are token soup or a different model's style | `get_info` for your model returns your base model as `tokenizer_id` | report; this was a server bug fixed in v0.0.5 | OpenRL version and the model id |
-| Steps are two to three times slower than yesterday | `shares_workers: true` in the model view means other LoRA jobs on the same base model share your trainer; several FFT jobs time-slice a GPU | expected sharing; stagger runs if wall-clock matters | nothing |
+| Samples are token soup or a different model's style | `get_info` for your model returns your base model as `tokenizer_id`; if it does, the renderer is the suspect: `/tinker:debug` | if `tokenizer_id` is wrong, report; this was a server bug fixed in v0.0.5 | OpenRL version and the model id |
+| Steps are two to three times slower than yesterday | `shares_workers: true` in the model view means other LoRA jobs on the same base model share your trainer; several FFT jobs time-slice a GPU | expected sharing; stagger runs if wall-clock matters. If nothing shares your workers, profile the client: `/tinker:debug` | nothing |
 | Everything slow or `healthz` failing | `healthz` latency | stop clients and wait | the `healthz` output and time |
+| Any other SDK error, a hang with all workers `ready`, output that differs from vLLM | | `/tinker:debug`; its error decoder covers the Tinker-level 400s and the SDK's retry behaviour | |
 | `No module named cluster_wait` when running a tiny example | you ran it from a copy, not from `examples/tiny/` | run from the repository clone, or copy `cluster_wait.py` next to the script | nothing |
 
 ## Where the server-side evidence is, for the platform owner

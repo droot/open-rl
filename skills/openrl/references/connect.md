@@ -54,29 +54,3 @@ The SDK's training client exposes the model id as `trainer.model_id`. The view i
 to one model: a model id is a random UUID the server minted for the client that created
 it, so knowing it is the capability, as for every Tinker call. There is no list of models
 or sessions and no fleet view; those wait for a tenancy design (design 016, deferred).
-
-## SDK versions
-
-The repository's examples pin `tinker==0.29.0` and `tinker-cookbook[math-rl]==0.5.7`.
-Servers from v0.0.4 on speak the protobuf wire SDKs >= 0.25 use; older SDKs also work.
-The SDK's response models ignore unknown fields, so the `openrl` additions are safe for
-every version.
-
-## Supported Tinker surface
-
-From `docs/tinker-client-compatibility.md`, generated against the server:
-
-- `ServiceClient`: `create_lora_training_client`, `create_sampling_client`,
-  `create_training_client_from_state` (with and without optimizer), `get_server_capabilities`.
-- `TrainingClient`: `forward`, `forward_backward`, `optim_step`, `save_state`, `load_state`
-  (with and without optimizer), `save_weights_for_sampler`,
-  `save_weights_and_get_sampling_client`, `create_sampling_client`, `get_info`, `get_tokenizer`.
-- `SamplingClient`: `sample`, `compute_logprobs`, `get_base_model`, `get_tokenizer`.
-
-Not supported: the `RestClient` checkpoint listing, deletion, archive and publish calls, and
-the session, billing and audit APIs. A cookbook recipe that lists checkpoints to resume will
-not find any; pass `save_every=0` unless you have verified resume on your server.
-
-Full fine-tuning is a setting, not a different client: `openrl.fine_tuning_type=full` on the
-session or the model. The old `x-open-rl-fine-tuning-type` header is refused with a 400
-that names the setting.

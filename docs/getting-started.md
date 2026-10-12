@@ -211,11 +211,23 @@ a worker can start. It needs no `kubectl` and takes a few seconds:
 uv --project examples run openrl-doctor
 ```
 
-If an AI coding agent is doing the work, give it
-[`skills/openrl/SKILL.md`](../skills/openrl/SKILL.md) from this clone. The
-same skill ships with each release as `openrl-skill.tar.gz`, stamped with the
-version it describes; Claude Code users can install it with
-`/plugin marketplace add gke-labs/open-rl` and `/plugin install openrl@open-rl`.
+If an AI coding agent is doing the work, give it two skills. The
+[OpenRL skill](../skills/openrl/SKILL.md) covers this deployment: connecting,
+the `openrl.*` settings, what the cluster is doing while a call waits, and
+OpenRL's own errors. The [tinker-cookbook skills](https://github.com/thinking-machines-lab/tinker-cookbook/tree/main/skills)
+cover how to train: recipes, hyperparameters, evaluation, and SDK debugging.
+The OpenRL skill says when to use which, and where the cookbook's
+hosted-service advice does not apply here. In Claude Code:
+
+```
+/plugin marketplace add gke-labs/open-rl
+/plugin install openrl@open-rl
+/plugin marketplace add thinking-machines-lab/tinker-cookbook
+/plugin install tinker@tinker-skills
+```
+
+The OpenRL skill also ships with each release as `openrl-skill.tar.gz`,
+stamped with the version it describes, for agents that are not Claude Code.
 
 The examples talk to `http://127.0.0.1:9003` by default.
 

@@ -1,6 +1,6 @@
 ---
 name: openrl
-description: Use a deployed OpenRL server (a self-hosted, Kubernetes-native Tinker API for LoRA and full fine-tuning, SFT and RL) from the client side with the tinker SDK or tinker-cookbook. Covers connecting, the openrl.* settings, what the cluster is doing while a call blocks, and what each error means. Use when a task mentions OpenRL, open-rl, the OpenRL API server, "our Tinker endpoint", or debugging training runs against one. Not for operating the cluster or for the hosted Tinker service.
+description: Use a deployed OpenRL server (a self-hosted, Kubernetes-native Tinker API for LoRA and full fine-tuning) from the client side. Covers only what differs from the hosted Tinker service: connecting to the endpoint, the openrl.* settings, what the cluster is doing while a call blocks, worker lifecycle, OpenRL's own errors, and where the tinker-cookbook skills' hosted-service advice does not apply. Use when a task mentions OpenRL, open-rl, the OpenRL API server, "our Tinker endpoint", TINKER_BASE_URL pointing at a cluster, or debugging a run against one. For how to train (recipes, hyperparameters, evaluation, SDK debugging) use the tinker-cookbook skills; this skill says when to load them.
 ---
 
 # OpenRL from the client side
@@ -11,8 +11,27 @@ OpenRL (github.com/gke-labs/open-rl) serves the Tinker API on a Kubernetes
 cluster your platform team runs. Any `tinker` SDK client or `tinker-cookbook`
 recipe works against it; your training loop runs on your machine and the
 GPUs do the work on the cluster. Facts here were verified on v0.0.6 plus the
-model view added by design 016, on 2026-10-12. The line above is
-replaced with the release tag when the skill ships with a release.
+model view added by design 016, on 2026-10-12. The line above is replaced
+with the release tag when the skill ships with a release.
+
+## This skill and the tinker-cookbook skills
+
+This skill covers the deployment: how to reach it, its settings, what it is
+doing while you wait, and its own errors. How to train is the tinker-cookbook
+skills' job, and they are the better reference:
+
+| Question | Skill |
+|---|---|
+| How do I set up SFT, RL, DPO, distillation; which model, which hyperparameters, how to evaluate, how to read `metrics.jsonl` | `/tinker:research` |
+| Why is a step slow or a session hanging once the workers are up; renderer and tokenization problems; what an SDK error means | `/tinker:debug` |
+| Anything about connecting to OpenRL, `openrl.*` settings, workers starting, sessions expiring, a 400 that names a setting | this skill |
+
+Install them next to this one if they are missing: `/plugin marketplace add
+thinking-machines-lab/tinker-cookbook`, then `/plugin install tinker@tinker-skills`.
+They assume the hosted Tinker service; `references/cookbook.md` lists each
+place that matters and what is true on OpenRL instead. Read it before
+following cookbook advice about API keys, model choice, checkpoints or
+"is Tinker down".
 
 ## Quick card
 
@@ -38,12 +57,15 @@ replaced with the release tag when the skill ships with a release.
 2. **Pick the settings.** `references/settings.md` is the complete list with defaults.
    Most runs need none. Full fine-tuning, exclusive GPUs, more sampler replicas and the
    Automodel trainer are settings, not code.
-3. **Write or run the loop.** `examples/tiny/tiny_sft.py` and `tiny_rl.py` in the repository
-   are complete; cookbook recipes run unchanged with `base_url=` pointing at the server.
+3. **Write or run the loop with the cookbook skills.** `examples/tiny/tiny_sft.py` and
+   `tiny_rl.py` in the repository are complete minimal loops; cookbook recipes run unchanged
+   with `base_url=` pointing at the server. `references/cookbook.md` says what to ignore in
+   the cookbook's hosted-service advice.
 4. **Know what waiting looks like.** `references/lifecycle.md`: which worker starts when,
    what each worker state means, how long each normally lasts, and when workers go away.
 5. **When something is wrong**, start from the symptom in `references/runbook.md`. Every
    entry says what to check from the client, the fix, and what to tell the platform owner.
+   Symptoms that are not about the deployment hand off to `/tinker:debug`.
 
 ## Rules that save runs
 
@@ -61,7 +83,8 @@ replaced with the release tag when the skill ships with a release.
 
 | Path | Contents |
 |---|---|
+| `references/cookbook.md` | which tinker-cookbook skill to use for what, and where their hosted-service advice differs on OpenRL; the supported Tinker surface |
 | `references/settings.md` | every `openrl.*` setting, generated from the server code and tested |
-| `references/connect.md` | URLs, SDK versions, the supported Tinker surface, OpenRL-only endpoints |
+| `references/connect.md` | URLs, which server you are talking to, the model view and its fields |
 | `references/lifecycle.md` | workers, their states, normal durations, release and cleanup |
-| `references/runbook.md` | symptom -> check -> fix -> what to tell the platform owner |
+| `references/runbook.md` | OpenRL symptoms: check from the client -> fix -> what to tell the platform owner |

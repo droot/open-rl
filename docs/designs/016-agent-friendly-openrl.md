@@ -297,8 +297,34 @@ API server log alone is possible.
 
 `skills/openrl/SKILL.md` plus `references/` in this repository, loadable
 by Claude Code and compatible agents, and linked from
-`docs/getting-started.md` and the README. Contents:
+`docs/getting-started.md` and the README.
 
+**Scope: only the OpenRL bits.** Users reach OpenRL through
+`tinker-cookbook`, which ships its own skills (`research`, `debug`,
+`inkling`) for how to train: methodology, recipes, hyperparameters,
+evaluation, logging, checkpoints, the SDK's threading model. Those are
+better than anything this repository should write, and they move weekly.
+The OpenRL skill does not repeat them. It covers what differs when the
+server is OpenRL, names the cookbook skill to load for everything else,
+and carries one table, `references/cookbook.md`, of the places where the
+cookbook skills assume the hosted service (API keys, the model lineup,
+`tinker run` and the checkpoint REST and CLI, billing and rate-limit
+errors, the "is Tinker down" smoke test, heartbeat triage) with what is
+true on OpenRL instead. The skill's description is scoped to deployment
+and connection words so the two plugins do not compete for the same
+prompts; there is no dependency mechanism between plugins, so the
+getting-started guide installs both. Vendoring the cookbook skills was
+rejected: thirty thousand words that track hosted features, with the
+drift ours to own. A small cookbook-side change (name `TINKER_BASE_URL`;
+on an `openrl` key in capabilities, follow `skill_url`) would make the
+discovery run both ways from the one endpoint every client hits; it is
+noted, not proposed yet.
+
+Contents:
+
+- Cookbook: which tinker-cookbook skill to load for what, and the table
+  of where their hosted-service advice differs on OpenRL; the supported
+  Tinker surface.
 - Connect: the endpoint, the port-forward, what to check first
   (`healthz`, `get_server_capabilities`), the model view and its state
   vocabulary.

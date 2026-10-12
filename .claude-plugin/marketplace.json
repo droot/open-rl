@@ -9,7 +9,7 @@
     {
       "name": "openrl",
       "source": "./",
-      "description": "Use a deployed OpenRL server from the client side: connecting, the openrl.* settings, worker lifecycle, and a symptom-first runbook. The skill in skills/openrl; each release also ships it as openrl-skill.tar.gz."
+      "description": "Use a deployed OpenRL server from the client side: connecting, the openrl.* settings, worker lifecycle, and OpenRL's own errors. Complements the tinker-cookbook skills (research, debug), which cover how to train. The skill in skills/openrl; each release also ships it as openrl-skill.tar.gz."
     }
   ]
 }
