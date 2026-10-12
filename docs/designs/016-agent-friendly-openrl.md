@@ -302,9 +302,13 @@ API server log alone is possible.
 
 ### 5.5 A reference for agents
 
-`skills/openrl/SKILL.md` plus `references/` in this repository, loadable
-by Claude Code and compatible agents, and linked from
-`docs/getting-started.md` and the README.
+`skills/openrl/SKILL.md` plus `references/` in this repository, in the
+skill format coding agents share (a directory with a `SKILL.md` whose
+frontmatter carries `name` and `description`, plus references the agent
+loads on demand), and linked from `docs/getting-started.md` and the
+README. The skill text names agents by nothing but that format; install
+steps that differ per agent live in one section of the getting-started
+guide, not in the skill.
 
 **Scope: only the OpenRL bits.** Users reach OpenRL through
 `tinker-cookbook`, which ships its own skills (`research`, `debug`,
@@ -318,9 +322,11 @@ cookbook skills assume the hosted service (API keys, the model lineup,
 `tinker run` and the checkpoint REST and CLI, billing and rate-limit
 errors, the "is Tinker down" smoke test, heartbeat triage) with what is
 true on OpenRL instead. The skill's description is scoped to deployment
-and connection words so the two plugins do not compete for the same
-prompts; there is no dependency mechanism between plugins, so the
-getting-started guide installs both. Vendoring the cookbook skills was
+and connection words so the two skills do not compete for the same
+prompts; skills have no dependency mechanism, so the getting-started
+guide installs both, with the per-agent steps in its own section. The
+skill refers to the cookbook skills by their names, `research` and
+`debug`, not by any one agent's slash commands. Vendoring the cookbook skills was
 rejected: thirty thousand words that track hosted features, with the
 drift ours to own. A small cookbook-side change (name `TINKER_BASE_URL`;
 on an `openrl` key in capabilities, follow `skill_url`) would make the
@@ -363,10 +369,12 @@ the same thing. `get_server_capabilities` reports
 `openrl.skill_url` for the running version
 (`https://github.com/gke-labs/open-rl/releases/download/<version>/openrl-skill.tar.gz`),
 so an agent that starts from an endpoint finds the matching reference in
-one call. Claude Code users get a second path, a `.claude-plugin/marketplace.json`
-so `/plugin marketplace add gke-labs/open-rl` works and can pin a tag;
-the tarball covers other agents, scripted installs, and air-gapped
-clusters. Installing is still a manual step for every agent, so the
+one call. The tarball is the primary install path, since it works for
+every agent, for scripted installs, and for air-gapped clusters. Claude
+Code users get a second path, a `.claude-plugin/marketplace.json` so
+`/plugin marketplace add gke-labs/open-rl` works and can pin a tag; other
+agents' package mechanisms can be added the same way, beside the tarball
+rather than instead of it. Installing is still a manual step for every agent, so the
 getting-started guide gets one install command right after
 `kubectl apply`. `RELEASING.md` gets a step to re-read the timings and
 runbook, since only the settings table is checked by a test.

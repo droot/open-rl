@@ -215,19 +215,32 @@ If an AI coding agent is doing the work, give it two skills. The
 [OpenRL skill](../skills/openrl/SKILL.md) covers this deployment: connecting,
 the `openrl.*` settings, what the cluster is doing while a call waits, and
 OpenRL's own errors. The [tinker-cookbook skills](https://github.com/thinking-machines-lab/tinker-cookbook/tree/main/skills)
-cover how to train: recipes, hyperparameters, evaluation, and SDK debugging.
-The OpenRL skill says when to use which, and where the cookbook's
-hosted-service advice does not apply here. In Claude Code:
+(`research`, `debug`) cover how to train: recipes, hyperparameters,
+evaluation, and SDK debugging. The OpenRL skill says when to use which, and
+where the cookbook's hosted-service advice does not apply here.
 
-```
-/plugin marketplace add gke-labs/open-rl
-/plugin install openrl@open-rl
-/plugin marketplace add thinking-machines-lab/tinker-cookbook
-/plugin install tinker@tinker-skills
-```
+Both are plain directories with a `SKILL.md` and a `references/` folder,
+the format most coding agents load. The OpenRL skill is `skills/openrl/`
+in this clone and ships with each release as `openrl-skill.tar.gz`, stamped
+with the version it describes; a running server names the matching asset
+as `openrl.skill_url` in `get_server_capabilities`. The cookbook skills are
+`skills/` in a clone of tinker-cookbook.
 
-The OpenRL skill also ships with each release as `openrl-skill.tar.gz`,
-stamped with the version it describes, for agents that are not Claude Code.
+How to install them depends on the agent:
+
+- **Any agent that loads skill directories:** unpack `openrl-skill.tar.gz`
+  (it unpacks to `openrl/`) and copy tinker-cookbook's `skills/research`
+  and `skills/debug` into the directory your agent reads skills from. An
+  agent without a skills directory can be pointed at the `SKILL.md` files
+  directly; each one links its references by relative path.
+- **Claude Code:** both repositories publish a plugin marketplace.
+  ```
+  /plugin marketplace add gke-labs/open-rl
+  /plugin install openrl@open-rl
+  /plugin marketplace add thinking-machines-lab/tinker-cookbook
+  /plugin install tinker@tinker-skills
+  ```
+  The cookbook skills then answer to `/tinker:research` and `/tinker:debug`.
 
 The examples talk to `http://127.0.0.1:9003` by default.
 

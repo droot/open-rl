@@ -22,13 +22,13 @@ skills' job, and they are the better reference:
 
 | Question | Skill |
 |---|---|
-| How do I set up SFT, RL, DPO, distillation; which model, which hyperparameters, how to evaluate, how to read `metrics.jsonl` | `/tinker:research` |
-| Why is a step slow or a session hanging once the workers are up; renderer and tokenization problems; what an SDK error means | `/tinker:debug` |
+| How do I set up SFT, RL, DPO, distillation; which model, which hyperparameters, how to evaluate, how to read `metrics.jsonl` | tinker-cookbook `research` |
+| Why is a step slow or a session hanging once the workers are up; renderer and tokenization problems; what an SDK error means | tinker-cookbook `debug` |
 | Anything about connecting to OpenRL, `openrl.*` settings, workers starting, sessions expiring, a 400 that names a setting | this skill |
 
-Install them next to this one if they are missing: `/plugin marketplace add
-thinking-machines-lab/tinker-cookbook`, then `/plugin install tinker@tinker-skills`.
-They assume the hosted Tinker service; `references/cookbook.md` lists each
+The cookbook skills live at github.com/thinking-machines-lab/tinker-cookbook
+under `skills/`; `references/cookbook.md` says how to install them next to
+this one. They assume the hosted Tinker service; the same file lists each
 place that matters and what is true on OpenRL instead. Read it before
 following cookbook advice about API keys, model choice, checkpoints or
 "is Tinker down".
@@ -65,7 +65,7 @@ following cookbook advice about API keys, model choice, checkpoints or
    what each worker state means, how long each normally lasts, and when workers go away.
 5. **When something is wrong**, start from the symptom in `references/runbook.md`. Every
    entry says what to check from the client, the fix, and what to tell the platform owner.
-   Symptoms that are not about the deployment hand off to `/tinker:debug`.
+   Symptoms that are not about the deployment hand off to the cookbook `debug` skill.
 
 ## Rules that save runs
 

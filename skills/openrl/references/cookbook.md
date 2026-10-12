@@ -3,18 +3,23 @@
 OpenRL serves the Tinker API, so Thinking Machines' tinker-cookbook skills are
 the reference for how to train: methodology, SFT, RL, DPO, distillation,
 hyperparameters, evaluation, logging, checkpoints, and SDK-level debugging.
-This skill does not repeat any of it. Install them next to this one:
-
-```
-/plugin marketplace add thinking-machines-lab/tinker-cookbook
-/plugin install tinker@tinker-skills
-```
+This skill does not repeat any of it.
 
 | Skill | Use it for |
 |---|---|
-| `/tinker:research` | planning and running experiments: recipes, model choice, hyperparameters, evaluation, checkpoints, reading `metrics.jsonl` and rollout logs |
-| `/tinker:debug` | the SDK's background thread and GIL contention, renderer and tokenization problems, outputs that differ from vLLM, the error decoder |
-| `/tinker:inkling` | not applicable: Inkling models are hosted only and do not run on OpenRL |
+| `research` | planning and running experiments: recipes, model choice, hyperparameters, evaluation, checkpoints, reading `metrics.jsonl` and rollout logs |
+| `debug` | the SDK's background thread and GIL contention, renderer and tokenization problems, outputs that differ from vLLM, the error decoder |
+| `inkling` | not applicable: Inkling models are hosted only and do not run on OpenRL |
+
+They are directories under `skills/` in
+github.com/thinking-machines-lab/tinker-cookbook, in the same `SKILL.md`
+plus `references/` format as this skill. Install them the way your agent
+installs skills: copy `skills/research` and `skills/debug` from a clone of
+the cookbook into the directory your agent reads skills from, or point the
+agent at their `SKILL.md` files. Claude Code users can instead run
+`/plugin marketplace add thinking-machines-lab/tinker-cookbook` and
+`/plugin install tinker@tinker-skills`, after which the skills answer to
+`/tinker:research` and `/tinker:debug`.
 
 The cookbook skills assume the hosted Tinker service. Where they do, this is
 what is true on OpenRL instead.
@@ -28,7 +33,7 @@ what is true on OpenRL instead.
 | `weights.download(tinker_path=...)`, `tinker checkpoint download`, `push-hf` | Not implemented. The files are on the API server's `OPEN_RL_TMP_DIR`, the shared volume on Kubernetes; copy them out of the api-server pod or ask the platform owner for the mount. `weights.build_hf_model` and `build_lora_adapter` then work on the copied adapter directory |
 | HTTP 402 is billing, 429 is the rate limit | Neither happens. A 400 that names an `openrl.*` setting is OpenRL's, see `runbook.md` |
 | "Is Tinker down?": run the smoke test | `GET /api/v1/healthz`, then `get_server_capabilities` and read the `openrl` key. No status page; the platform owner has the API server log |
-| `Session heartbeat failed` means the SDK thread is blocked (GIL contention) | On a laptop it usually means the port-forward dropped. Check `healthz` through the client's URL first; if that is fine, follow `/tinker:debug`. The server releases the workers 120 s after the last heartbeat, see `lifecycle.md` |
+| `Session heartbeat failed` means the SDK thread is blocked (GIL contention) | On a laptop it usually means the port-forward dropped. Check `healthz` through the client's URL first; if that is fine, follow the `debug` skill. The server releases the workers 120 s after the last heartbeat, see `lifecycle.md` |
 | a slow step is GIL contention, a service issue, or a large batch | On OpenRL the first step of a run waits for workers to start (minutes on a cold node) and LoRA jobs on one base model share a trainer. Read the model view (`connect.md`) before profiling the client |
 | the newest SDK | The repository's examples pin `tinker==0.29.0` and `tinker-cookbook[math-rl]==0.5.7`. Servers from v0.0.4 on speak the protobuf wire that SDKs >= 0.25 use. Methods the cookbook skills mention that are newer than the pin may not exist on your server; `docs/tinker-client-compatibility.md` in the repository is the generated list |
 
