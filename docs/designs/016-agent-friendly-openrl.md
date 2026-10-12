@@ -331,8 +331,13 @@ endpoint ("waiting on cluster: trainer Placing (PodCreated), 2m10s").
 
 ## 7. Phases
 
-**Phase 1: see what is happening.** API server only, no cluster or RBAC
-change. Capabilities `openrl` object and OpenAPI metadata (5.1); the four
+**Phase 1: see what is happening.** Implemented on this branch and
+verified on 2026-10-12 against `open-rl-dra` (api-server image
+`agent1-27de66b` over the v0.0.6 bundle): `openrl-doctor` reports the
+fleet, `tiny_sft` prints the cluster's state while it waits, and a client
+stranded by a port-forward outage shows up as "no live session and no
+workers; the model's workers were released" in its model view. API server
+only, no cluster or RBAC change. Capabilities `openrl` object and OpenAPI metadata (5.1); the four
 status endpoints (5.2); build arg for the version; tiny examples flush and
 exit codes; a first `openrl-doctor` using the new endpoints. Unit tests
 with a fake `CustomObjectsApi`. Verified on `open-rl-dra` with a dev
