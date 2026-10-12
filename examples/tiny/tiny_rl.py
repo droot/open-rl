@@ -16,6 +16,7 @@ from typing import Any, cast
 
 import chz
 import tinker
+from cluster_wait import waiting
 from tinker import types
 
 BASE_URL = "http://127.0.0.1:9003"
@@ -85,16 +86,18 @@ def main(config: Config) -> None:
   reset_log_dir(log_dir, config.behavior_if_log_dir_exists)
 
   client = tinker.ServiceClient(api_key=os.getenv("TINKER_API_KEY", "tml-dummy-key"), base_url=config.base_url)
-  trainer = client.create_lora_training_client(
-    base_model=config.base_model,
-    rank=config.rank,
-    seed=config.seed,
-    train_attn=True,
-    train_mlp=True,
-    # Qwen2.5-0.5B ties lm_head to embed_tokens; LoRA on the tied head trips a
-    # PEFT warning and vLLM cannot load lm_head adapter weights at all.
-    train_unembed=False,
-  )
+  # The first call starts a trainer on the cluster, which can take minutes.
+  with waiting("tiny-rl", config.base_url, "create_model (the cluster is starting a trainer)"):
+    trainer = client.create_lora_training_client(
+      base_model=config.base_model,
+      rank=config.rank,
+      seed=config.seed,
+      train_attn=True,
+      train_mlp=True,
+      # Qwen2.5-0.5B ties lm_head to embed_tokens; LoRA on the tied head trips a
+      # PEFT warning and vLLM cannot load lm_head adapter weights at all.
+      train_unembed=False,
+    )
 
   try:
     tokenizer = trainer.get_tokenizer()
@@ -108,8 +111,10 @@ def main(config: Config) -> None:
 
     mean_reward = 0.0
     for step in range(1, config.steps + 1):
-      sampler = trainer.save_weights_and_get_sampling_client()
-      sequences = sampler.sample(prompt=prompt, num_samples=config.samples_per_prompt, sampling_params=sampling_params).result().sequences
+      # The first sample starts a sampler on the cluster, which can take minutes.
+      with waiting("tiny-rl", config.base_url, f"step {step} sampling" + (" (the cluster is starting a sampler)" if step == 1 else "")):
+        sampler = trainer.save_weights_and_get_sampling_client()
+        sequences = sampler.sample(prompt=prompt, num_samples=config.samples_per_prompt, sampling_params=sampling_params).result().sequences
 
       rewards = []
       for sequence in sequences:

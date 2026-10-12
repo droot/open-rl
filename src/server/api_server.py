@@ -9,7 +9,8 @@ import traceback
 import uuid
 from collections import defaultdict
 from contextlib import asynccontextmanager
-from typing import Annotated, Any, Literal
+from types import UnionType
+from typing import Annotated, Any, Literal, Union, get_args, get_origin
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.encoders import jsonable_encoder
@@ -23,7 +24,7 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from pydantic import AfterValidator, AliasChoices, BaseModel, BeforeValidator, ConfigDict, Field, ValidationError, ValidationInfo, field_validator
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from server import proto_codec
+from server import openrl_status, proto_codec
 from server.model_metadata import (
   TrainingModelMetadata,
   WeightSyncConfig,
@@ -162,30 +163,78 @@ def parse_trainer_backend(value: str) -> str:
 
 
 class Settings(BaseModel):
+  """The descriptions are what get_server_capabilities and the skill show, so
+  they are written for the client choosing a value."""
+
   model_config = ConfigDict(extra="forbid")
 
-  # Single-GPU samplers that drain the model's sampling queue together.
-  sampler_replicas: int = Field(default=1, ge=1, le=8)
-  # A workload no other workload shares. The model gets its own trainer and
-  # sampler, and nothing time-slices their GPUs.
-  exclusive: Annotated[bool, BeforeValidator(parse_bool)] = False
-  # The trainer the model runs on. Automodel is LoRA only. An image runs its
-  # own trainer, picked by the OPEN_RL_TRAINER_BACKEND it sets.
-  trainer_backend: Annotated[str, AfterValidator(parse_trainer_backend)] = "pytorch"
-  # GPUs the trainer drives as one data-parallel torchrun group. More than
-  # one is Automodel only and makes the model exclusive.
-  trainer_gpus: int = Field(default=1, ge=1, le=8)
-  # Trainer GPUs that share one sequence, as context parallelism. The rest
-  # of trainer_gpus is data parallel.
-  trainer_cp: int = Field(default=1, ge=1, le=8)
-  # LoRA unless set. A restored model takes the checkpoint's type.
-  fine_tuning_type: FineTuningType | None = None
+  sampler_replicas: int = Field(default=1, ge=1, le=8, description="Single-GPU samplers that drain the model's sampling queue together.")
+  exclusive: Annotated[bool, BeforeValidator(parse_bool)] = Field(
+    default=False,
+    description="A workload no other workload shares. The model gets its own trainer and sampler, and nothing time-slices their GPUs.",
+  )
+  trainer_backend: Annotated[str, AfterValidator(parse_trainer_backend)] = Field(
+    default="pytorch",
+    description="The trainer the model runs on: pytorch, automodel (LoRA only), or an image like ghcr.io/org/trainer:tag that runs its own trainer.",
+  )
+  trainer_gpus: int = Field(
+    default=1,
+    ge=1,
+    le=8,
+    description="GPUs the trainer drives as one data-parallel torchrun group. More than one is Automodel only and makes the model exclusive.",
+  )
+  trainer_cp: int = Field(
+    default=1,
+    ge=1,
+    le=8,
+    description="Trainer GPUs that share one sequence, as context parallelism. The rest of trainer_gpus is data parallel.",
+  )
+  fine_tuning_type: FineTuningType | None = Field(
+    default=None,
+    description="lora unless set. A model restored from a checkpoint takes the checkpoint's type.",
+  )
   # The rest apply to full fine-tuning only.
-  # How the trainer hands each step's weights to the sampler.
-  weight_sync: Literal["delta", "full"] | None = None
-  fft_seed: int | None = None
-  # Park trainer state in host memory between turns. Exclusive models default to off.
-  fft_cpu_offload: Annotated[bool | None, BeforeValidator(parse_bool)] = None
+  weight_sync: Literal["delta", "full"] | None = Field(
+    default=None,
+    description="Full fine-tuning only. How the trainer hands each step's weights to the sampler: delta (changed weights only, the default) or full.",
+  )
+  fft_seed: int | None = Field(default=None, description="Full fine-tuning only. The trainer's random seed.")
+  fft_cpu_offload: Annotated[bool | None, BeforeValidator(parse_bool)] = Field(
+    default=None,
+    description="Full fine-tuning only. Park trainer state in host memory between turns. Exclusive models default to off.",
+  )
+
+
+def settings_catalog() -> list[dict[str, Any]]:
+  """The openrl. settings as get_server_capabilities reports them: one entry
+  per field of Settings, so the endpoint, the skill and the 400 messages agree."""
+  catalog = []
+  for name, field in Settings.model_fields.items():
+    entry: dict[str, Any] = {"name": f"{SETTINGS_PREFIX}{name}", **describe_annotation(field.annotation), "default": field.default}
+    for constraint in field.metadata:
+      if hasattr(constraint, "ge"):
+        entry["min"] = constraint.ge
+      if hasattr(constraint, "le"):
+        entry["max"] = constraint.le
+    entry["description"] = field.description or ""
+    catalog.append(entry)
+  return catalog
+
+
+def describe_annotation(annotation: Any) -> dict[str, Any]:
+  origin = get_origin(annotation)
+  if origin is Annotated:
+    return describe_annotation(get_args(annotation)[0])
+  if origin in (Union, UnionType):
+    args = [arg for arg in get_args(annotation) if arg is not type(None)]
+    return describe_annotation(args[0]) if len(args) == 1 else {"type": "string"}
+  if origin is Literal:
+    return {"type": "string", "allowed": list(get_args(annotation))}
+  if annotation is bool:
+    return {"type": "bool"}
+  if annotation is int:
+    return {"type": "int"}
+  return {"type": "string"}
 
 
 def tag_metadata(tags: list[str]) -> dict[str, str]:
@@ -632,7 +681,23 @@ async def lifespan(_: FastAPI):
       worker_manager = None
 
 
-app = FastAPI(title="Open-RL Server MVP", lifespan=lifespan)
+# The release tag, baked in at image build (OPEN_RL_VERSION build arg); the
+# VERSION file is an internal counter and does not name a release.
+OPEN_RL_VERSION = os.getenv("OPEN_RL_VERSION", "dev")
+RELEASES_URL = "https://github.com/gke-labs/open-rl/releases"
+EXAMPLE_MODELS = ["Qwen/Qwen2.5-0.5B", "Qwen/Qwen3-0.6B", "google/gemma-4-e2b", "Qwen/Qwen3-8B"]
+
+app = FastAPI(
+  title="OpenRL API server",
+  version=OPEN_RL_VERSION,
+  description=(
+    "A self-hosted, Kubernetes-native post-training API that serves the Tinker API. "
+    "Tinker SDK clients use the /api/v1 paths; the read-only /api/v1/openrl paths show what "
+    "the server knows about models, sessions, workers and the fleet. "
+    "Repository and docs: https://github.com/gke-labs/open-rl"
+  ),
+  lifespan=lifespan,
+)
 FastAPIInstrumentor.instrument_app(app, excluded_urls="/api/v1/retrieve_future,/api/v1/session_heartbeat")
 
 
@@ -684,6 +749,60 @@ async def health_check():
   return {"status": "ok"}
 
 
+def worker_launcher_mode() -> str:
+  """How this server runs workers: single_process (trainer in this process),
+  process (subprocesses), scheduler (Workloads placed on a cluster), or none
+  (standing worker deployments)."""
+  if is_single_process_mode():
+    return "single_process"
+  if worker_manager is None:
+    return "none"
+  mode = os.getenv("OPEN_RL_WORKER_MANAGER", "local").lower()
+  return "scheduler" if mode == "scheduler" else "process"
+
+
+def env_int(name: str) -> int | None:
+  value = os.getenv(name)
+  return int(value) if value and value.isdigit() else None
+
+
+def openrl_info() -> dict[str, Any]:
+  """What an agent needs to know about this deployment before its first
+  request (design 016, section 5.1). Nested under one key so the SDK's
+  response models ignore it."""
+  release = OPEN_RL_VERSION.startswith("v")
+  return {
+    "version": OPEN_RL_VERSION,
+    "worker_launcher": worker_launcher_mode(),
+    "sampler_backend": get_sampler_backend(),
+    "fft_enabled": is_fft_enabled(),
+    "models": {
+      # Outside single-process mode the base model is whatever create_model names.
+      "any_huggingface_model": not is_single_process_mode(),
+      "default": get_default_model_name(),
+      "examples": EXAMPLE_MODELS,
+    },
+    "settings": settings_catalog(),
+    "settings_howto": "Pass as user_metadata on create_session or create_model, or as TINKER_TAGS=openrl.key=value,...",
+    "limits": {
+      "vllm_max_model_len": env_int("VLLM_MAX_MODEL_LEN"),
+      "train_token_budget": env_int("OPEN_RL_TRAIN_TOKEN_BUDGET"),
+      "session_ttl_seconds": session_registry.ttl_seconds,
+      "session_reap_interval_seconds": SESSION_REAP_INTERVAL_SEC,
+    },
+    "endpoints": {
+      "status": "/api/v1/openrl/status",
+      "models": "/api/v1/openrl/models",
+      "model": "/api/v1/openrl/models/{model_id}",
+      "session": "/api/v1/openrl/sessions/{session_id}",
+      "openapi": "/openapi.json",
+      "docs": "/docs",
+    },
+    "skill_url": f"{RELEASES_URL}/download/{OPEN_RL_VERSION}/openrl-skill.tar.gz" if release else None,
+    "getting_started_url": "https://github.com/gke-labs/open-rl/blob/main/docs/getting-started.md",
+  }
+
+
 @app.get("/api/v1/get_server_capabilities")
 async def get_server_capabilities():
   model_name = get_default_model_name()
@@ -691,7 +810,45 @@ async def get_server_capabilities():
     "supported_models": [{"model_name": model_name}] if model_name else [],
     "default_model": model_name,
     "single_process": is_single_process_mode(),
+    "openrl": openrl_info(),
   }
+
+
+# *** OpenRL status endpoints: read-only, not part of the Tinker API ***
+def status_context() -> openrl_status.StatusContext:
+  return openrl_status.StatusContext(
+    state=state, store=store, registry=session_registry, manager=worker_manager, worker_launcher=worker_launcher_mode(), version=OPEN_RL_VERSION
+  )
+
+
+@app.get("/api/v1/openrl/status")
+async def openrl_cluster_status():
+  """Workers, the sessions using them, and the fleet, for clients without kubectl."""
+  return await openrl_status.cluster_status(status_context())
+
+
+@app.get("/api/v1/openrl/models")
+async def openrl_list_models():
+  """Every model this server created, newest first."""
+  return await openrl_status.list_models(status_context())
+
+
+@app.get("/api/v1/openrl/models/{model_id}")
+async def openrl_model_status(model_id: str):
+  """One model: its settings, sessions, workers and a one-line summary."""
+  result = await openrl_status.model_status(status_context(), model_id)
+  if result is None:
+    raise HTTPException(status_code=404, detail=f"Unknown model: {model_id}")
+  return result
+
+
+@app.get("/api/v1/openrl/sessions/{session_id}")
+async def openrl_session_status(session_id: str):
+  """Whether a session is live, its settings, and the owners it is attached to."""
+  result = await openrl_status.session_status(status_context(), session_id)
+  if result is None:
+    raise HTTPException(status_code=404, detail=f"Unknown or expired session: {session_id}")
+  return result
 
 
 @app.post("/api/v1/client/config")

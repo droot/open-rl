@@ -10,7 +10,7 @@ import subprocess
 import sys
 import threading
 from pathlib import Path
-from typing import Protocol
+from typing import Any, Protocol
 
 from accel_timeslicer.workload import SAMPLER_TIME_SLICE_GROUP, TRAINER_TIME_SLICE_GROUP, workload_job_id
 from server.estimator import footprint
@@ -135,6 +135,20 @@ class WorkerManager(Protocol):
     """The API server is exiting."""
     ...
 
+  def inspect_owner(self, owner: str) -> list[dict[str, Any]]:
+    """One entry per worker serving this owner: role, where it is in its
+    lifecycle (phase, reason) and where it runs. Read-only."""
+    ...
+
+  def inspect_all(self) -> list[dict[str, Any]]:
+    """Every worker this API server launched, in the same shape."""
+    ...
+
+  def fleet(self) -> dict[str, Any] | None:
+    """The accelerators workers can land on and how many OpenRL uses, or
+    None when the launcher has no view of a fleet."""
+    ...
+
 
 class LocalWorkerManager:
   """Runs each runtime as a subprocess of the API server, for development."""
@@ -195,6 +209,31 @@ class LocalWorkerManager:
     proc = self.processes.pop(key)
     if proc.poll() is None:
       proc.terminate()
+
+  def inspect_owner(self, owner: str) -> list[dict[str, Any]]:
+    return [worker for worker in self.inspect_all() if worker["owner"] == owner]
+
+  def inspect_all(self) -> list[dict[str, Any]]:
+    with self.lock:
+      workers = []
+      for (role, runtime), proc in self.processes.items():
+        code = proc.poll()
+        workers.append(
+          {
+            "role": role,
+            "runtime": runtime,
+            "owner": owner_id(runtime),
+            "model_id": runtime,
+            "pid": proc.pid,
+            "phase": "Running" if code is None else "Failed" if code else "Succeeded",
+            "reason": "" if code is None else f"exited with code {code}",
+            "node": None,
+          }
+        )
+      return workers
+
+  def fleet(self) -> dict[str, Any] | None:
+    return None
 
 
 def python_command(extras: list[str], module: str, args: list[str]) -> list[str]:

@@ -137,7 +137,7 @@ require-gcp-project:
 
 build-images: require-gcp-project
 	DOCKER_BUILDKIT=1 docker build -t $(CLOUD_REGISTRY)/open-rl-server:$(IMAGE_TAG) -f src/server/Dockerfile .
-	DOCKER_BUILDKIT=1 docker build -t $(CLOUD_REGISTRY)/open-rl-api-server:$(IMAGE_TAG) -f src/server/Dockerfile.api_server .
+	DOCKER_BUILDKIT=1 docker build --build-arg OPEN_RL_VERSION=$(IMAGE_TAG) -t $(CLOUD_REGISTRY)/open-rl-api-server:$(IMAGE_TAG) -f src/server/Dockerfile.api_server .
 	DOCKER_BUILDKIT=1 docker build -t $(CLOUD_REGISTRY)/open-rl-client:$(IMAGE_TAG) -f src/server/Dockerfile.client .
 
 push-images: require-gcp-project

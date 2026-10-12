@@ -15,6 +15,7 @@ from typing import Any, cast
 
 import chz
 import tinker
+from cluster_wait import waiting
 from tinker import types
 
 BASE_URL = "http://127.0.0.1:9003"
@@ -89,20 +90,23 @@ def main(config: Config) -> None:
   reset_log_dir(log_dir, config.behavior_if_log_dir_exists)
 
   client = tinker.ServiceClient(api_key=os.getenv("TINKER_API_KEY", "tml-dummy-key"), base_url=config.base_url)
-  trainer = client.create_lora_training_client(
-    base_model=config.base_model,
-    rank=config.rank,
-    seed=config.seed,
-    train_attn=True,
-    train_mlp=True,
-    # Qwen2.5-0.5B ties lm_head to embed_tokens; LoRA on the tied head trips a
-    # PEFT warning and vLLM cannot load lm_head adapter weights at all.
-    train_unembed=False,
-  )
+  # The first call starts a trainer on the cluster, which can take minutes.
+  with waiting("tiny-sft", config.base_url, "create_model (the cluster is starting a trainer)"):
+    trainer = client.create_lora_training_client(
+      base_model=config.base_model,
+      rank=config.rank,
+      seed=config.seed,
+      train_attn=True,
+      train_mlp=True,
+      # Qwen2.5-0.5B ties lm_head to embed_tokens; LoRA on the tied head trips a
+      # PEFT warning and vLLM cannot load lm_head adapter weights at all.
+      train_unembed=False,
+    )
   tokenizer = trainer.get_tokenizer()
   datum, active_tokens = build_datum(tokenizer, config.prompt, config.completion)
 
-  initial_loss = measure_loss(trainer, datum, active_tokens, config.grad_clip_norm)
+  with waiting("tiny-sft", config.base_url, "the first forward_backward"):
+    initial_loss = measure_loss(trainer, datum, active_tokens, config.grad_clip_norm)
   write_metric(log_dir, {"phase": "initial", "loss": initial_loss, "step": 0})
   print(f"[tiny-sft] initial_loss={initial_loss:.6f}")
 
@@ -135,12 +139,14 @@ def main(config: Config) -> None:
     raise RuntimeError(f"Expected loss_drop >= {config.min_loss_drop:.1%}, got {loss_drop:.1%}")
 
   if config.sample_after_train:
-    sampler = trainer.save_weights_and_get_sampling_client(name="tiny-sft-sampler")
-    result = sampler.sample(
-      prompt=types.ModelInput.from_ints(tokenizer.encode(config.prompt, add_special_tokens=False)),
-      num_samples=1,
-      sampling_params=types.SamplingParams(max_tokens=8, temperature=0.0),
-    ).result()
+    # The first sample starts a sampler on the cluster, which can take minutes.
+    with waiting("tiny-sft", config.base_url, "the first sample (the cluster is starting a sampler)"):
+      sampler = trainer.save_weights_and_get_sampling_client()
+      result = sampler.sample(
+        prompt=types.ModelInput.from_ints(tokenizer.encode(config.prompt, add_special_tokens=False)),
+        num_samples=1,
+        sampling_params=types.SamplingParams(max_tokens=8, temperature=0.0),
+      ).result()
     if len(result.sequences) != 1 or not result.sequences[0].tokens:
       raise RuntimeError("The sampler did not generate tokens from the saved adapter")
     tokens = result.sequences[0].tokens

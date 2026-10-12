@@ -101,3 +101,5 @@ async def get_model_metadata(state: StateStore, model_id: str) -> TrainingModelM
 
 async def persist_model_metadata(state: StateStore, model_id: str, metadata: TrainingModelMetadata) -> None:
   await state.set_value(f"open_rl:model_meta:{model_id}", metadata.model_dump_json())
+  # The store cannot enumerate keys, so the status views list models from here.
+  await state.add_to_set("open_rl:models", model_id)

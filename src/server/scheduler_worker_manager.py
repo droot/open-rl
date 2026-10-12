@@ -18,6 +18,7 @@ The Workload name is what the pod label and the time-slicer call job_id.
 """
 
 import dataclasses
+import datetime
 import logging
 import os
 import time
@@ -197,14 +198,21 @@ def workload_body(worker: Worker) -> dict[str, Any]:
 class SchedulerWorkerManager:
   """Runs trainer and sampler workers by creating Workload objects."""
 
-  def __init__(self, custom_api: Any = None):
+  def __init__(self, custom_api: Any = None, core_api: Any = None, resource_api: Any = None):
     if not os.getenv("REDIS_URL"):
       raise RuntimeError("OPEN_RL_ENABLE_FFT=true requires REDIS_URL so launched workers can share queues and futures")
     self.namespace = os.getenv("OPEN_RL_WORKER_NAMESPACE", "openrl-system")
     if custom_api is None:
       config.load_incluster_config()
       custom_api = client.CustomObjectsApi()
+      core_api = client.CoreV1Api()
+      resource_api = client.ResourceV1Api()
     self.custom_api = custom_api
+    self.core_api = core_api
+    self.resource_api = resource_api
+    # Status views may be polled; one read per few seconds is plenty.
+    self._view_cache: dict[str, tuple[float, Any]] = {}
+    self.view_cache_seconds = 5.0
 
   def ensure(self, model_id: str, role: str) -> None:
     for index in range(replicas_of(model_id, role)):
@@ -265,3 +273,101 @@ class SchedulerWorkerManager:
     except Exception as exc:
       if getattr(exc, "status", None) != 404:
         raise
+
+  # -- read-only views (design 016) -----------------------------------------
+
+  def cached(self, key: str, load: Any) -> Any:
+    now = time.monotonic()
+    hit = self._view_cache.get(key)
+    if hit is not None and now - hit[0] < self.view_cache_seconds:
+      return hit[1]
+    value = load()
+    self._view_cache[key] = (now, value)
+    return value
+
+  def inspect_owner(self, owner: str) -> list[dict[str, Any]]:
+    return [worker for worker in self.inspect_all() if worker["owner"] == owner]
+
+  def inspect_all(self) -> list[dict[str, Any]]:
+    """Our Workloads joined with their pods: what kubectl get workloads,pods
+    shows, as one entry per worker."""
+    return self.cached("workers", self.load_workers)
+
+  def load_workers(self) -> list[dict[str, Any]]:
+    selector = "app.kubernetes.io/managed-by=open-rl-api-server"
+    found = self.custom_api.list_namespaced_custom_object(GROUP, VERSION, self.namespace, PLURAL, label_selector=selector)
+    pods = {pod.metadata.name: pod for pod in self.core_api.list_namespaced_pod(self.namespace).items}
+    now = time.time()
+    workers = []
+    for item in found["items"]:
+      spec, status, meta = item["spec"], item.get("status") or {}, item["metadata"]
+      worker: dict[str, Any] = {
+        "workload": meta["name"],
+        "role": spec["role"],
+        "owner": spec.get("ownerID"),
+        "model_id": spec["modelID"],
+        "phase": status.get("phase") or "Pending",
+        "reason": status.get("reason") or "",
+        "node": status.get("nodeName"),
+        "pod": status.get("podName"),
+        "devices": status.get("deviceCount"),
+        "memory_per_device": status.get("memoryPerDevice"),
+        "age_seconds": age_seconds(meta.get("creationTimestamp"), now),
+        "deleting": bool(meta.get("deletionTimestamp")),
+      }
+      pod = pods.get(worker["pod"]) if worker["pod"] else None
+      if pod is not None:
+        worker["pod_phase"] = pod.status.phase
+        waiting = [c.state.waiting.reason for c in pod.status.container_statuses or [] if c.state and c.state.waiting]
+        worker["pod_waiting"] = waiting[0] if waiting else None
+        worker["restarts"] = sum(c.restart_count for c in pod.status.container_statuses or [])
+      workers.append(worker)
+    return workers
+
+  def fleet(self) -> dict[str, Any] | None:
+    """Accelerators on nodes the scheduler may use, from the DRA driver's
+    ResourceSlices, and how many of them run an OpenRL worker. The API server
+    cannot read ResourceClaims, so occupancy counts our Running workers, not
+    every claim on the node."""
+    try:
+      return self.cached("fleet", self.load_fleet)
+    except Exception as exc:
+      return {"error": f"{type(exc).__name__}: {exc}"}
+
+  def load_fleet(self) -> dict[str, Any]:
+    nodes = {}
+    for node in self.core_api.list_node(label_selector="openrl.io/enabled=true").items:
+      labels = node.metadata.labels or {}
+      # A node naming neither role accepts both; otherwise only the roles set to true.
+      named = {role for role in ("trainer", "sampler") if f"openrl.io/{role}" in labels}
+      roles = [role for role in ("trainer", "sampler") if not named or labels.get(f"openrl.io/{role}") == "true"]
+      nodes[node.metadata.name] = {"name": node.metadata.name, "roles": roles, "accelerator": None, "memory": None, "devices": 0, "openrl_workers": 0}
+    for s in self.resource_api.list_resource_slice().items:
+      if s.spec.driver != "gpu.nvidia.com" or s.spec.node_name not in nodes:
+        continue
+      entry = nodes[s.spec.node_name]
+      for device in s.spec.devices or []:
+        attrs = device.attributes or {}
+        if "productName" in attrs:
+          entry["accelerator"] = attrs["productName"].string
+        if device.capacity and "memory" in device.capacity:
+          entry["memory"] = device.capacity["memory"].value
+        entry["devices"] += 1
+    for worker in self.inspect_all():
+      if worker["phase"] == "Running" and worker["node"] in nodes:
+        nodes[worker["node"]]["openrl_workers"] += worker.get("devices") or 1
+    accelerators: dict[tuple[str | None, str | None], dict[str, Any]] = {}
+    for entry in nodes.values():
+      key = (entry["accelerator"], entry["memory"])
+      acc = accelerators.setdefault(key, {"accelerator": key[0], "memory": key[1], "nodes": 0, "devices": 0, "openrl_workers": 0})
+      acc["nodes"] += 1
+      acc["devices"] += entry["devices"]
+      acc["openrl_workers"] += entry["openrl_workers"]
+    return {"nodes": sorted(nodes.values(), key=lambda n: n["name"]), "accelerators": list(accelerators.values())}
+
+
+def age_seconds(timestamp: str | None, now: float) -> float | None:
+  if not timestamp:
+    return None
+  created = datetime.datetime.fromisoformat(timestamp.replace("Z", "+00:00")).timestamp()
+  return max(0.0, now - created)
