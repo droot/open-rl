@@ -302,7 +302,9 @@ class SchedulerWorkerManager:
     client vocabulary."""
     selector = "app.kubernetes.io/managed-by=open-rl-api-server"
     found = self.custom_api.list_namespaced_custom_object(GROUP, VERSION, self.namespace, PLURAL, label_selector=selector)
-    pods = {pod.metadata.name: pod for pod in self.core_api.list_namespaced_pod(self.namespace).items}
+    # Only worker pods (the scheduler labels them app=open-rl-<role>-worker), not the rest of the namespace.
+    pod_selector = "app in (open-rl-trainer-worker,open-rl-sampler-worker)"
+    pods = {pod.metadata.name: pod for pod in self.core_api.list_namespaced_pod(self.namespace, label_selector=pod_selector).items}
     now = time.time()
     workers = []
     for item in found["items"]:

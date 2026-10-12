@@ -51,7 +51,12 @@ owner_locks: defaultdict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
 
 
 async def bind_session(session_id: str | None, model_id: str) -> None:
-  if worker_manager is not None and session_id:
+  if not session_id:
+    return
+  # The model's own sessions, for the model view. Owner-level attachment below
+  # is what keeps workers alive and is shared across a runtime's models.
+  await state.add_to_set(f"open_rl:model_sessions:{model_id}", session_id)
+  if worker_manager is not None:
     owner = await asyncio.to_thread(owner_of, model_id)
     async with owner_locks[owner]:
       await session_registry.attach(session_id, owner)
@@ -683,7 +688,7 @@ async def lifespan(_: FastAPI):
 
 # The release tag, baked in at image build (OPEN_RL_VERSION build arg); the
 # VERSION file is an internal counter and does not name a release.
-OPEN_RL_VERSION = os.getenv("OPEN_RL_VERSION", "dev")
+OPEN_RL_VERSION = os.getenv("OPEN_RL_VERSION") or "dev"  # an empty build arg must not become the version
 RELEASES_URL = "https://github.com/gke-labs/open-rl/releases"
 EXAMPLE_MODELS = ["Qwen/Qwen2.5-0.5B", "Qwen/Qwen3-0.6B", "google/gemma-4-e2b", "Qwen/Qwen3-8B"]
 
@@ -810,7 +815,7 @@ async def get_server_capabilities():
 @app.get("/api/v1/openrl/models/{model_id}")
 async def openrl_model_status(model_id: str):
   """One model: its settings, its workers with their state, whether its session is live, and a one-line summary."""
-  ctx = openrl_status.StatusContext(state=state, registry=session_registry, manager=worker_manager)
+  ctx = openrl_status.StatusContext(state=state, registry=session_registry, manager=worker_manager, worker_launcher=worker_launcher_mode())
   result = await openrl_status.model_status(ctx, model_id)
   if result is None:
     raise HTTPException(status_code=404, detail=f"Unknown model: {model_id}")

@@ -213,6 +213,7 @@ class LocalWorkerManager:
 
   def terminate(self, key: tuple[str, str]) -> None:
     proc = self.processes.pop(key)
+    self.started.pop(key, None)
     if proc.poll() is None:
       proc.terminate()
 

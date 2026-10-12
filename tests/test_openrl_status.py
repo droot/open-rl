@@ -103,8 +103,37 @@ class StatusViewsTest(unittest.IsolatedAsyncioTestCase):
     body = (await self.get(f"openrl/models/{model_id}")).json()
     # No owner key, no session ids, no pod names or pids: nothing another tenant could use.
     fields = {"model_id", "base_model", "fine_tuning_type", "status", "created_at", "shares_workers", "session_live", "settings", "workers"}
-    self.assertEqual(set(body), fields | {"summary"})
+    self.assertEqual(set(body), fields | {"workers_error", "summary"})
+    self.assertIsNone(body["workers_error"])
     self.assertEqual(set(body["workers"][0]), {"role", "state", "detail", "workload", "node", "age_seconds", "summary"})
+
+  async def test_session_live_is_the_models_own_session_not_the_shared_runtimes(self):
+    # Two LoRA jobs on one base model share workers (one owner) but have their own sessions.
+    session_a, model_a = await self.create_model()
+    _, model_b = await self.create_model()
+    await self.state.delete_values(f"open_rl:session:{session_a}")
+    a = (await self.get(f"openrl/models/{model_a}")).json()
+    b = (await self.get(f"openrl/models/{model_b}")).json()
+    self.assertFalse(a["session_live"])
+    self.assertTrue(b["session_live"])
+    self.assertTrue(a["shares_workers"])
+    self.assertIn("workers stay up while other jobs use them", a["summary"])
+    self.assertNotIn("expired", b["summary"])
+
+  async def test_a_launcher_error_degrades_the_view_instead_of_failing_it(self):
+    _, model_id = await self.create_model()
+
+    def broken(owner):
+      raise RuntimeError("kube-apiserver unreachable")
+
+    with patch.object(self.manager, "inspect_owner", broken):
+      response = await self.get(f"openrl/models/{model_id}")
+    self.assertEqual(response.status_code, 200)
+    body = response.json()
+    self.assertEqual(body["workers"], [])
+    self.assertIn("kube-apiserver unreachable", body["workers_error"])
+    self.assertIn("worker state unavailable", body["summary"])
+    self.assertTrue(body["session_live"])
 
   async def test_a_sampler_is_starting_until_it_announces_itself(self):
     _, model_id = await self.create_model()
@@ -119,7 +148,7 @@ class StatusViewsTest(unittest.IsolatedAsyncioTestCase):
     self.assertEqual(sampler["state"], "ready")
 
   async def test_a_released_model_says_so_in_its_summary(self):
-    session, model_id = await self.create_model()
+    session, model_id = await self.create_model({"openrl.fine_tuning_type": "full"})
     await self.state.delete_values(f"open_rl:session:{session}")
     self.manager.ensured.clear()  # the reaper removed the workers
     body = (await self.get(f"openrl/models/{model_id}")).json()
@@ -132,12 +161,15 @@ class StatusViewsTest(unittest.IsolatedAsyncioTestCase):
     self.assertEqual(response.status_code, 404)
     self.assertIn("Unknown model", response.json()["error"])
 
-  async def test_the_view_without_a_worker_manager_is_still_answered(self):
+  async def test_the_view_without_a_worker_manager_says_why_there_are_no_workers(self):
     _, model_id = await self.create_model()
     with patch.object(api_server, "worker_manager", None):
       body = (await self.get(f"openrl/models/{model_id}")).json()
     self.assertEqual(body["workers"], [])
-    self.assertIn("no workers yet", body["summary"])
+    self.assertIn("standing deployments", body["summary"])
+    with patch.object(api_server, "worker_manager", None), patch.object(api_server, "is_single_process_mode", return_value=True):
+      body = (await self.get(f"openrl/models/{model_id}")).json()
+    self.assertIn("inside the API server", body["summary"])
 
 
 class WorkerStateTest(unittest.TestCase):
@@ -183,7 +215,8 @@ class FakeCoreApi:
   def __init__(self, pods):
     self.pods = pods
 
-  def list_namespaced_pod(self, namespace):
+  def list_namespaced_pod(self, namespace, label_selector=""):
+    assert "open-rl-trainer-worker" in label_selector and "open-rl-sampler-worker" in label_selector, "only worker pods are listed"
     return SimpleNamespace(items=self.pods)
 
 

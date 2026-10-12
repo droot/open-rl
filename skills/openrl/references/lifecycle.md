@@ -26,7 +26,7 @@ the same facts `detail` quotes.
 |---|---|---|---|
 | `waiting_for_placement` | no accelerator assigned yet | `Pending (NoCapacity: ...)`: nothing in the cluster fits; `Pending (WaitingForCapacity)`: something fits but is busy | seconds; longer only when the cluster is full |
 | `starting` | placed on a node; pulling the image, mounting volumes, or loading the model | `Placing ... pod ContainerCreating` is the image pull and volume mount; `Running ..., loading the model` is vLLM starting | under a minute on a warm node; 5 to 10 minutes on a cold node. Trainer: `ready` about 2 minutes after `create_model`; sampler: 3 to 4 minutes more while vLLM starts |
-| `ready` | serving requests | node name | |
+| `ready` | serving requests | node name | a sampler is `ready` once vLLM can serve. A trainer is `ready` once its process runs; its first `forward_backward` may still wait 1 to 2 minutes while it loads the base model |
 | `failed` | the process exited with an error, or the pod cannot start | the reason, `pod CrashLoopBackOff` or `pod ImagePullBackOff`, restart count | |
 | `stopped` | exited normally, or being released | `being released; ...` while the reaper or `delete_model` tears it down | |
 

@@ -35,7 +35,7 @@ Not part of the Tinker API; plain HTTP GET/POST with JSON.
 
 | Endpoint | Use |
 |---|---|
-| `GET /api/v1/openrl/models/{model_id}` | one model: `settings`, `session_live`, `shares_workers`, `workers` (below), and `summary`, one line that says what to know first |
+| `GET /api/v1/openrl/models/{model_id}` | one model: `settings`, `session_live` (a session that created or restored this model is live; on shared workers other jobs' sessions do not count), `shares_workers`, `workers` (below), `workers_error` (set, with `workers` empty, when the server could not ask the cluster; the rest of the view is still valid), and `summary`, one line that says what to know first |
 | `POST /api/v1/delete_model` | `{"model_id": "..."}`; releases the model's workers now (an FFT or exclusive job) or frees its adapter (a shared LoRA runtime) |
 | `GET /openapi.json`, `/docs` | the full API |
 
@@ -44,7 +44,7 @@ A worker entry in the model view:
 | Field | Meaning |
 |---|---|
 | `role` | `trainer` or `sampler` |
-| `state` | one of `waiting_for_placement`, `starting`, `ready`, `failed`, `stopped`; the same five on every server, branch on this |
+| `state` | one of `waiting_for_placement`, `starting`, `ready`, `failed`, `stopped`; the same five on every server, branch on this. A sampler is `ready` once it can serve. A trainer is `ready` once its process runs and may still be loading the base model for its first minute or two; its first request queues until then |
 | `detail` | free text for a human: the scheduler's own words (Workload phase and reason, node, pod state, restarts); wording can change, do not parse it |
 | `workload`, `node` | names to give the platform owner; `null` on a server that runs workers as processes |
 | `age_seconds` | since the worker was requested |

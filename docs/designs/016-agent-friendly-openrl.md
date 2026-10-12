@@ -49,7 +49,7 @@ What the agent needed during the v0.0.6 test, and where it found it:
 | Why has the run shown nothing for 8 minutes? | `kubectl get workloads`; then `session_registry.py`, `api_server.py`; then `redis-cli` inside the Redis pod | The client's `try_again` response, or an error |
 | What are the `openrl.*` settings and their values? | Release notes and `class Settings` in `api_server.py` | `get_server_capabilities` and the skill |
 | Does this server support gemma? | Unclear: `get_server_capabilities` listed only `Qwen/Qwen2.5-0.5B`, the guide trains gemma | `get_server_capabilities` |
-| Is the trainer pulling an image or stuck? | `kubectl -n openrl-system get pods` | A status endpoint |
+| Is the trainer pulling an image or stuck? | `kubectl -n openrl-system get pods` | The model view |
 | Which release is deployed? | `kubectl get deploy -o jsonpath=...` | `get_server_capabilities`, `/openapi.json` |
 | Is the client hung or buffering? | Guess; `ps` and `lsof` | Flushed output |
 
@@ -121,33 +121,39 @@ version OpenRL supports.
   "single_process": false,
   "openrl": {
     "version": "v0.0.6",
-    "build": "1f08142",
     "worker_launcher": "scheduler",
     "sampler_backend": "vllm",
     "fft_enabled": true,
     "models": {
       "any_huggingface_model": true,
-      "examples": ["google/gemma-4-e2b", "Qwen/Qwen3-0.6B", "Qwen/Qwen3-8B"]
+      "default": "Qwen/Qwen2.5-0.5B",
+      "examples": ["Qwen/Qwen2.5-0.5B", "Qwen/Qwen3-0.6B", "google/gemma-4-e2b", "Qwen/Qwen3-8B"]
     },
     "settings": [
-      {"name": "openrl.fine_tuning_type", "type": "string", "default": "lora",
-       "allowed": ["lora", "full"], "description": "LoRA unless set. A restored model takes the checkpoint's type."},
+      {"name": "openrl.fine_tuning_type", "type": "string", "default": null,
+       "allowed": ["lora", "full"], "description": "lora unless set. A model restored from a checkpoint takes the checkpoint's type."},
       {"name": "openrl.exclusive", "type": "bool", "default": false,
        "description": "A workload no other workload shares. ..."}
     ],
-    "limits": {"vllm_max_model_len": 8192, "train_token_budget": 65536, "session_ttl_seconds": 120},
-    "skill_url": "https://github.com/gke-labs/open-rl/releases/download/v0.0.6/openrl-skill.tar.gz"
+    "settings_howto": "Pass as user_metadata on create_session or create_model, or as TINKER_TAGS=openrl.key=value,...",
+    "limits": {"vllm_max_model_len": 8192, "train_token_budget": 65536,
+               "session_ttl_seconds": 120, "session_reap_interval_seconds": 30},
+    "skill_url": "https://github.com/gke-labs/open-rl/releases/download/v0.0.6/openrl-skill.tar.gz",
+    "getting_started_url": "https://github.com/gke-labs/open-rl/blob/main/docs/getting-started.md"
   }
 }
 ```
 
 - `settings` is generated from `class Settings`: field name, annotation,
-  default, `Literal` or enum choices, and the comment above the field,
-  which becomes the description. One source of truth for the endpoint,
+  default, `Literal` or enum choices, `ge`/`le` bounds as `min`/`max`,
+  and the field's `description`. One source of truth for the endpoint,
   the skill, and the 400 messages.
 - `worker_launcher` is one of `single_process`, `process`, `scheduler`,
+  or `none` (standing worker deployments the server does not launch),
   derived from the same environment the server already reads. Several
   settings are refused outside `scheduler` mode; the client can see why.
+  The model view's summary uses it too, so a single-process server does
+  not report "no workers yet" for a trainer that runs in-process.
 - `models`: in `scheduler` and `process` modes any Hugging Face model
   works and `BASE_MODEL` is only a default. `supported_models` stays as
   the SDK expects it; `models.any_huggingface_model` says the truth, and
@@ -173,7 +179,7 @@ One read-only endpoint, JSON, not used by the Tinker SDK:
 
 | Endpoint | Returns |
 |---|---|
-| `GET /api/v1/openrl/models/{model_id}` | the model's metadata and resolved `settings`, `session_live`, `shares_workers`, one entry per worker (below), and `summary`, one line saying what to know first |
+| `GET /api/v1/openrl/models/{model_id}` | the model's metadata and resolved `settings`, `session_live`, `shares_workers`, one entry per worker (below), `workers_error`, and `summary`, one line saying what to know first |
 
 ```json
 {
@@ -209,6 +215,11 @@ that every launcher reports:
 | `waiting_for_placement` | no accelerator assigned yet | Workload without a `nodeName` (`Pending`, early `Placing`) | never |
 | `starting` | placed; pulling the image, mounting volumes, loading the model | node assigned, pod not yet `Running`; or pod `Running` but the sampler has not announced itself | process alive, sampler not announced |
 | `ready` | serving requests | Workload `Running`, pod `Running`, sampler announced (`open_rl:sampler_ready:<model>`) | process alive |
+
+A trainer has no announcement, so it is `ready` once its process runs and
+may still be loading the base model for its first minute or two; the
+skill says so. Adding a trainer ready key would move that time into
+`starting` and is cheap; it is not in this round.
 | `failed` | exited with an error, or the pod cannot start | Workload `Failed`, pod `Failed`, or a container waiting in `CrashLoopBackOff`, `ImagePullBackOff` and the like | exit code not zero |
 | `stopped` | exited normally, or being released | Workload `Succeeded`, or a deletion timestamp | exit code zero |
 
@@ -226,11 +237,18 @@ is table-tested. The node assignment is the placement boundary; a running
 pod is the readiness boundary, refined for samplers by the ready key the
 sampler writes when vLLM can serve.
 
-**Sources and cost.** Workloads and pods in the namespace, read with the
-RBAC the API server already has, joined in process and cached for 5
-seconds since the examples poll the view once a minute. No RBAC change,
-no watches. Without a worker manager (`single_process`) the view answers
-with no workers and a summary that says so.
+**Sources and cost.** Worker pods (label `app=open-rl-<role>-worker`) and
+Workloads in the namespace, read with the RBAC the API server already
+has, joined in process and cached for 5 seconds since the examples poll
+the view once a minute. No RBAC change, no watches. `session_live` comes
+from `open_rl:model_sessions:<model_id>`, which `bind_session` fills for
+every model in every launcher mode; it is the model's own sessions, not
+the owner's, because on a shared LoRA runtime another client's session
+keeps the workers up but says nothing about this one. When the cluster
+API cannot be read the view still answers from the store, with `workers`
+empty and `workers_error` set, rather than failing a GET that clients
+poll. Without a worker manager (`single_process`, `none`) the summary
+says where the workers are instead of reporting none.
 
 ### 5.3 Failures reach the client
 

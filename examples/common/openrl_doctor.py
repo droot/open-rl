@@ -50,48 +50,68 @@ def get(base_url: str, path: str, timeout: float = 10.0) -> tuple[int, Any, floa
 
 
 def check_endpoint(report: Report, base_url: str) -> dict[str, Any] | None:
+  """None when the server is unreachable or not OpenRL; {} when it is an
+  OpenRL server too old to describe itself; else the openrl object."""
+  check = "healthz"
   try:
     status, body, took = get(base_url, "/api/v1/healthz")
-  except ConnectionError as exc:
-    report.line("FAIL", "healthz", f"cannot reach {base_url}: {exc}. Is the port-forward running?")
-    return None
-  if status != 200 or not body or body.get("status") != "ok":
-    report.line("FAIL", "healthz", f"HTTP {status} {body}")
-    return None
-  report.line("OK", "healthz", f"{took * 1000:.0f} ms")
+    if status != 200 or not body or body.get("status") != "ok":
+      report.line("FAIL", check, f"HTTP {status} {body}")
+      return None
+    report.line("OK", check, f"{took * 1000:.0f} ms")
 
-  status, caps, _ = get(base_url, "/api/v1/get_server_capabilities")
-  if status != 200 or caps is None:
-    report.line("FAIL", "capabilities", f"HTTP {status}")
+    check = "capabilities"
+    status, caps, _ = get(base_url, "/api/v1/get_server_capabilities")
+    if status != 200 or caps is None:
+      report.line("FAIL", check, f"HTTP {status}")
+      return None
+    info = caps.get("openrl")
+    if not info:
+      report.line("WARN", check, "no openrl section: this server predates v0.0.7 and does not describe itself")
+      return {}
+    settings = ", ".join(s["name"].removeprefix("openrl.") for s in info.get("settings", []))
+    report.line(
+      "OK",
+      "version",
+      f"OpenRL {info.get('version', '?')}, workers via {info.get('worker_launcher', '?')}, "
+      f"sampler {info.get('sampler_backend', '?')}, fft {info.get('fft_enabled', '?')}",
+    )
+    report.line("OK", "settings", settings or "none")
+    limits = {k: v for k, v in info.get("limits", {}).items() if v is not None}
+    report.line("OK", "limits", ", ".join(f"{k}={v}" for k, v in limits.items()))
+    if info.get("skill_url"):
+      report.line("OK", "skill", info["skill_url"])
+    check = "openapi"
+    status, _, _ = get(base_url, "/openapi.json")
+    report.line("OK" if status == 200 else "WARN", check, f"/openapi.json HTTP {status}")
+    return info
+  except ConnectionError as exc:
+    report.line("FAIL", check, f"cannot reach {base_url}: {exc}. Is the port-forward running?")
     return None
-  info = caps.get("openrl")
-  if not info:
-    report.line("WARN", "capabilities", "no openrl section: this server predates v0.0.7 and does not describe itself")
-    return {}
-  settings = ", ".join(s["name"].removeprefix("openrl.") for s in info.get("settings", []))
-  report.line(
-    "OK", "version", f"OpenRL {info['version']}, workers via {info['worker_launcher']}, sampler {info['sampler_backend']}, fft {info['fft_enabled']}"
-  )
-  report.line("OK", "settings", settings or "none")
-  limits = {k: v for k, v in info.get("limits", {}).items() if v is not None}
-  report.line("OK", "limits", ", ".join(f"{k}={v}" for k, v in limits.items()))
-  if info.get("skill_url"):
-    report.line("OK", "skill", info["skill_url"])
-  status, _, _ = get(base_url, "/openapi.json")
-  report.line("OK" if status == 200 else "WARN", "openapi", f"/openapi.json HTTP {status}")
-  return info
 
 
 def check_train(report: Report, base_url: str) -> None:
   script = Path(__file__).resolve().parents[1] / "tiny" / "tiny_sft.py"
   cmd = [sys.executable, str(script), f"base_url={base_url}", "steps=3", "min_loss_drop=0.0", "sample_after_train=true"]
   started = time.monotonic()
-  proc = subprocess.run(cmd, capture_output=True, text=True)
+  # Stream the example's own lines as they come: on a cold cluster the first
+  # worker takes minutes, and the per-minute waiting lines are the evidence
+  # that nothing is hung.
+  proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+  lines: list[str] = []
+  last = "no output"
+  assert proc.stdout is not None
+  for raw in proc.stdout:
+    line = raw.rstrip()
+    if line:
+      last = line
+    if line.startswith("[tiny-sft]"):
+      lines.append(line)
+      print(f"     train          {line}", flush=True)
+  proc.wait()
   took = time.monotonic() - started
-  lines = [line for line in proc.stdout.splitlines() if line.startswith("[tiny-sft]")]
   if proc.returncode != 0:
-    tail = (proc.stderr.strip().splitlines() or ["no stderr"])[-1]
-    report.line("FAIL", "train", f"tiny_sft exited {proc.returncode} after {took:.0f}s: {tail}")
+    report.line("FAIL", "train", f"tiny_sft exited {proc.returncode} after {took:.0f}s: {last}")
     return
   sampled = next((line.split("=", 1)[1] for line in lines if "sampled_saved_adapter" in line), "?")
   report.line("OK", "train", f"3 SFT steps plus one sample in {took:.0f}s; the adapter answered {sampled}")

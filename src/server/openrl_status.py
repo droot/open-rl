@@ -20,10 +20,12 @@ from typing import Any
 from server.model_metadata import TrainingModelMetadata, get_model_metadata
 from server.session_registry import SessionRegistry
 from server.store import StateStore
-from server.worker_manager import READY, STARTING, WorkerManager, owner_of
+from server.worker_manager import READY, STARTING, WorkerManager, owner_id
 
 # What a worker entry exposes. The launchers know more (pod names, pids,
-# owners); none of that is the client's contract.
+# owners); none of that is the client's contract. A trainer is `ready` once
+# its process runs; it has no announcement, so its first request may still
+# wait while it loads the base model.
 WORKER_FIELDS = ("role", "state", "detail", "workload", "node", "age_seconds")
 
 
@@ -32,6 +34,7 @@ class StatusContext:
   state: StateStore
   registry: SessionRegistry
   manager: WorkerManager | None
+  worker_launcher: str  # as get_server_capabilities reports it
 
 
 def describe_worker(worker: dict[str, Any]) -> str:
@@ -40,11 +43,18 @@ def describe_worker(worker: dict[str, Any]) -> str:
   return f"{worker['role']} {worker['state']}: {worker['detail']}{age}"
 
 
-async def workers_of_owner(ctx: StatusContext, owner: str) -> list[dict[str, Any]]:
+async def workers_of_owner(ctx: StatusContext, owner: str) -> tuple[list[dict[str, Any]], str | None]:
+  """The owner's workers, or an empty list and the error when the launcher
+  cannot answer. The rest of the view comes from the store and is still worth
+  returning when the cluster API is not."""
   if ctx.manager is None:
-    return []
+    return [], None
+  try:
+    found_workers = await asyncio.to_thread(ctx.manager.inspect_owner, owner)
+  except Exception as exc:
+    return [], f"{type(exc).__name__}: {exc}"
   out = []
-  for found in await asyncio.to_thread(ctx.manager.inspect_owner, owner):
+  for found in found_workers:
     worker = {field: found.get(field) for field in WORKER_FIELDS}
     # The launcher sees a sampler's pod run minutes before vLLM has loaded the
     # model; the sampler announces itself when it can serve.
@@ -54,12 +64,14 @@ async def workers_of_owner(ctx: StatusContext, owner: str) -> list[dict[str, Any
       worker["detail"] = f"{worker['detail']}, loading the model"
     worker["summary"] = describe_worker(worker)
     out.append(worker)
-  return out
+  return out, None
 
 
-async def owner_has_live_session(ctx: StatusContext, owner: str) -> bool:
-  # Read-only: in_use() drops dead sessions, this only looks.
-  for session_id in await ctx.state.set_members(f"open_rl:owner:{owner}"):
+async def model_has_live_session(ctx: StatusContext, model_id: str) -> bool:
+  """Whether a session that created or restored this model is still live.
+  Scoped to the model, not to the owner: on a shared LoRA runtime another
+  client's session keeps the workers up but says nothing about this one."""
+  for session_id in await ctx.state.set_members(f"open_rl:model_sessions:{model_id}"):
     if await ctx.registry.live(session_id):
       return True
   return False
@@ -78,17 +90,26 @@ def settings_of(meta: TrainingModelMetadata) -> dict[str, Any]:
   }
 
 
-def summarize(entry: dict[str, Any], workers: list[dict[str, Any]]) -> str:
+def summarize(ctx: StatusContext, entry: dict[str, Any], workers: list[dict[str, Any]]) -> str:
   """What an agent should know first, in one line."""
   if entry["status"] != "active":
     return f"model {entry['status']}"
+  if ctx.worker_launcher == "single_process":
+    return "the trainer runs inside the API server; there are no separate workers to wait for"
+  if ctx.worker_launcher == "none":
+    return "workers are standing deployments this server does not launch or track"
+  if entry["workers_error"]:
+    return f"worker state unavailable ({entry['workers_error']}); settings and session are from the store"
   if not workers:
     if entry["session_live"]:
       return "no workers yet; the API server has not created them or they were released"
     return "no live session and no workers; the model's workers were released"
   if not entry["session_live"]:
-    ttl = "its session expired; the reaper releases unused workers within about two minutes"
-    return f"{'; '.join(w['summary'] for w in workers)}. {ttl}"
+    if entry["shares_workers"]:
+      then = "the workers stay up while other jobs use them, but this model's session is gone"
+    else:
+      then = "the reaper releases unused workers within about two minutes"
+    return f"{'; '.join(w['summary'] for w in workers)}. Its session expired; {then}"
   return "; ".join(w["summary"] for w in workers)
 
 
@@ -96,8 +117,7 @@ async def model_status(ctx: StatusContext, model_id: str) -> dict[str, Any] | No
   meta = await get_model_metadata(ctx.state, model_id)
   if meta is None:
     return None
-  owner = await asyncio.to_thread(owner_of, model_id)
-  workers = await workers_of_owner(ctx, owner)
+  workers, workers_error = await workers_of_owner(ctx, owner_id(meta.runtime(model_id)))
   entry: dict[str, Any] = {
     "model_id": model_id,
     "base_model": meta.base_model,
@@ -105,9 +125,10 @@ async def model_status(ctx: StatusContext, model_id: str) -> dict[str, Any] | No
     "status": meta.status,
     "created_at": meta.created_at,
     "shares_workers": meta.shares_runtime(),
-    "session_live": await owner_has_live_session(ctx, owner),
+    "session_live": await model_has_live_session(ctx, model_id),
     "settings": settings_of(meta),
     "workers": workers,
+    "workers_error": workers_error,
   }
-  entry["summary"] = summarize(entry, workers)
+  entry["summary"] = summarize(ctx, entry, workers)
   return entry
