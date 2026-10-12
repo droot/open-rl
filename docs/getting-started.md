@@ -316,7 +316,7 @@ Any Tinker SDK client works against OpenRL, so the larger examples carry over:
   waited and, once they have a model id, what the model's workers are doing.
   For any client, `curl http://127.0.0.1:9003/api/v1/openrl/models/<model_id>`
   shows the model's workers, each with a `state` and a `detail`, without
-  `kubectl`. `kubectl -n openrl-system get workloads,pods` shows the whole
+  `kubectl`. `kubectl -n openrl-system get workloads` shows the whole
   cluster. A Workload stuck with `NoCapacity` means no labeled node has a
   free GPU large enough; `WaitingForCapacity` means one exists but is busy.
 - **A worker pod stays Pending.** `kubectl -n openrl-system describe pod <pod>`

@@ -7,7 +7,7 @@ line per minute. Once the example knows its model id, the line carries the
 model view's summary, for example:
 
   [tiny-sft] waiting 2m00s on the first sample; trainer ready: Running on gke-...-lvw8, 201s;
-  sampler starting: Placing on gke-...-2208, pod ContainerCreating, 118s
+  sampler starting: Placing (PodCreated) on gke-...-2208, 118s
 
 During create_model the client has no model id yet, so the line only says
 how long it has waited. The model view is OpenRL's; against another Tinker

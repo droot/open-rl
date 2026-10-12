@@ -8,7 +8,6 @@ import asyncio
 import os
 import unittest
 from collections import defaultdict
-from types import SimpleNamespace
 from unittest.mock import patch
 
 from server import api_server
@@ -173,51 +172,32 @@ class StatusViewsTest(unittest.IsolatedAsyncioTestCase):
 
 
 class WorkerStateTest(unittest.TestCase):
-  """The mapping from Workload and pod facts onto the five client states."""
-
-  def state(self, phase="Running", reason="", node="node-a", deleting=False, pod_phase="Running", pod_waiting=None, restarts=0):
-    return worker_state(phase, reason, node, deleting, pod_phase, pod_waiting, restarts)
+  """The mapping from Workload status onto the five client states."""
 
   def test_every_outcome_is_one_of_the_documented_states(self):
     cases = [
-      (dict(phase="Pending", reason="NoCapacity: needs 40Gi", node=None, pod_phase=None), "waiting_for_placement"),
-      (dict(phase="Placing", reason="PodCreated", pod_phase="Pending", pod_waiting="ContainerCreating"), "starting"),
-      (dict(phase="Running", pod_phase=None), "starting"),  # the pod list has not caught up
-      (dict(), "ready"),
-      (dict(pod_waiting="CrashLoopBackOff", restarts=3), "failed"),
-      (dict(pod_waiting="ImagePullBackOff", pod_phase="Pending"), "failed"),
-      (dict(phase="Failed", reason="OOMKilled", pod_phase="Failed"), "failed"),
-      (dict(phase="Succeeded", pod_phase="Succeeded"), "stopped"),
-      (dict(deleting=True), "stopped"),
+      (dict(phase="Pending", reason="NoCapacity: needs 40Gi", node=None), "waiting_for_placement"),
+      (dict(phase="Placing", reason="PodCreated", node=None), "waiting_for_placement"),  # claim cut, allocation not yet observed
+      (dict(phase="Placing", reason="PodCreated", node="node-a"), "starting"),
+      (dict(phase="Running", reason="", node="node-a"), "ready"),
+      (dict(phase="Failed", reason="PodFailed", node="node-a"), "failed"),
+      (dict(phase="Failed", reason="NoCapacity: no pool accepts role trainer", node=None), "failed"),
+      (dict(phase="Succeeded", reason="", node="node-a"), "stopped"),
+      (dict(phase="Running", reason="", node="node-a", deleting=True), "stopped"),
     ]
     for facts, expected in cases:
       with self.subTest(**facts):
-        state, _ = self.state(**facts)
+        state, _ = worker_state(facts["phase"], facts["reason"], facts["node"], facts.get("deleting", False))
         self.assertEqual(state, expected)
         self.assertIn(state, WORKER_STATES)
 
   def test_detail_carries_the_raw_facts_for_a_human(self):
-    _, detail = self.state(phase="Placing", reason="PodCreated", node="gke-l4-lvw8", pod_phase="Pending", pod_waiting="ContainerCreating")
-    self.assertEqual(detail, "Placing (PodCreated) on gke-l4-lvw8, pod ContainerCreating")
-    _, detail = self.state(pod_waiting="CrashLoopBackOff", restarts=3)
-    self.assertEqual(detail, "Running on node-a, pod CrashLoopBackOff, 3 restart(s)")
-    _, detail = self.state(deleting=True)
-    self.assertTrue(detail.startswith("being released; "))
-
-
-def pod(name: str, phase: str, waiting: str | None = None, restarts: int = 0):
-  state = SimpleNamespace(waiting=SimpleNamespace(reason=waiting) if waiting else None)
-  statuses = [SimpleNamespace(state=state, restart_count=restarts, ready=phase == "Running")]
-  return SimpleNamespace(metadata=SimpleNamespace(name=name), status=SimpleNamespace(phase=phase, container_statuses=statuses))
-
-
-class FakeCoreApi:
-  def __init__(self, pods):
-    self.pods = pods
-
-  def list_namespaced_pod(self, namespace, label_selector=""):
-    assert "open-rl-trainer-worker" in label_selector and "open-rl-sampler-worker" in label_selector, "only worker pods are listed"
-    return SimpleNamespace(items=self.pods)
+    _, detail = worker_state("Placing", "PodCreated", "gke-l4-lvw8", False)
+    self.assertEqual(detail, "Placing (PodCreated) on gke-l4-lvw8")
+    _, detail = worker_state("Pending", "WaitingForCapacity", None, False)
+    self.assertEqual(detail, "Pending (WaitingForCapacity)")
+    _, detail = worker_state("Running", "", "node-a", True)
+    self.assertEqual(detail, "being released; Running on node-a")
 
 
 def workload(name: str, role: str, owner: str, model_id: str, status: dict, created="2026-10-12T00:00:00Z"):
@@ -226,7 +206,7 @@ def workload(name: str, role: str, owner: str, model_id: str, status: dict, crea
 
 
 class SchedulerViewTest(unittest.TestCase):
-  """The cluster side of the model view: Workloads joined with pods."""
+  """The cluster side of the model view: Workloads only. The pod is the scheduler's."""
 
   def setUp(self):
     self.enterContext(patch.dict(os.environ, {"REDIS_URL": "redis://test"}))
@@ -240,21 +220,22 @@ class SchedulerViewTest(unittest.TestCase):
       ),
       "fft-job-trainer": workload("fft-job-trainer", "trainer", "job", "job", {"phase": "Pending", "reason": "NoCapacity: needs 40Gi"}),
     }
-    pods = [pod("orw-t", "Running"), pod("orw-s", "Pending", waiting="ContainerCreating")]
-    self.manager = SchedulerWorkerManager(custom_api=self.custom, core_api=FakeCoreApi(pods))
+    self.manager = SchedulerWorkerManager(custom_api=self.custom)
 
-  def test_workers_join_workload_status_with_pod_state(self):
+  def test_workers_come_from_workload_status_alone(self):
     by_name = {w["workload"]: w for w in self.manager.inspect_owner("base")}
     trainer = by_name["lora-base-0-trainer"]
     self.assertEqual((trainer["role"], trainer["state"], trainer["node"]), ("trainer", "ready", "node-a"))
     self.assertEqual(trainer["detail"], "Running (PodCreated) on node-a")
     self.assertGreater(trainer["age_seconds"], 0)
     sampler = by_name["lora-base-0-sampler"]
-    self.assertEqual((sampler["state"], sampler["detail"]), ("starting", "Placing on node-b, pod ContainerCreating"))
+    self.assertEqual((sampler["state"], sampler["detail"]), ("starting", "Placing on node-b"))
     (pending,) = self.manager.inspect_owner("job")
     self.assertEqual((pending["state"], pending["node"]), ("waiting_for_placement", None))
     self.assertEqual(pending["detail"], "Pending (NoCapacity: needs 40Gi)")
     self.assertEqual(self.manager.inspect_owner("nobody"), [])
+    # No pod names or other pod facts leak into the entry.
+    self.assertNotIn("pod", trainer)
 
   def test_the_view_is_cached_briefly(self):
     first = self.manager.inspect_owner("base")

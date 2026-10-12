@@ -2,7 +2,7 @@
 without kubectl (design 016, section 5.2).
 
 Most clients run on a laptop behind a port-forward. For a model id the client
-owns, this answers what `kubectl get workloads,pods` would: which workers the
+owns, this answers what `kubectl get workloads` would: which workers the
 model has, where each one is in its life, and whether its session is live.
 Nothing here changes state. The worker manager answers the cluster side; the
 stores answer the rest.

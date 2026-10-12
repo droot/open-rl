@@ -210,16 +210,14 @@ def workload_body(worker: Worker) -> dict[str, Any]:
 class SchedulerWorkerManager:
   """Runs trainer and sampler workers by creating Workload objects."""
 
-  def __init__(self, custom_api: Any = None, core_api: Any = None):
+  def __init__(self, custom_api: Any = None):
     if not os.getenv("REDIS_URL"):
       raise RuntimeError("OPEN_RL_ENABLE_FFT=true requires REDIS_URL so launched workers can share queues and futures")
     self.namespace = os.getenv("OPEN_RL_WORKER_NAMESPACE", "openrl-system")
     if custom_api is None:
       config.load_incluster_config()
       custom_api = client.CustomObjectsApi()
-      core_api = client.CoreV1Api()
     self.custom_api = custom_api
-    self.core_api = core_api
     # The model view may be polled; one read per few seconds is plenty.
     self._workers_cache: tuple[float, list[dict[str, Any]]] | None = None
     self.view_cache_seconds = 5.0
@@ -298,33 +296,20 @@ class SchedulerWorkerManager:
     return workers
 
   def load_workers(self) -> list[dict[str, Any]]:
-    """Our Workloads joined with their pods, one entry per worker, in the
-    client vocabulary."""
+    """Our Workloads, one entry per worker, in the client vocabulary. The pod
+    is the scheduler's; what the API server knows about it is what the
+    scheduler wrote into Workload status."""
     selector = "app.kubernetes.io/managed-by=open-rl-api-server"
     found = self.custom_api.list_namespaced_custom_object(GROUP, VERSION, self.namespace, PLURAL, label_selector=selector)
-    # Only worker pods (the scheduler labels them app=open-rl-<role>-worker), not the rest of the namespace.
-    pod_selector = "app in (open-rl-trainer-worker,open-rl-sampler-worker)"
-    pods = {pod.metadata.name: pod for pod in self.core_api.list_namespaced_pod(self.namespace, label_selector=pod_selector).items}
     now = time.time()
     workers = []
     for item in found["items"]:
       spec, status, meta = item["spec"], item.get("status") or {}, item["metadata"]
-      pod = pods.get(status["podName"]) if status.get("podName") else None
-      pod_phase = pod_waiting = None
-      restarts = 0
-      if pod is not None:
-        pod_phase = pod.status.phase
-        waiting = [c.state.waiting.reason for c in pod.status.container_statuses or [] if c.state and c.state.waiting]
-        pod_waiting = waiting[0] if waiting else None
-        restarts = sum(c.restart_count for c in pod.status.container_statuses or [])
       state, detail = worker_state(
         phase=status.get("phase") or "Pending",
         reason=status.get("reason") or "",
         node=status.get("nodeName"),
         deleting=bool(meta.get("deletionTimestamp")),
-        pod_phase=pod_phase,
-        pod_waiting=pod_waiting,
-        restarts=restarts,
       )
       workers.append(
         {
@@ -341,42 +326,23 @@ class SchedulerWorkerManager:
     return workers
 
 
-# Container waiting reasons that will not clear on their own.
-POD_WAITING_FAILURES = {
-  "CrashLoopBackOff",
-  "ImagePullBackOff",
-  "ErrImagePull",
-  "InvalidImageName",
-  "CreateContainerError",
-  "CreateContainerConfigError",
-}
-
-
-def worker_state(
-  phase: str, reason: str, node: str | None, deleting: bool, pod_phase: str | None, pod_waiting: str | None, restarts: int
-) -> tuple[str, str]:
-  """Map a Workload and its pod onto the client vocabulary. The raw facts go
+def worker_state(phase: str, reason: str, node: str | None, deleting: bool) -> tuple[str, str]:
+  """Map a Workload's status onto the client vocabulary. The raw facts go
   into `detail`, for a human; `state` is what a client branches on. A node
-  assignment is the placement boundary; a running pod is the readiness
+  assignment is the placement boundary; phase Running is the readiness
   boundary (the model view refines it for samplers)."""
   facts = phase + (f" ({reason})" if reason else "")
   if node:
     facts += f" on {node}"
-  if pod_waiting:
-    facts += f", pod {pod_waiting}"
-  elif pod_phase and pod_phase != "Running":
-    facts += f", pod {pod_phase}"
-  if restarts:
-    facts += f", {restarts} restart(s)"
   if deleting:
     return STOPPED, f"being released; {facts}"
-  if phase == "Succeeded" or pod_phase == "Succeeded":
+  if phase == "Succeeded":
     return STOPPED, facts
-  if phase == "Failed" or pod_phase == "Failed" or pod_waiting in POD_WAITING_FAILURES:
+  if phase == "Failed":
     return FAILED, facts
   if not node:
     return WAITING_FOR_PLACEMENT, facts
-  if phase == "Running" and pod_phase == "Running":
+  if phase == "Running":
     return READY, facts
   return STARTING, facts
 

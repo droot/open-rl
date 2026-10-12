@@ -18,16 +18,16 @@ The workers that serve one job appear together in the job's model view,
 ## Worker states
 
 Each worker in the model view has a `state`, the same five values on every server, and a
-`detail` in the scheduler's own words (Workload phase and reason, node, pod state). Branch
-on `state`; show `detail` to a human. `kubectl -n openrl-system get workloads,pods` shows
-the same facts `detail` quotes.
+`detail` in the scheduler's own words (Workload phase and reason, node). Branch on `state`;
+show `detail` to a human. `kubectl -n openrl-system get workloads` shows the same facts
+`detail` quotes; the pods behind them are the scheduler's and the view does not read them.
 
 | State | Meaning | What `detail` says | Normal duration |
 |---|---|---|---|
 | `waiting_for_placement` | no accelerator assigned yet | `Pending (NoCapacity: ...)`: nothing in the cluster fits; `Pending (WaitingForCapacity)`: something fits but is busy | seconds; longer only when the cluster is full |
-| `starting` | placed on a node; pulling the image, mounting volumes, or loading the model | `Placing ... pod ContainerCreating` is the image pull and volume mount; `Running ..., loading the model` is vLLM starting | under a minute on a warm node; 5 to 10 minutes on a cold node. Trainer: `ready` about 2 minutes after `create_model`; sampler: 3 to 4 minutes more while vLLM starts |
+| `starting` | placed on a node; pulling the image, mounting volumes, or loading the model | `Placing (PodCreated) on <node>` is the image pull and volume mount; `Running ..., loading the model` is vLLM starting | under a minute on a warm node; 5 to 10 minutes on a cold node. Trainer: `ready` about 2 minutes after `create_model`; sampler: 3 to 4 minutes more while vLLM starts |
 | `ready` | serving requests | node name | a sampler is `ready` once vLLM can serve. A trainer is `ready` once its process runs; its first `forward_backward` may still wait 1 to 2 minutes while it loads the base model |
-| `failed` | the process exited with an error, or the pod cannot start | the reason, `pod CrashLoopBackOff` or `pod ImagePullBackOff`, restart count | |
+| `failed` | the process exited with an error, or the request cannot be satisfied | the scheduler's reason, for example `Failed (PodFailed)`. A container that cannot pull its image or crash-loops is not reported as failed yet; it stays `starting` or `ready` past the normal duration, see the runbook | |
 | `stopped` | exited normally, or being released | `being released; ...` while the reaper or `delete_model` tears it down | |
 
 What the examples print while they wait is the same information:

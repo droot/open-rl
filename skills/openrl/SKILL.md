@@ -41,7 +41,7 @@ following cookbook advice about API keys, model choice, checkpoints or
 | Endpoint in the cluster | `http://open-rl-api-server-service.openrl-system.svc.cluster.local:8000` |
 | Auth | None. The SDK insists on a key: `TINKER_API_KEY=tml-dummy-key`. |
 | Is it up, which release | `GET /api/v1/healthz`; `GET /api/v1/get_server_capabilities` -> `openrl.version`, `openrl.worker_launcher`, `openrl.fft_enabled`, `openrl.settings` |
-| What is my run doing | `GET /api/v1/openrl/models/<model_id>`: the model's workers, each with a `state` (`waiting_for_placement`, `starting`, `ready`, `failed`, `stopped`) and a human-readable `detail`; whether its session is live; a one-line `summary`. The model id is `trainer.model_id`. Before you have one, or for the whole cluster, only `kubectl -n openrl-system get workloads,pods` (needs cluster access). |
+| What is my run doing | `GET /api/v1/openrl/models/<model_id>`: the model's workers, each with a `state` (`waiting_for_placement`, `starting`, `ready`, `failed`, `stopped`) and a human-readable `detail`; whether its session is live; a one-line `summary`. The model id is `trainer.model_id`. Before you have one, or for the whole cluster, only `kubectl -n openrl-system get workloads` (needs cluster access). |
 | One-command check | `uv --project examples run openrl-doctor` from a clone, or `python -m common.openrl_doctor` in the client image |
 | Base models | Any Hugging Face model id. `supported_models` lists only the configured default. First use of a model downloads it on the cluster. |
 | LoRA or full fine-tuning | `openrl.fine_tuning_type=lora` (default) or `full`; full needs `openrl.fft_enabled: true` in capabilities |

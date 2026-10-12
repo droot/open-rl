@@ -97,8 +97,9 @@ Non-goals for this round:
    message that names the cause and the next step. Waiting is fine;
    waiting without saying why is not.
 3. **Status needs no cluster access.** Most agents run on a laptop behind
-   a port-forward. Everything `kubectl get workloads,pods` shows about a
-   model, the API server can show too.
+   a port-forward. Everything `kubectl get workloads` shows about a
+   model, the API server can show too. The API server reads the Workload,
+   the object it created; the pod behind it is the scheduler's.
 4. **Docs for agents are references, not narratives.** Tables, exact
    commands, normal durations, and symptom-first runbooks.
    `getting-started.md` stays a narrative for humans.
@@ -213,18 +214,17 @@ that every launcher reports:
 | `state` | Meaning | Scheduler mode | Process mode |
 |---|---|---|---|
 | `waiting_for_placement` | no accelerator assigned yet | Workload without a `nodeName` (`Pending`, early `Placing`) | never |
-| `starting` | placed; pulling the image, mounting volumes, loading the model | node assigned, pod not yet `Running`; or pod `Running` but the sampler has not announced itself | process alive, sampler not announced |
-| `ready` | serving requests | Workload `Running`, pod `Running`, sampler announced (`open_rl:sampler_ready:<model>`) | process alive |
+| `starting` | placed; pulling the image, mounting volumes, loading the model | `nodeName` set, phase not yet `Running`; or `Running` but the sampler has not announced itself | process alive, sampler not announced |
+| `ready` | serving requests | Workload `Running`, sampler announced (`open_rl:sampler_ready:<model>`) | process alive |
+| `failed` | exited with an error, or the request cannot be satisfied | Workload `Failed` | exit code not zero |
+| `stopped` | exited normally, or being released | Workload `Succeeded`, or a deletion timestamp | exit code zero |
 
 A trainer has no announcement, so it is `ready` once its process runs and
 may still be loading the base model for its first minute or two; the
 skill says so. Adding a trainer ready key would move that time into
 `starting` and is cheap; it is not in this round.
-| `failed` | exited with an error, or the pod cannot start | Workload `Failed`, pod `Failed`, or a container waiting in `CrashLoopBackOff`, `ImagePullBackOff` and the like | exit code not zero |
-| `stopped` | exited normally, or being released | Workload `Succeeded`, or a deletion timestamp | exit code zero |
 
-The scheduler's phase names, reasons, pod states and restart counts
-reach the client only inside `detail`, a free-text string documented as
+The scheduler's phase names and reasons reach the client only inside `detail`, a free-text string documented as
 for humans and not a contract, the same split Kubernetes conditions make
 between `reason` and `message`. Renaming a Workload phase changes a
 string an agent shows to a user; it does not break a branch. The field is
@@ -233,14 +233,21 @@ of `active` or `deleted`.
 
 The mapping lives in one function per launcher (`worker_state` in
 `scheduler_worker_manager.py`; the process launcher's is three lines) and
-is table-tested. The node assignment is the placement boundary; a running
-pod is the readiness boundary, refined for samplers by the ready key the
-sampler writes when vLLM can serve.
+is table-tested. The node assignment is the placement boundary; phase
+`Running` is the readiness boundary, refined for samplers by the ready
+key the sampler writes when vLLM can serve.
 
-**Sources and cost.** Worker pods (label `app=open-rl-<role>-worker`) and
-Workloads in the namespace, read with the RBAC the API server already
-has, joined in process and cached for 5 seconds since the examples poll
-the view once a minute. No RBAC change, no watches. `session_live` comes
+**Sources and cost.** The Workloads this API server created, read with
+the RBAC it already has for them and cached for 5 seconds since the
+examples poll the view once a minute. No pod reads: the API server asks
+the scheduler for workers through the Workload and learns about them the
+same way, so the boundary between the two stays where it is. What the
+scheduler puts in Workload status is what the client can see. Today that
+is pod phase mapped onto Workload phase, so an image pull shows as
+`starting` with `Placing (PodCreated)` and a crash-looping container as
+`ready` until the pod fails; surfacing container waiting reasons in
+Workload `reason` is a scheduler change (section 10). No RBAC change, no
+watches. `session_live` comes
 from `open_rl:model_sessions:<model_id>`, which `bind_session` fills for
 every model in every launcher mode; it is the model's own sessions, not
 the owner's, because on a shared LoRA runtime another client's session
@@ -487,6 +494,7 @@ are answered.
 | `openrl.endpoints` in capabilities | advertised the paths above | nothing to advertise with one path; the skill names it |
 | `openrl-doctor` fleet and store checks | "is there a free GPU", "is the store reachable" | both come back with the fleet view. The store check could return earlier as a field in capabilities if a deployment needs it |
 | the per-minute line during `create_model` | showed the trainer's progress before the client had a model id | phase 2 puts `state` and `detail` into the pending `try_again` response, which needs no new path |
+| pod facts in `detail` (`ContainerCreating`, `ImagePullBackOff`, `CrashLoopBackOff`, restart counts) | the first cut joined pods to Workloads in the API server | the pod is the scheduler's. The controller already reads it when it writes status; setting `reason` from the first container's waiting reason while `Placing`, and `Failed` on the terminal image and crash-loop reasons, gives the view and `kubectl get workloads` the same answer without the API server crossing into pods |
 
 When the fleet view returns, it should report the same five worker
 states and the same `detail` split as the model view, so a client that
