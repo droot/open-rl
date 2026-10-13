@@ -2,7 +2,7 @@
 title: "Point your coding agent at OpenRL"
 date: 2026-10-12
 authors: ["Sunil Arora"]
-summary: "OpenRL vVERSION describes itself to the agent that drives it: the server reports its version, settings and limits, one endpoint says what a run is waiting for, and a skill tells the agent what differs from hosted Tinker. Install it in one command."
+summary: "OpenRL vVERSION describes itself to the agent that drives it: the server reports its version and limits and publishes every setting in its OpenAPI document, one endpoint says what a run is waiting for, and a skill tells the agent what differs from hosted Tinker. Install it in one command."
 tags: ["release", "agents"]
 draft: true
 ---
@@ -43,7 +43,7 @@ Three facts were missing from where the agent was looking: which server it was t
   </g>
 </svg>
 
-**The server describes itself.** `get_server_capabilities` has a new `openrl` object. It names the release, how the server runs workers, every `openrl.*` setting with its type and default, and the deployment limits. The settings list is generated from the server code, so it cannot be stale.
+**The server describes itself.** `get_server_capabilities` has a new `openrl` object. It names the release, how the server runs workers, the deployment limits, and where the settings are described: every `openrl.*` setting, with its type, default and description, is published once, as `components.schemas.OpenRLSettings` in `/openapi.json`, and rendered at `/docs`. It is pydantic's own schema for the settings class, so it cannot be stale, and nothing else carries a copy.
 
 **One endpoint says what a run is waiting for.** `GET /api/v1/openrl/models/{model_id}` returns the model's settings, whether its session is live, and its workers. Each worker has a `state` from a fixed set of five, the same five on every deployment:
 
@@ -73,14 +73,7 @@ curl -s $OPENRL/api/v1/get_server_capabilities | jq .openrl
   "version": "vVERSION",
   "worker_launcher": "scheduler",
   "fft_enabled": true,
-  "settings": {
-    "type": "object",
-    "properties": {
-      "openrl.fine_tuning_type": {"anyOf": [{"type": "string", "enum": ["lora", "full"]}, {"type": "null"}], "default": null,
-                                  "description": "lora unless set. A model restored from a checkpoint takes the checkpoint's type."},
-      "...": {}
-    }
-  },
+  "settings_schema_url": "/openapi.json#/components/schemas/OpenRLSettings",
   "limits": {"session_ttl_seconds": 120, "session_reap_interval_seconds": 30},
   "skill_url": "https://github.com/gke-labs/open-rl/releases/download/vVERSION/openrl-skill.tar.gz"
 }
@@ -151,7 +144,7 @@ An agent with no skills directory can still be pointed at the two `SKILL.md` fil
 
 With the skills loaded, these prompts work as you would hope:
 
-- "Check the OpenRL server at `$OPENRL` and tell me what it can do." The agent reads capabilities and reports the release, the launcher mode and the settings.
+- "Check the OpenRL server at `$OPENRL` and tell me what it can do." The agent reads capabilities and the OpenAPI document and reports the release, the launcher mode and the settings.
 - "Fine-tune `google/gemma-4-e2b` on this dataset with LoRA." The agent uses the cookbook's `research` skill for the loop and the OpenRL skill for the connection and settings.
 - "The run has printed nothing for five minutes. Is it hung?" The agent reads the model view, compares the worker ages with the normal durations in the skill, and answers from evidence.
 - "Switch this to full fine-tuning on an exclusive GPU." The agent sets `openrl.fine_tuning_type=full` and `openrl.exclusive=true` as settings, not code.
