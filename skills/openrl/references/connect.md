@@ -25,8 +25,8 @@ curl -s http://127.0.0.1:9003/api/v1/get_server_capabilities | python3 -m json.t
 
 The `openrl` object holds `version` (the release tag, or `sha-<commit>` for a build from
 main), `worker_launcher` (`scheduler` on Kubernetes, `process` or `single_process` for local
-servers), `sampler_backend`, `fft_enabled`, `models`, `settings` (the JSON Schema
-`settings.md` is rendered from; also `components.schemas.OpenRLSettings` in `/openapi.json`), `limits` and, on releases, `skill_url` for the copy of this skill that
+servers), `sampler_backend`, `fft_enabled`, `models`, `settings_schema_url` (the settings
+are described once, as `components.schemas.OpenRLSettings` in `/openapi.json`), `limits` and, on releases, `skill_url` for the copy of this skill that
 matches the server. A response without `openrl` is a server older than v0.0.7. The response names the
 release but not the worker images; in particular it does not say which Automodel trainer
 image a deployment runs, or whether one was set at all (see `lifecycle.md`).

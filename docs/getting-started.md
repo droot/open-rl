@@ -191,7 +191,9 @@ curl http://127.0.0.1:9003/api/v1/get_server_capabilities
 ```
 
 The `openrl` section of the second response names the release, how the
-server runs workers, and every `openrl.*` setting with its default. Any
+server runs workers, and where the settings are described: every `openrl.*`
+setting, with its type, default and description, is in `/openapi.json`
+under `components.schemas.OpenRLSettings`, rendered at `/docs`. Any
 Hugging Face model works as a base model; `supported_models` only lists the
 configured default.
 

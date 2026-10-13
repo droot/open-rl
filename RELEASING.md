@@ -46,8 +46,8 @@ Every bundle has its images pinned to the release tag. The API server reports th
    `tar -tzf dist/openrl-skill.tar.gz` should list `openrl/SKILL.md` and `openrl/references/`.
 
    Re-read `skills/openrl/references/lifecycle.md` and `runbook.md` against this release. The
-   settings table is generated and tested (`scripts/gen_settings_doc.py`); the durations and
-   failure modes are not, and an agent will trust them.
+   settings come from the server's own OpenAPI document and cannot drift; the durations and
+   failure modes are hand-written, and an agent will trust them.
 
    To check a recipe overlay, which CI does not exercise:
 

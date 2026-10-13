@@ -69,10 +69,14 @@ class StatusViewsTest(unittest.IsolatedAsyncioTestCase):
     self.assertEqual(info["skill_url"], "https://github.com/gke-labs/open-rl/releases/download/v9.9.9/openrl-skill.tar.gz")
     # Deployment facts only; nothing about other clients' models or the fleet.
     self.assertNotIn("endpoints", info)
+    # The settings are described once, in the OpenAPI document; capabilities point there.
+    self.assertNotIn("settings", info)
+    self.assertEqual(info["settings_schema_url"], "/openapi.json#/components/schemas/OpenRLSettings")
 
-  async def test_capabilities_serve_the_settings_as_json_schema(self):
-    info = (await self.get("get_server_capabilities")).json()["openrl"]
-    props = info["settings"]["properties"]
+  async def test_the_openapi_document_describes_the_settings(self):
+    spec = (await self.client.get("/openapi.json")).json()
+    schema = spec["components"]["schemas"]["OpenRLSettings"]
+    props = schema["properties"]
     self.assertEqual(set(props), {f"openrl.{name}" for name in api_server.Settings.model_fields})
     kind = props["openrl.fine_tuning_type"]
     self.assertEqual([o for o in kind["anyOf"] if o.get("type") == "string"][0]["enum"], ["lora", "full"])
@@ -80,16 +84,9 @@ class StatusViewsTest(unittest.IsolatedAsyncioTestCase):
     replicas = props["openrl.sampler_replicas"]
     self.assertEqual((replicas["type"], replicas["default"], replicas["minimum"], replicas["maximum"]), ("integer", 1, 1, 8))
     self.assertEqual(props["openrl.exclusive"]["type"], "boolean")
-    self.assertFalse(info["settings"]["additionalProperties"], "unknown openrl. keys are refused")
+    self.assertFalse(schema["additionalProperties"], "unknown openrl. keys are refused")
     for name, prop in props.items():
-      self.assertTrue(prop.get("description"), f"{name} needs a description; the skill shows it")
-
-  async def test_the_openapi_document_carries_the_settings_schema(self):
-    spec = (await self.client.get("/openapi.json")).json()
-    schema = spec["components"]["schemas"]["OpenRLSettings"]
-    self.assertEqual(set(schema["properties"]), {field.alias for field in api_server.Settings.model_fields.values()})
-    # One schema, served twice.
-    self.assertEqual(schema, (await self.get("get_server_capabilities")).json()["openrl"]["settings"])
+      self.assertTrue(prop.get("description"), f"{name} needs a description; agents read it from here")
     # The request models say where the settings go.
     field = spec["components"]["schemas"]["CreateSessionRequest"]["properties"]["user_metadata"]
     self.assertIn("OpenRLSettings", field["description"])

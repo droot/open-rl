@@ -30,10 +30,10 @@ hung without an error. This document proposes:
 3. **Every failure reaches the client, with the fix in the message.** When
    workers are released, pending futures fail instead of polling forever.
    While a worker is starting, `try_again` says what it is waiting on.
-4. **A reference written for agents.** A skill (`skills/openrl/`) with the
-   settings table, Workload phases and normal durations, and a
-   symptom-first runbook. The settings table is checked against the code
-   by a test.
+4. **A reference written for agents.** A skill (`skills/openrl/`) with
+   worker states and normal durations and a symptom-first runbook. It
+   carries no copy of the settings; the server describes them once, in
+   its OpenAPI document, and the skill sends agents there.
 5. **A doctor script and parseable examples.** `openrl-doctor` verifies a
    deployment in under a minute; the tiny examples flush output and exit
    non-zero on failure.
@@ -103,8 +103,9 @@ Non-goals for this round:
 4. **Docs for agents are references, not narratives.** Tables, exact
    commands, normal durations, and symptom-first runbooks.
    `getting-started.md` stays a narrative for humans.
-5. **Facts in docs are tested.** A settings table that drifts from
-   `class Settings` is worse than none.
+5. **Facts in docs are tested or fetched.** A settings table that drifts
+   from `class Settings` is worse than none; the settings are therefore
+   published by the server in one place and not copied into docs.
 
 ## 5. Design
 
@@ -130,16 +131,7 @@ version OpenRL supports.
       "default": "Qwen/Qwen2.5-0.5B",
       "examples": ["Qwen/Qwen2.5-0.5B", "Qwen/Qwen3-0.6B", "google/gemma-4-e2b", "Qwen/Qwen3-8B"]
     },
-    "settings": {
-      "type": "object", "additionalProperties": false,
-      "properties": {
-        "openrl.fine_tuning_type": {"anyOf": [{"type": "string", "enum": ["lora", "full"]}, {"type": "null"}], "default": null,
-                                    "description": "lora unless set. A model restored from a checkpoint takes the checkpoint's type."},
-        "openrl.sampler_replicas": {"type": "integer", "minimum": 1, "maximum": 8, "default": 1,
-                                    "description": "Single-GPU samplers that drain the model's sampling queue together."},
-        "...": {}
-      }
-    },
+    "settings_schema_url": "/openapi.json#/components/schemas/OpenRLSettings",
     "settings_howto": "Pass as user_metadata on create_session or create_model, or as TINKER_TAGS=openrl.key=value,...",
     "limits": {"vllm_max_model_len": 8192, "train_token_budget": 65536,
                "session_ttl_seconds": 120, "session_reap_interval_seconds": 30},
@@ -149,16 +141,17 @@ version OpenRL supports.
 }
 ```
 
-- `settings` is pydantic's JSON Schema for `class Settings`, as is. The
-  `openrl.` names are the fields' aliases, set by an alias generator on
-  the model, so pydantic validates `user_metadata` keys as the client
-  wrote them, names them that way in 400s, and emits them in the schema;
-  nothing adds or strips the prefix by hand. The same object is published
-  in `/openapi.json` as `components.schemas.OpenRLSettings`, and the
-  `user_metadata` fields of the request models point at it. The skill's
-  settings table is rendered from that OpenAPI document by
-  `scripts/gen_settings_doc.py`, not from the server module, so the skill,
-  the spec, capabilities and the 400 messages all read one artifact.
+- The settings are described in one place: `components.schemas.OpenRLSettings`
+  in `/openapi.json`, pydantic's JSON Schema for `class Settings` as is,
+  rendered for humans at `/docs`. Capabilities carry only
+  `settings_schema_url`, so an agent that starts there knows where to
+  look and no second copy can disagree. The `openrl.` names are the
+  fields' aliases, set by an alias generator on the model, so pydantic
+  validates `user_metadata` keys as the client wrote them, names them
+  that way in 400s, and emits them in the schema; nothing adds or strips
+  the prefix by hand. The `user_metadata` fields of the request models
+  point at the schema. The skill carries no settings table; it says how
+  to read the schema and how to pass settings.
 - `worker_launcher` is one of `single_process`, `process`, `scheduler`,
   or `none` (standing worker deployments the server does not launch),
   derived from the same environment the server already reads. Several
@@ -354,9 +347,9 @@ Contents:
 - Connect: the endpoint, the port-forward, what to check first
   (`healthz`, `get_server_capabilities`), the model view and its state
   vocabulary.
-- Settings table, generated from `class Settings` by
-  `scripts/gen_settings_doc.py`; a unit test fails when the checked-in
-  table is stale.
+- Settings: how to read the server's schema and how to pass them. No
+  table; an earlier cut generated one from the server code and tested it
+  for drift, and dropped it once the server published the schema itself.
 - Worker states and normal durations: `waiting_for_placement` to `ready`
   for a cold node (image pull), a warm node, and a reused worker; vLLM
   start time; the 120 s idle release. The skill tells agents to branch on
@@ -390,7 +383,7 @@ agents' package mechanisms can be added the same way, beside the tarball
 rather than instead of it. Installing is still a manual step for every agent, so the
 getting-started guide gets one install command right after
 `kubectl apply`. `RELEASING.md` gets a step to re-read the timings and
-runbook, since only the settings table is checked by a test.
+runbook, since nothing checks those by test.
 
 **Discovery.** Agents fetch the page they are pointed at and follow its
 links; none probes `/llms.txt` on its own. So the landing page and the
@@ -461,8 +454,7 @@ interval.
 
 **Phase 3: the reference.** Implemented on this branch on 2026-10-12,
 ahead of phase 2 by decision: `skills/openrl/` (SKILL.md, connect,
-lifecycle, runbook, generated settings table), `scripts/gen_settings_doc.py`
-with `tests/test_skill_docs.py`, `make skill-bundle` inside
+lifecycle, runbook, settings), `tests/test_skill_docs.py`, `make skill-bundle` inside
 `release-bundle`, `.claude-plugin/marketplace.json`, `site/static/llms.txt`,
 links from the landing page, README and getting-started, and the
 `RELEASING.md` step. Settings generator and its test, the skill,

@@ -69,21 +69,27 @@ def check_endpoint(report: Report, base_url: str) -> dict[str, Any] | None:
     if not info:
       report.line("WARN", check, "no openrl section: this server predates v0.0.7 and does not describe itself")
       return {}
-    settings = ", ".join(name.removeprefix("openrl.") for name in info.get("settings", {}).get("properties", {}))
     report.line(
       "OK",
       "version",
       f"OpenRL {info.get('version', '?')}, workers via {info.get('worker_launcher', '?')}, "
       f"sampler {info.get('sampler_backend', '?')}, fft {info.get('fft_enabled', '?')}",
     )
-    report.line("OK", "settings", settings or "none")
     limits = {k: v for k, v in info.get("limits", {}).items() if v is not None}
     report.line("OK", "limits", ", ".join(f"{k}={v}" for k, v in limits.items()))
     if info.get("skill_url"):
       report.line("OK", "skill", info["skill_url"])
     check = "openapi"
-    status, _, _ = get(base_url, "/openapi.json")
-    report.line("OK" if status == 200 else "WARN", check, f"/openapi.json HTTP {status}")
+    status, spec, _ = get(base_url, "/openapi.json")
+    if status != 200 or not spec:
+      report.line("WARN", check, f"/openapi.json HTTP {status}")
+      return info
+    # The settings are described in one place, the OpenAPI document.
+    names = (spec.get("components", {}).get("schemas", {}).get("OpenRLSettings", {}).get("properties") or {}).keys()
+    if names:
+      report.line("OK", "settings", ", ".join(name.removeprefix("openrl.") for name in names))
+    else:
+      report.line("WARN", "settings", "this server does not publish OpenRLSettings in /openapi.json; it predates v0.0.7")
     return info
   except ConnectionError as exc:
     report.line("FAIL", check, f"cannot reach {base_url}: {exc}. Is the port-forward running?")

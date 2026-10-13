@@ -40,13 +40,13 @@ following cookbook advice about API keys, model choice, checkpoints or
 | Endpoint from a laptop | `kubectl -n openrl-system port-forward svc/open-rl-api-server-service 9003:8000`, then `http://127.0.0.1:9003`. Run it in a loop; it drops on server restarts (see runbook). |
 | Endpoint in the cluster | `http://open-rl-api-server-service.openrl-system.svc.cluster.local:8000` |
 | Auth | None. The SDK insists on a key: `TINKER_API_KEY=tml-dummy-key`. |
-| Is it up, which release | `GET /api/v1/healthz`; `GET /api/v1/get_server_capabilities` -> `openrl.version`, `openrl.worker_launcher`, `openrl.fft_enabled`, `openrl.settings` |
+| Is it up, which release | `GET /api/v1/healthz`; `GET /api/v1/get_server_capabilities` -> `openrl.version`, `openrl.worker_launcher`, `openrl.fft_enabled`, `openrl.settings_schema_url` |
 | What is my run doing | `GET /api/v1/openrl/models/<model_id>`: the model's workers, each with a `state` (`waiting_for_placement`, `starting`, `ready`, `failed`, `stopped`) and a human-readable `detail`; whether its session is live; a one-line `summary`. The model id is `trainer.model_id`. Before you have one, or for the whole cluster, only `kubectl -n openrl-system get workloads` (needs cluster access). |
 | One-command check | `uv --project examples run openrl-doctor` from a clone, or `python -m common.openrl_doctor` in the client image |
 | Base models | Any Hugging Face model id. `supported_models` lists only the configured default. First use of a model downloads it on the cluster. |
 | LoRA or full fine-tuning | `openrl.fine_tuning_type=lora` (default) or `full`; full needs `openrl.fft_enabled: true` in capabilities |
 | A model too big for one GPU | first a bigger device with `openrl.exclusive=true`; then `openrl.trainer_backend=automodel` with `openrl.trainer_gpus=N` to shard the trainer across `N` GPUs on one node (LoRA only). The sampler always needs one device that fits the model. Sizing rules in `references/lifecycle.md` |
-| Settings | `references/settings.md`; pass as `user_metadata` or `TINKER_TAGS=openrl.key=value` |
+| Settings | the server's OpenAPI document, `components.schemas.OpenRLSettings` (`/openapi.json`, rendered at `/docs`); `references/settings.md` says how to read and pass them. Pass as `user_metadata` or `TINKER_TAGS=openrl.key=value` |
 | Keep the run alive | Keep the client process and the port-forward up. Session TTL is 120 s; workers are released about 2 minutes after the last heartbeat. |
 | Release workers now | `POST /api/v1/delete_model {"model_id": ...}` (not in the SDK) |
 
@@ -55,8 +55,9 @@ following cookbook advice about API keys, model choice, checkpoints or
 1. **Check the deployment.** `openrl-doctor`, or curl `healthz` and `get_server_capabilities`.
    Read `openrl.version`; a server without an `openrl` section predates v0.0.7 and has no
    model view.
-2. **Pick the settings.** `references/settings.md` is the complete list with defaults.
-   Most runs need none. Full fine-tuning, exclusive GPUs, more sampler replicas and the
+2. **Pick the settings.** Read them from the server: `curl -s $OPENRL/openapi.json | jq
+   .components.schemas.OpenRLSettings`; `references/settings.md` says how to read and pass
+   them. Most runs need none. Full fine-tuning, exclusive GPUs, more sampler replicas and the
    Automodel trainer are settings, not code.
 3. **Write or run the loop with the cookbook skills.** `examples/tiny/tiny_sft.py` and
    `tiny_rl.py` in the repository are complete minimal loops; cookbook recipes run unchanged
@@ -89,7 +90,7 @@ following cookbook advice about API keys, model choice, checkpoints or
 | Path | Contents |
 |---|---|
 | `references/cookbook.md` | which tinker-cookbook skill to use for what, and where their hosted-service advice differs on OpenRL; the supported Tinker surface |
-| `references/settings.md` | every `openrl.*` setting, generated from the server code and tested |
+| `references/settings.md` | where the settings are described (the server's OpenAPI document) and how to pass them; no copy of the list |
 | `references/connect.md` | URLs, which server you are talking to, the model view and its fields |
 | `references/lifecycle.md` | workers, their states, normal durations, release and cleanup |
 | `references/runbook.md` | OpenRL symptoms: check from the client -> fix -> what to tell the platform owner |

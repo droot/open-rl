@@ -113,7 +113,7 @@ class SessionHeartbeatRequest(BaseModel):
 
 USER_METADATA_DOC = (
   "Free-form client metadata. Keys that start with openrl. are OpenRL settings: "
-  "see components.schemas.OpenRLSettings in this document, or openrl.settings in get_server_capabilities. "
+  "see components.schemas.OpenRLSettings in this document. "
   "Values are strings on the wire."
 )
 
@@ -224,10 +224,9 @@ class Settings(BaseModel):
 
 
 def settings_schema() -> dict[str, Any]:
-  """The openrl.* settings as JSON Schema, straight from pydantic. Served as
-  openrl.settings in get_server_capabilities and as
-  components.schemas.OpenRLSettings in /openapi.json; the skill's settings
-  table is rendered from the same document."""
+  """The openrl.* settings as JSON Schema, straight from pydantic, published
+  once: components.schemas.OpenRLSettings in /openapi.json. Capabilities
+  point there; the skill sends agents there."""
   return Settings.model_json_schema(ref_template="#/components/schemas/{model}")
 
 
@@ -699,7 +698,7 @@ app = FastAPI(
 def openapi_with_settings() -> dict[str, Any]:
   """FastAPI publishes the request models on its own. The openrl.* settings
   travel inside user_metadata, so their schema is added under components by
-  hand; it is the same object capabilities serve as openrl.settings."""
+  hand. It is the one place the settings are described."""
   if app.openapi_schema:
     return app.openapi_schema
   schema = get_openapi(title=app.title, version=app.version, description=app.description, routes=app.routes)
@@ -796,7 +795,8 @@ def openrl_info() -> dict[str, Any]:
       "default": get_default_model_name(),
       "examples": EXAMPLE_MODELS,
     },
-    "settings": settings_schema(),
+    # The settings themselves live in one place, the OpenAPI document.
+    "settings_schema_url": "/openapi.json#/components/schemas/OpenRLSettings",
     "settings_howto": "Pass as user_metadata on create_session or create_model, or as TINKER_TAGS=openrl.key=value,...",
     "limits": {
       "vllm_max_model_len": env_int("VLLM_MAX_MODEL_LEN"),
