@@ -94,9 +94,8 @@ def check_train(report: Report, base_url: str) -> None:
   script = Path(__file__).resolve().parents[1] / "tiny" / "tiny_sft.py"
   cmd = [sys.executable, str(script), f"base_url={base_url}", "steps=3", "min_loss_drop=0.0", "sample_after_train=true"]
   started = time.monotonic()
-  # Stream the example's own lines as they come: on a cold cluster the first
-  # worker takes minutes, and the per-minute waiting lines are the evidence
-  # that nothing is hung.
+  # Stream the example's own lines as they come, so the loss lines show up
+  # while it runs rather than all at the end.
   proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
   lines: list[str] = []
   last = "no output"

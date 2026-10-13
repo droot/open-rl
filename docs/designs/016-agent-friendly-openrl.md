@@ -411,12 +411,13 @@ the client image) runs in under a minute without a GPU:
 One line per check, `OK`/`WARN`/`FAIL` with the reason, non-zero exit on
 `FAIL`.
 
-The tiny examples switch stdout to line buffering, exit non-zero on
-failure, silence the deprecation and Hugging Face warnings, and when a
-call has waited more than 60 s print one line per minute. Once the
-example has its model id (`trainer.model_id`) the line carries the model
-view's `summary`; during `create_model` it only says how long it has
-waited (see 5.3 for the fix).
+The tiny examples exit non-zero on failure and, right after
+`create_model`, print the model id and the `curl` for its model view.
+That is the usage model: launch the job, then ask the server about the
+model from another shell (or a CLI, later) while a call blocks. An
+earlier cut had the examples poll the view themselves and print a line a
+minute; it was removed as a second status surface the examples had no
+business owning.
 
 ## 6. Decisions
 
@@ -443,8 +444,8 @@ first cut (verified on 2026-10-12 against `open-rl-dra`, api-server image
 summary; review of PR #328 raised tenancy and the scheduler-internals
 contract, and the scope was narrowed the same day to the capabilities
 `openrl` object and OpenAPI metadata (5.1), the model view with the state
-vocabulary (5.2), the version build arg, the tiny examples' flushing, exit
-codes and per-minute lines, and `openrl-doctor` on capabilities alone.
+vocabulary (5.2), the version build arg, the tiny examples' exit codes
+and model-id line, and `openrl-doctor` on capabilities alone.
 Unit tests with a fake `CustomObjectsApi` cover the state mapping and the
 view. API server only, no cluster or RBAC change. The narrowed cut is to
 be re-verified on `open-rl-dra` before release.
@@ -512,7 +513,7 @@ are answered.
 | `GET /api/v1/openrl/sessions/{session_id}` | live or expired, TTL, `user_metadata`, owners attached | session ids are not exposed by the SDK, so no client could use it without reading server state; revisit with phase 2 if the expired-session 400 needs a pointer |
 | `openrl.endpoints` in capabilities | advertised the paths above | nothing to advertise with one path; the skill names it |
 | `openrl-doctor` fleet and store checks | "is there a free GPU", "is the store reachable" | both come back with the fleet view. The store check could return earlier as a field in capabilities if a deployment needs it |
-| the per-minute line during `create_model` | showed the trainer's progress before the client had a model id | phase 2 puts `state` and `detail` into the pending `try_again` response, which needs no new path |
+| progress during `create_model` | the client has no model id yet, so nothing can be asked about the model until the call returns | phase 2 puts `state` and `detail` into the pending `try_again` response, which needs no new path |
 | pod facts in `detail` (`ContainerCreating`, `ImagePullBackOff`, `CrashLoopBackOff`, restart counts) | the first cut joined pods to Workloads in the API server | the pod is the scheduler's. The controller already reads it when it writes status; setting `reason` from the first container's waiting reason while `Placing`, and `Failed` on the terminal image and crash-loop reasons, gives the view and `kubectl get workloads` the same answer without the API server crossing into pods |
 
 When the fleet view returns, it should report the same five worker

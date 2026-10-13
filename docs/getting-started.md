@@ -325,9 +325,9 @@ Any Tinker SDK client works against OpenRL, so the larger examples carry over:
 ## Troubleshooting
 
 - **A step hangs before the first loss line.** The cluster is starting a
-  worker. The examples print one line per minute saying how long they have
-  waited and, once they have a model id, what the model's workers are doing.
-  For any client, `curl http://127.0.0.1:9003/api/v1/openrl/models/<model_id>`
+  worker. Ask the server about the model from another shell: the examples
+  print the model id and the command right after `create_model`, and for
+  any client `curl http://127.0.0.1:9003/api/v1/openrl/models/<model_id>`
   shows the model's workers, each with a `state` and a `detail`, without
   `kubectl`. `kubectl -n openrl-system get workloads` shows the whole
   cluster. A Workload stuck with `NoCapacity` means no labeled node has a

@@ -30,10 +30,12 @@ show `detail` to a human. `kubectl -n openrl-system get workloads` shows the sam
 | `failed` | the process exited with an error, or the request cannot be satisfied | the scheduler's reason, for example `Failed (PodFailed)`. A container that cannot pull its image or crash-loops is not reported as failed yet; it stays `starting` or `ready` past the normal duration, see the runbook | |
 | `stopped` | exited normally, or being released | `being released; ...` while the reaper or `delete_model` tears it down | |
 
-What the examples print while they wait is the same information:
+While a call blocks, ask the server about the model from another shell; the examples
+print the model id and this command right after `create_model`:
 
 ```
-[tiny-sft] waiting 2m00s on the first sample (the cluster is starting a sampler); trainer ready: Running (PodCreated) on gke-...-lvw8, 201s; sampler starting: Running on gke-...-2208, loading the model, 120s
+curl -s $OPENRL/api/v1/openrl/models/<model_id> | jq .summary
+"trainer ready: Running (PodCreated) on gke-...-lvw8, 201s; sampler starting: Running on gke-...-2208, loading the model, 120s"
 ```
 
 So, from a laptop against a warm cluster: about 2 minutes to the first loss line and about
@@ -85,8 +87,8 @@ What changes when you choose Automodel:
 - The job gets a trainer of its own, keyed `automodel-<base-model>`, so it never shares
   with PyTorch LoRA jobs on the same base model and starts cold every time: expect the
   5 to 10 minute cold-node figure, not the warm one.
-- The waiting line and the model view are the same; the trainer is `starting` until all
-  `N` ranks have loaded their shard.
+- The model view is the same; the trainer is `starting` until all `N` ranks have loaded
+  their shard.
 - `openrl.trainer_backend` also accepts an image reference, for a trainer you built
   yourself; the job then runs on that image with the same module on its `PATH`.
 

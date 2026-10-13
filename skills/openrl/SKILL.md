@@ -70,9 +70,10 @@ following cookbook advice about API keys, model choice, checkpoints or
 
 ## Rules that save runs
 
-- Read `summary` from `/api/v1/openrl/models/<id>` before deciding a run is hung. The
-  examples print it every minute while a call blocks, once they have a model id. Branch on
-  a worker's `state`; `detail` is for a human and its wording can change.
+- Read `summary` from `/api/v1/openrl/models/<id>` before deciding a run is hung. Launch
+  the job, then ask the server about the model while a call blocks; the examples print
+  the model id and the exact `curl` after `create_model`. Branch on a worker's `state`;
+  `detail` is for a human and its wording can change.
 - A port-forward that is down for more than two minutes ends the run: the server releases
   the workers and the adapter state in them. Save state (`save_state`) if a run must survive
   that, and restart the forward before relaunching.

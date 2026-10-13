@@ -10,7 +10,7 @@ wait out the normal duration, then ask the platform owner.
 
 | Symptom | Check | Fix | Tell the platform owner |
 |---|---|---|---|
-| No output for minutes after `create_model` or the first `sample` | the worker's `state`, `detail` and age in the model view; the examples print this every minute once they have a model id | wait while `waiting_for_placement` or `starting` and younger than the normal duration; a cold node needs 5 to 10 minutes more | nothing |
+| No output for minutes after `create_model` or the first `sample` | the worker's `state`, `detail` and age in the model view, from another shell; the examples print the model id and the `curl` after `create_model` | wait while `waiting_for_placement` or `starting` and younger than the normal duration; a cold node needs 5 to 10 minutes more | nothing |
 | Worker `waiting_for_placement`, `detail` `Pending (NoCapacity: ...)` | the reason names what is missing: a node accepting the role, or a device with enough memory | for a trainer: a bigger pool via `openrl.exclusive=true`, else `openrl.trainer_backend=automodel` with `openrl.trainer_gpus=N` to spread it (LoRA only); for a sampler: a bigger device or a smaller model, nothing spreads a sampler. Sizing in `lifecycle.md` | the reason text; which nodes should carry `openrl.io/enabled=true` and the role labels |
 | Worker `waiting_for_placement`, `detail` `Pending (WaitingForCapacity)` | nothing more from the endpoint: the fleet is not visible to clients yet | wait; idle workers of other jobs are released about two minutes after their clients exit | how long you have waited; `kubectl -n openrl-system get workloads` shows them who holds the GPUs |
 | `starting` for over 10 minutes with `detail` `Placing (PodCreated) on <node>` | `age_seconds`; the view cannot tell an image pull from a pod that cannot start | wait to 15 minutes; a cold node pulls a multi-GiB image and mounts the shared volume | the entry's `node` and `workload`; `kubectl -n openrl-system describe pod` on the worker pod shows `ImagePullBackOff` or a mount error |
@@ -26,7 +26,6 @@ wait out the normal duration, then ask the platform owner.
 | Steps are two to three times slower than yesterday | `shares_workers: true` in the model view means other LoRA jobs on the same base model share your trainer; several FFT jobs time-slice a GPU | expected sharing; stagger runs if wall-clock matters. If nothing shares your workers, profile the client: the cookbook `debug` skill | nothing |
 | Everything slow or `healthz` failing | `healthz` latency | stop clients and wait | the `healthz` output and time |
 | Any other SDK error, a hang with all workers `ready`, output that differs from vLLM | | the cookbook `debug` skill; its error decoder covers the Tinker-level 400s and the SDK's retry behaviour | |
-| `No module named cluster_wait` when running a tiny example | you ran it from a copy, not from `examples/tiny/` | run from the repository clone, or copy `cluster_wait.py` next to the script | nothing |
 
 ## Where the server-side evidence is, for the platform owner
 
