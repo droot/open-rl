@@ -115,6 +115,10 @@ class StatusViewsTest(unittest.IsolatedAsyncioTestCase):
     b = (await self.get(f"openrl/models/{model_b}")).json()
     self.assertFalse(a["session_live"])
     self.assertTrue(b["session_live"])
+    # The binding lives on the model's metadata, nowhere else.
+    from server.model_metadata import get_model_metadata
+
+    self.assertEqual((await get_model_metadata(self.state, model_a)).session_ids, [session_a])
     self.assertTrue(a["shares_workers"])
     self.assertIn("workers stay up while other jobs use them", a["summary"])
     self.assertNotIn("expired", b["summary"])

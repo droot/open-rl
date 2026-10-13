@@ -248,10 +248,12 @@ is pod phase mapped onto Workload phase, so an image pull shows as
 `ready` until the pod fails; surfacing container waiting reasons in
 Workload `reason` is a scheduler change (section 10). No RBAC change, no
 watches. `session_live` comes
-from `open_rl:model_sessions:<model_id>`, which `bind_session` fills for
-every model in every launcher mode; it is the model's own sessions, not
-the owner's, because on a shared LoRA runtime another client's session
-keeps the workers up but says nothing about this one. When the cluster
+from `session_ids` on the model's metadata, which `bind_session` appends
+to for every model in every launcher mode; it is the model's own
+sessions, not the owner's, because on a shared LoRA runtime another
+client's session keeps the workers up but says nothing about this one.
+Keeping it on the metadata means it has the metadata's lifetime and
+there is no extra key to clean up. When the cluster
 API cannot be read the view still answers from the store, with `workers`
 empty and `workers_error` set, rather than failing a GET that clients
 poll. Without a worker manager (`single_process`, `none`) the summary

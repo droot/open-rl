@@ -53,12 +53,15 @@ owner_locks: defaultdict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
 async def bind_session(session_id: str | None, model_id: str) -> None:
   if not session_id:
     return
-  # The model's own sessions, for the model view. Owner-level attachment below
-  # is what keeps workers alive and is shared across a runtime's models.
-  await state.add_to_set(f"open_rl:model_sessions:{model_id}", session_id)
-  if worker_manager is not None:
-    owner = await asyncio.to_thread(owner_of, model_id)
-    async with owner_locks[owner]:
+  owner = await asyncio.to_thread(owner_of, model_id)
+  async with owner_locks[owner]:
+    # On the model, for the model view: which sessions are this model's own.
+    meta = await get_model_metadata(state, model_id)
+    if meta is not None and session_id not in meta.session_ids:
+      meta.session_ids.append(session_id)
+      await persist_model_metadata(state, model_id, meta)
+    # On the owner, for the reaper: workers stay while any attached session lives.
+    if worker_manager is not None:
       await session_registry.attach(session_id, owner)
 
 

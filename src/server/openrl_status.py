@@ -67,25 +67,18 @@ async def workers_of_owner(ctx: StatusContext, owner: str) -> tuple[list[dict[st
   return out, None
 
 
-async def any_live(ctx: StatusContext, key: str) -> bool:
-  # Read-only: in_use() drops dead sessions, this only looks.
-  for session_id in await ctx.state.set_members(key):
+async def any_live(ctx: StatusContext, session_ids: Any) -> bool:
+  for session_id in session_ids:
     if await ctx.registry.live(session_id):
       return True
   return False
 
 
-async def model_has_live_session(ctx: StatusContext, model_id: str) -> bool:
-  """Whether a session that created or restored this model is still live.
-  Scoped to the model, not to the owner: on a shared LoRA runtime another
-  client's session keeps the workers up but says nothing about this one."""
-  return await any_live(ctx, f"open_rl:model_sessions:{model_id}")
-
-
 async def workers_in_use_by_others(ctx: StatusContext, owner: str) -> bool:
   """Whether any session still holds the owner's workers. Used only to word
-  the summary; which session it is stays out of the response."""
-  return await any_live(ctx, f"open_rl:owner:{owner}")
+  the summary; which session it is stays out of the response. Read-only:
+  in_use() drops dead sessions, this only looks."""
+  return await any_live(ctx, await ctx.state.set_members(f"open_rl:owner:{owner}"))
 
 
 def settings_of(meta: TrainingModelMetadata) -> dict[str, Any]:
@@ -137,7 +130,9 @@ async def model_status(ctx: StatusContext, model_id: str) -> dict[str, Any] | No
     "status": meta.status,
     "created_at": meta.created_at,
     "shares_workers": meta.shares_runtime(),
-    "session_live": await model_has_live_session(ctx, model_id),
+    # The model's own sessions: on a shared LoRA runtime another client's
+    # session keeps the workers up but says nothing about this one.
+    "session_live": await any_live(ctx, meta.session_ids),
     "settings": settings_of(meta),
     "workers": workers,
     "workers_error": workers_error,
