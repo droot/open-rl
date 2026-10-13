@@ -106,10 +106,11 @@ curl -s $OPENRL/api/v1/openrl/models/fd51fb5c-f0f4-475a-a986-eb146826309f \
 }
 ```
 
-The examples in the repository print that summary once a minute while a call blocks, so a run that is waiting looks like a run that is waiting, not like a hang:
+That is the usage model: launch the job, then ask the server about the model from another shell while a call blocks. The examples in the repository print the model id and that `curl` right after `create_model`, so a run that is waiting looks like a run that is waiting, not like a hang:
 
 ```
-[tiny-sft] waiting 2m00s on the first sample (the cluster is starting a sampler); sampler starting: Running on gke-...-bs96, loading the model, 120s; trainer ready: Running on gke-...-sr2c, 202s
+[tiny-sft] model_id=fd51fb5c-f0f4-475a-a986-eb146826309f
+[tiny-sft] status: curl -s http://127.0.0.1:9003/api/v1/openrl/models/fd51fb5c-f0f4-475a-a986-eb146826309f | jq .summary
 ```
 
 After the client exits, the same endpoint says that the session expired, and then that the workers were released. The agent no longer needs the cluster to learn either fact.
