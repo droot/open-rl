@@ -223,30 +223,12 @@ class Settings(BaseModel):
   )
 
 
-JSON_TYPE_NAMES = {"integer": "int", "boolean": "bool", "string": "string"}
-
-
-def settings_catalog() -> list[dict[str, Any]]:
-  """The openrl. settings as get_server_capabilities reports them: one entry
-  per field of Settings, flattened from pydantic's JSON Schema (which already
-  carries the openrl. names) so the endpoint, the skill and /openapi.json
-  (components.schemas.OpenRLSettings) agree."""
-  catalog = []
-  for name, prop in Settings.model_json_schema()["properties"].items():
-    # An optional field arrives as anyOf [X, null]; the setting is simply unset by default.
-    options = [option for option in prop.get("anyOf", [prop]) if option.get("type") != "null"]
-    schema = options[0] if len(options) == 1 else {"type": "string"}
-    entry: dict[str, Any] = {"name": name, "type": JSON_TYPE_NAMES.get(schema.get("type"), "string")}
-    if "enum" in schema:
-      entry["allowed"] = list(schema["enum"])
-    entry["default"] = prop.get("default")
-    if "minimum" in schema:
-      entry["min"] = schema["minimum"]
-    if "maximum" in schema:
-      entry["max"] = schema["maximum"]
-    entry["description"] = prop.get("description", "")
-    catalog.append(entry)
-  return catalog
+def settings_schema() -> dict[str, Any]:
+  """The openrl.* settings as JSON Schema, straight from pydantic. Served as
+  openrl.settings in get_server_capabilities and as
+  components.schemas.OpenRLSettings in /openapi.json; the skill's settings
+  table is rendered from the same document."""
+  return Settings.model_json_schema(ref_template="#/components/schemas/{model}")
 
 
 def tag_metadata(tags: list[str]) -> dict[str, str]:
@@ -717,12 +699,11 @@ app = FastAPI(
 def openapi_with_settings() -> dict[str, Any]:
   """FastAPI publishes the request models on its own. The openrl.* settings
   travel inside user_metadata, so their schema is added under components by
-  hand; it is the same pydantic schema openrl.settings in capabilities is
-  reshaped from."""
+  hand; it is the same object capabilities serve as openrl.settings."""
   if app.openapi_schema:
     return app.openapi_schema
   schema = get_openapi(title=app.title, version=app.version, description=app.description, routes=app.routes)
-  settings = Settings.model_json_schema(ref_template="#/components/schemas/{model}")
+  settings = settings_schema()
   schemas = schema.setdefault("components", {}).setdefault("schemas", {})
   schemas.update(settings.pop("$defs", {}))
   schemas["OpenRLSettings"] = settings
@@ -815,7 +796,7 @@ def openrl_info() -> dict[str, Any]:
       "default": get_default_model_name(),
       "examples": EXAMPLE_MODELS,
     },
-    "settings": settings_catalog(),
+    "settings": settings_schema(),
     "settings_howto": "Pass as user_metadata on create_session or create_model, or as TINKER_TAGS=openrl.key=value,...",
     "limits": {
       "vllm_max_model_len": env_int("VLLM_MAX_MODEL_LEN"),

@@ -130,12 +130,16 @@ version OpenRL supports.
       "default": "Qwen/Qwen2.5-0.5B",
       "examples": ["Qwen/Qwen2.5-0.5B", "Qwen/Qwen3-0.6B", "google/gemma-4-e2b", "Qwen/Qwen3-8B"]
     },
-    "settings": [
-      {"name": "openrl.fine_tuning_type", "type": "string", "default": null,
-       "allowed": ["lora", "full"], "description": "lora unless set. A model restored from a checkpoint takes the checkpoint's type."},
-      {"name": "openrl.exclusive", "type": "bool", "default": false,
-       "description": "A workload no other workload shares. ..."}
-    ],
+    "settings": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "openrl.fine_tuning_type": {"anyOf": [{"type": "string", "enum": ["lora", "full"]}, {"type": "null"}], "default": null,
+                                    "description": "lora unless set. A model restored from a checkpoint takes the checkpoint's type."},
+        "openrl.sampler_replicas": {"type": "integer", "minimum": 1, "maximum": 8, "default": 1,
+                                    "description": "Single-GPU samplers that drain the model's sampling queue together."},
+        "...": {}
+      }
+    },
     "settings_howto": "Pass as user_metadata on create_session or create_model, or as TINKER_TAGS=openrl.key=value,...",
     "limits": {"vllm_max_model_len": 8192, "train_token_budget": 65536,
                "session_ttl_seconds": 120, "session_reap_interval_seconds": 30},
@@ -145,18 +149,16 @@ version OpenRL supports.
 }
 ```
 
-- `settings` is pydantic's JSON Schema for `class Settings`, flattened:
-  nullable unions collapsed, `minimum` and `maximum` as `min` and `max`,
-  `enum` as `allowed`. The `openrl.` names are the fields' aliases, set by
-  an alias generator on the model, so pydantic validates `user_metadata`
-  keys as the client wrote them, names them that way in 400s, and emits
-  them in the schema; nothing adds or strips the prefix by hand. The same schema
-  is published unchanged in `/openapi.json` as
-  `components.schemas.OpenRLSettings`, and the `user_metadata` fields of
-  the request models point at it, so a client that reads the spec rather
-  than capabilities finds the settings there. Nothing walks the type
-  annotations by hand; pydantic is the one source for the endpoint, the
-  spec, the skill table and the 400 messages.
+- `settings` is pydantic's JSON Schema for `class Settings`, as is. The
+  `openrl.` names are the fields' aliases, set by an alias generator on
+  the model, so pydantic validates `user_metadata` keys as the client
+  wrote them, names them that way in 400s, and emits them in the schema;
+  nothing adds or strips the prefix by hand. The same object is published
+  in `/openapi.json` as `components.schemas.OpenRLSettings`, and the
+  `user_metadata` fields of the request models point at it. The skill's
+  settings table is rendered from that OpenAPI document by
+  `scripts/gen_settings_doc.py`, not from the server module, so the skill,
+  the spec, capabilities and the 400 messages all read one artifact.
 - `worker_launcher` is one of `single_process`, `process`, `scheduler`,
   or `none` (standing worker deployments the server does not launch),
   derived from the same environment the server already reads. Several

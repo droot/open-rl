@@ -69,7 +69,7 @@ def check_endpoint(report: Report, base_url: str) -> dict[str, Any] | None:
     if not info:
       report.line("WARN", check, "no openrl section: this server predates v0.0.7 and does not describe itself")
       return {}
-    settings = ", ".join(s["name"].removeprefix("openrl.") for s in info.get("settings", []))
+    settings = ", ".join(name.removeprefix("openrl.") for name in info.get("settings", {}).get("properties", {}))
     report.line(
       "OK",
       "version",
