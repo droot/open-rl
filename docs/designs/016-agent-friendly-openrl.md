@@ -145,10 +145,15 @@ version OpenRL supports.
 }
 ```
 
-- `settings` is generated from `class Settings`: field name, annotation,
-  default, `Literal` or enum choices, `ge`/`le` bounds as `min`/`max`,
-  and the field's `description`. One source of truth for the endpoint,
-  the skill, and the 400 messages.
+- `settings` is pydantic's JSON Schema for `class Settings`, reshaped:
+  the `openrl.` prefix on each name, nullable unions collapsed, `minimum`
+  and `maximum` as `min` and `max`, `enum` as `allowed`. The same schema
+  is published unchanged in `/openapi.json` as
+  `components.schemas.OpenRLSettings`, and the `user_metadata` fields of
+  the request models point at it, so a client that reads the spec rather
+  than capabilities finds the settings there. Nothing walks the type
+  annotations by hand; pydantic is the one source for the endpoint, the
+  spec, the skill table and the 400 messages.
 - `worker_launcher` is one of `single_process`, `process`, `scheduler`,
   or `none` (standing worker deployments the server does not launch),
   derived from the same environment the server already reads. Several

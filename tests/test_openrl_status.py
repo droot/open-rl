@@ -84,6 +84,15 @@ class StatusViewsTest(unittest.IsolatedAsyncioTestCase):
     for entry in catalog.values():
       self.assertTrue(entry["description"], f"{entry['name']} needs a description; the skill shows it")
 
+  async def test_the_openapi_document_carries_the_settings_schema(self):
+    spec = (await self.client.get("/openapi.json")).json()
+    schema = spec["components"]["schemas"]["OpenRLSettings"]
+    self.assertEqual(set(schema["properties"]), set(api_server.Settings.model_fields))
+    self.assertEqual(schema["properties"]["sampler_replicas"]["maximum"], 8)
+    # The request models say where the settings go.
+    field = spec["components"]["schemas"]["CreateSessionRequest"]["properties"]["user_metadata"]
+    self.assertIn("OpenRLSettings", field["description"])
+
   async def test_a_dev_build_has_no_skill_url(self):
     with patch.object(api_server, "OPEN_RL_VERSION", "sha-abc1234"):
       info = (await self.get("get_server_capabilities")).json()["openrl"]

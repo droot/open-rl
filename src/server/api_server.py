@@ -9,12 +9,12 @@ import traceback
 import uuid
 from collections import defaultdict
 from contextlib import asynccontextmanager
-from types import UnionType
-from typing import Annotated, Any, Literal, Union, get_args, get_origin
+from typing import Annotated, Any, Literal
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
+from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse, Response
 from fastapi.utils import is_body_allowed_for_status_code
 from opentelemetry import propagate, trace
@@ -111,15 +111,22 @@ class SessionHeartbeatRequest(BaseModel):
   session_id: str | None = None
 
 
+USER_METADATA_DOC = (
+  "Free-form client metadata. Keys that start with openrl. are OpenRL settings: "
+  "see components.schemas.OpenRLSettings in this document, or openrl.settings in get_server_capabilities. "
+  "Values are strings on the wire."
+)
+
+
 class CreateSessionRequest(BaseModel):
   tags: list[str] = Field(default_factory=list)
-  user_metadata: dict[str, Any] | None = None
+  user_metadata: dict[str, Any] | None = Field(default=None, description=USER_METADATA_DOC)
 
 
 class CreateModelRequest(BaseModel):
   base_model: str
   session_id: str | None = None
-  user_metadata: dict[str, Any] | None = None
+  user_metadata: dict[str, Any] | None = Field(default=None, description=USER_METADATA_DOC)
   lora_config: LoraConfig = Field(default_factory=LoraConfig)
   # Removed; FFT options are openrl. settings now. Kept to reject it loudly.
   full_config: Any = None
@@ -136,7 +143,7 @@ class CreateModelFromStateRequest(BaseModel):
   # The checkpoint's metadata names the base model when the client does not.
   base_model: str | None = None
   session_id: str | None = None
-  user_metadata: dict[str, Any] | None = None
+  user_metadata: dict[str, Any] | None = Field(default=None, description=USER_METADATA_DOC)
   lora_config: LoraConfig = Field(default_factory=LoraConfig)
   # Removed; FFT options are openrl. settings now. Kept to reject it loudly.
   full_config: Any = None
@@ -213,36 +220,29 @@ class Settings(BaseModel):
   )
 
 
+JSON_TYPE_NAMES = {"integer": "int", "boolean": "bool", "string": "string"}
+
+
 def settings_catalog() -> list[dict[str, Any]]:
   """The openrl. settings as get_server_capabilities reports them: one entry
-  per field of Settings, so the endpoint, the skill and the 400 messages agree."""
+  per field of Settings, reshaped from pydantic's JSON Schema so the endpoint,
+  the skill and /openapi.json (components.schemas.OpenRLSettings) agree."""
   catalog = []
-  for name, field in Settings.model_fields.items():
-    entry: dict[str, Any] = {"name": f"{SETTINGS_PREFIX}{name}", **describe_annotation(field.annotation), "default": field.default}
-    for constraint in field.metadata:
-      if hasattr(constraint, "ge"):
-        entry["min"] = constraint.ge
-      if hasattr(constraint, "le"):
-        entry["max"] = constraint.le
-    entry["description"] = field.description or ""
+  for name, prop in Settings.model_json_schema()["properties"].items():
+    # An optional field arrives as anyOf [X, null]; the setting is simply unset by default.
+    options = [option for option in prop.get("anyOf", [prop]) if option.get("type") != "null"]
+    schema = options[0] if len(options) == 1 else {"type": "string"}
+    entry: dict[str, Any] = {"name": f"{SETTINGS_PREFIX}{name}", "type": JSON_TYPE_NAMES.get(schema.get("type"), "string")}
+    if "enum" in schema:
+      entry["allowed"] = list(schema["enum"])
+    entry["default"] = prop.get("default")
+    if "minimum" in schema:
+      entry["min"] = schema["minimum"]
+    if "maximum" in schema:
+      entry["max"] = schema["maximum"]
+    entry["description"] = prop.get("description", "")
     catalog.append(entry)
   return catalog
-
-
-def describe_annotation(annotation: Any) -> dict[str, Any]:
-  origin = get_origin(annotation)
-  if origin is Annotated:
-    return describe_annotation(get_args(annotation)[0])
-  if origin in (Union, UnionType):
-    args = [arg for arg in get_args(annotation) if arg is not type(None)]
-    return describe_annotation(args[0]) if len(args) == 1 else {"type": "string"}
-  if origin is Literal:
-    return {"type": "string", "allowed": list(get_args(annotation))}
-  if annotation is bool:
-    return {"type": "bool"}
-  if annotation is int:
-    return {"type": "int"}
-  return {"type": "string"}
 
 
 def tag_metadata(tags: list[str]) -> dict[str, str]:
@@ -706,6 +706,25 @@ app = FastAPI(
   ),
   lifespan=lifespan,
 )
+
+
+def openapi_with_settings() -> dict[str, Any]:
+  """FastAPI publishes the request models on its own. The openrl.* settings
+  travel inside user_metadata, so their schema is added under components by
+  hand; it is the same pydantic schema openrl.settings in capabilities is
+  reshaped from."""
+  if app.openapi_schema:
+    return app.openapi_schema
+  schema = get_openapi(title=app.title, version=app.version, description=app.description, routes=app.routes)
+  settings = Settings.model_json_schema(ref_template="#/components/schemas/{model}")
+  schemas = schema.setdefault("components", {}).setdefault("schemas", {})
+  schemas.update(settings.pop("$defs", {}))
+  schemas["OpenRLSettings"] = settings
+  app.openapi_schema = schema
+  return schema
+
+
+app.openapi = openapi_with_settings
 FastAPIInstrumentor.instrument_app(app, excluded_urls="/api/v1/retrieve_future,/api/v1/session_heartbeat")
 
 
