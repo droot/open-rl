@@ -27,7 +27,9 @@ The `openrl` object holds `version` (the release tag, or `sha-<commit>` for a bu
 main), `worker_launcher` (`scheduler` on Kubernetes, `process` or `single_process` for local
 servers), `sampler_backend`, `fft_enabled`, `models`, `settings` (the same table as
 `settings.md`), `limits` and, on releases, `skill_url` for the copy of this skill that
-matches the server. A response without `openrl` is a server older than v0.0.7.
+matches the server. A response without `openrl` is a server older than v0.0.7. The response names the
+release but not the worker images; in particular it does not say which Automodel trainer
+image a deployment runs, or whether one was set at all (see `lifecycle.md`).
 
 ## OpenRL-only endpoints
 

@@ -40,6 +40,56 @@ So, from a laptop against a warm cluster: about 2 minutes to the first loss line
 4 more minutes to the first sample. A second run on the same base model within two minutes
 of the first finds both workers up and starts in seconds.
 
+## Bigger models: when one GPU is not enough
+
+The server sizes every worker from the model's parameter count before it asks the
+scheduler for a device, and refuses with `Pending (NoCapacity: ...)` when nothing fits. Use
+the same arithmetic before you choose a model or a setting:
+
+| Worker | Device memory it asks for | Example: 8B | Example: 27B |
+|---|---|---|---|
+| LoRA trainer (default) | 2 bytes per parameter + 4 GiB | about 19 GiB | about 54 GiB |
+| full fine-tuning trainer | 8 bytes per parameter + 4 GiB | about 65 GiB | about 205 GiB |
+| sampler (vLLM, always one device) | 2 bytes per parameter + KV cache for eight max-length requests + about 2 GiB; LoRA adds about 1 GiB plus 0.25 bytes per parameter | about 30 GiB | about 62 GiB |
+
+A model the server does not know is sized as 8B, so the request is never too small.
+On a cluster of L4s (22 GiB per device) that puts the ceiling for the default trainer at
+about 8B. H100s (80 GiB) take a 27B LoRA trainer and sampler on one device each, and an
+8B full fine-tuning trainer; a 27B full fine-tuning trainer fits no single device, and
+full fine-tuning cannot span devices.
+
+**Decision order for a bigger model:**
+
+1. **Prefer a bigger device.** `openrl.exclusive=true` gives the job its own trainer and
+   sampler. If the cluster has a larger pool, the scheduler places them where they fit;
+   nothing else changes. Ask the platform owner which pools exist; the endpoint does not
+   list them yet.
+2. **Then spread the trainer over several GPUs.** When no single device holds the
+   trainer, set `openrl.trainer_backend=automodel` and `openrl.trainer_gpus=N` (2 to 8).
+   The Automodel trainer shards the model with FSDP2 across `N` GPUs on one node, so each
+   device needs only its share: a 27B LoRA trainer over four GPUs asks for about 14 GiB
+   each, which fits an L4. Multi-GPU is LoRA only, needs the Kubernetes deployment, and
+   makes the job exclusive. For long sequences, `openrl.trainer_cp=C` makes `C` of those
+   GPUs share each sequence as context parallelism, with the rest data parallel; `C` must
+   divide `N`.
+3. **The sampler still has to fit one device.** Nothing spreads it. A model whose bf16
+   weights plus KV cache exceed the largest device cannot be sampled, so it cannot do RL
+   or sample after SFT on that cluster.
+
+What changes when you choose Automodel:
+
+- The trainer runs a different image, the one the platform owner set as
+  `OPEN_RL_AUTOMODEL_IMAGE`. The endpoint does not report which, and a deployment that
+  never set it runs `ghcr.io/gke-labs/open-rl/automodel:latest`. A first start pulls that
+  image (several GiB) on top of the usual durations.
+- The job gets a trainer of its own, keyed `automodel-<base-model>`, so it never shares
+  with PyTorch LoRA jobs on the same base model and starts cold every time: expect the
+  5 to 10 minute cold-node figure, not the warm one.
+- The waiting line and the model view are the same; the trainer is `starting` until all
+  `N` ranks have loaded their shard.
+- `openrl.trainer_backend` also accepts an image reference, for a trainer you built
+  yourself; the job then runs on that image with the same module on its `PATH`.
+
 ## Sessions and release
 
 - The SDK heartbeats its session every 10 seconds. The server keeps a session alive for
