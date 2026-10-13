@@ -71,7 +71,7 @@ async def reap_owner(owner: str) -> None:
       return
     print(f"[API_SERVER] No live session uses {owner}; tearing its workers down")
     for model in await asyncio.to_thread(worker_manager.release_owner, owner):
-      await state.delete_values(f"open_rl:sampler_ready:{model}")
+      await state.delete_values(f"open_rl:sampler_ready:{model}", f"open_rl:trainer_ready:{model}")
     await session_registry.forget(owner)
 
 

@@ -42,9 +42,16 @@ class StatusViewsTest(unittest.IsolatedAsyncioTestCase):
   async def get(self, path: str):
     return await self.client.get(f"/api/v1/{path}")
 
-  async def create_model(self, user_metadata: dict | None = None) -> tuple[str, str]:
+  async def create_model(self, user_metadata: dict | None = None, trainer_ready: bool = True) -> tuple[str, str]:
     session = (await post_json(self.client, "create_session", {"user_metadata": user_metadata or {}}))["session_id"]
     model_id = (await post_json(self.client, "create_model", {"base_model": "test-base", "session_id": session}))["request_id"]
+    if trainer_ready:
+      # The trainer process announces itself once its model is loaded, under
+      # its runtime id: the base model for a shared LoRA trainer, the model
+      # id for a job's own trainer.
+      from server.worker_manager import runtime_of
+
+      await self.state.set_value(f"open_rl:trainer_ready:{runtime_of(model_id)[1]}", "1")
     return session, model_id
 
   async def test_capabilities_describe_the_deployment_without_breaking_the_sdk_fields(self):
@@ -141,6 +148,15 @@ class StatusViewsTest(unittest.IsolatedAsyncioTestCase):
     self.assertIn("kube-apiserver unreachable", body["workers_error"])
     self.assertIn("worker state unavailable", body["summary"])
     self.assertTrue(body["session_live"])
+
+  async def test_a_trainer_is_starting_until_it_announces_itself(self):
+    _, model_id = await self.create_model(trainer_ready=False)
+    (trainer,) = (await self.get(f"openrl/models/{model_id}")).json()["workers"]
+    self.assertEqual(trainer["state"], "starting")
+    self.assertTrue(trainer["detail"].endswith("loading the model"))
+    await self.state.set_value("open_rl:trainer_ready:test-base", "1")
+    (trainer,) = (await self.get(f"openrl/models/{model_id}")).json()["workers"]
+    self.assertEqual(trainer["state"], "ready")
 
   async def test_a_sampler_is_starting_until_it_announces_itself(self):
     _, model_id = await self.create_model()

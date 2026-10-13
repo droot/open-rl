@@ -23,9 +23,7 @@ from server.store import StateStore
 from server.worker_manager import READY, STARTING, WorkerManager, owner_id
 
 # What a worker entry exposes. The launchers know more (pod names, pids,
-# owners); none of that is the client's contract. A trainer is `ready` once
-# its process runs; it has no announcement, so its first request may still
-# wait while it loads the base model.
+# owners); none of that is the client's contract.
 WORKER_FIELDS = ("role", "state", "detail", "workload", "node", "age_seconds")
 
 
@@ -56,9 +54,9 @@ async def workers_of_owner(ctx: StatusContext, owner: str) -> tuple[list[dict[st
   out = []
   for found in found_workers:
     worker = {field: found.get(field) for field in WORKER_FIELDS}
-    # The launcher sees a sampler's pod run minutes before vLLM has loaded the
-    # model; the sampler announces itself when it can serve.
-    announced = found["role"] != "sampler" or await ctx.state.get_value(f"open_rl:sampler_ready:{found['model_id']}") is not None
+    # The launcher sees a pod run minutes before the model is loaded; each
+    # worker announces itself when it can serve (open_rl:<role>_ready:<runtime>).
+    announced = await ctx.state.get_value(f"open_rl:{found['role']}_ready:{found['model_id']}") is not None
     if worker["state"] == READY and not announced:
       worker["state"] = STARTING
       worker["detail"] = f"{worker['detail']}, loading the model"

@@ -214,15 +214,17 @@ that every launcher reports:
 | `state` | Meaning | Scheduler mode | Process mode |
 |---|---|---|---|
 | `waiting_for_placement` | no accelerator assigned yet | Workload without a `nodeName` (`Pending`, early `Placing`) | never |
-| `starting` | placed; pulling the image, mounting volumes, loading the model | `nodeName` set, phase not yet `Running`; or `Running` but the sampler has not announced itself | process alive, sampler not announced |
-| `ready` | serving requests | Workload `Running`, sampler announced (`open_rl:sampler_ready:<model>`) | process alive |
+| `starting` | placed; pulling the image, mounting volumes, loading the model | `nodeName` set, phase not yet `Running`; or `Running` but the worker has not announced itself | process alive, worker not announced |
+| `ready` | serving requests | Workload `Running` and the worker announced itself: `open_rl:sampler_ready:<runtime>` once vLLM can serve, `open_rl:trainer_ready:<runtime>` once the trainer holds a loaded model and drains its queue | process alive and announced |
 | `failed` | exited with an error, or the request cannot be satisfied | Workload `Failed` | exit code not zero |
 | `stopped` | exited normally, or being released | Workload `Succeeded`, or a deletion timestamp | exit code zero |
 
-A trainer has no announcement, so it is `ready` once its process runs and
-may still be loading the base model for its first minute or two; the
-skill says so. Adding a trainer ready key would move that time into
-`starting` and is cheap; it is not in this round.
+Both announcements are TTL keys the worker refreshes each minute and
+deletes on exit, so a dead process stops looking ready on its own. The
+trainer's comes from the request processor asking the worker whether it
+holds a model (`is_ready()`), so a LoRA trainer is `starting` during its
+preload and a full fine-tuning trainer until its `create_model` has
+loaded the weights.
 
 The scheduler's phase names and reasons reach the client only inside `detail`, a free-text string documented as
 for humans and not a contract, the same split Kubernetes conditions make
@@ -233,9 +235,8 @@ of `active` or `deleted`.
 
 The mapping lives in one function per launcher (`worker_state` in
 `scheduler_worker_manager.py`; the process launcher's is three lines) and
-is table-tested. The node assignment is the placement boundary; phase
-`Running` is the readiness boundary, refined for samplers by the ready
-key the sampler writes when vLLM can serve.
+is table-tested. The node assignment is the placement boundary; the
+worker's own announcement is the readiness boundary.
 
 **Sources and cost.** The Workloads this API server created, read with
 the RBAC it already has for them and cached for 5 seconds since the

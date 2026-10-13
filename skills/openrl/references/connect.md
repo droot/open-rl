@@ -44,7 +44,7 @@ A worker entry in the model view:
 | Field | Meaning |
 |---|---|
 | `role` | `trainer` or `sampler` |
-| `state` | one of `waiting_for_placement`, `starting`, `ready`, `failed`, `stopped`; the same five on every server, branch on this. A sampler is `ready` once it can serve. A trainer is `ready` once its process runs and may still be loading the base model for its first minute or two; its first request queues until then |
+| `state` | one of `waiting_for_placement`, `starting`, `ready`, `failed`, `stopped`; the same five on every server, branch on this. `ready` means the worker has its model loaded and is serving; until then it is `starting` with `loading the model` in `detail` |
 | `detail` | free text for a human: the scheduler's own words (Workload phase and reason, node); wording can change, do not parse it |
 | `workload`, `node` | names to give the platform owner; `null` on a server that runs workers as processes |
 | `age_seconds` | since the worker was requested |
