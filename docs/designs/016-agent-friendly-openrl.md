@@ -422,7 +422,7 @@ business owning.
 | Which status views ship now | Only the model view, scoped to one model id | A model id is a per-client capability, so the view adds no tenancy assumption; list and fleet views would expose every client's ids and need a tenancy design first | decided |
 | Worker state contract | Five OpenRL-owned states in `state`; scheduler words only in free-text `detail` | Workload phases and pod states are scheduler internals; a rename must not break clients | decided |
 | Where OpenRL-specific data lives in Tinker responses | One `openrl` object | Easy to find, easy to strip, never collides with SDK fields | open |
-| Settings documentation | Generated from `class Settings`, checked by a test | One source of truth; the 400 messages already derive from it | open |
+| Settings documentation | Published once by the server as `components.schemas.OpenRLSettings` in `/openapi.json`; capabilities point at it; no copy in the skill or docs | One artifact, pydantic's schema, for the spec, the 400 messages and every reader; a generated table was tried first and removed as a second copy | decided |
 | Version source | Build arg `OPEN_RL_VERSION`, env var at runtime | `/app/VERSION` holds the internal counter, not the release tag | open |
 | Expired session semantics | No revival; 200 with `expired: true` on heartbeat, 400 on other calls | Avoids a live-looking session with no workers; keeps the SDK heartbeat loop from erroring | open |
 | Agent reference location | `skills/openrl/` in this repository, copied into each release as `openrl-skill.tar.gz` | Versioned with the code the tests check it against; the asset matches the manifests a user deployed | decided |
@@ -457,10 +457,9 @@ ahead of phase 2 by decision: `skills/openrl/` (SKILL.md, connect,
 lifecycle, runbook, settings), `tests/test_skill_docs.py`, `make skill-bundle` inside
 `release-bundle`, `.claude-plugin/marketplace.json`, `site/static/llms.txt`,
 links from the landing page, README and getting-started, and the
-`RELEASING.md` step. Settings generator and its test, the skill,
-the release bundle target and `skill_url`, the marketplace manifest,
-`llms.txt`, links from the landing page, README and getting-started, the
-`RELEASING.md` step, doctor in the client image (5.5, 5.6). Re-verify
+`RELEASING.md` step, doctor in the client image (5.5, 5.6). The
+generated settings table and its drift test were part of this phase and
+were removed once the server published the schema itself. Re-verify
 every number in the skill on the release the phase ships in.
 
 Phases 1 and 2 are server changes and ship in the next release; phase 3
@@ -471,8 +470,9 @@ phase 1.
 
 - Unit: the model view against a fake Kubernetes client and the
   in-memory store, with a table test over the state mapping and a test
-  that the response has only the model's own fields; settings generator
-  against `class Settings`; future failure on release; heartbeat after
+  that the response has only the model's own fields; the OpenAPI
+  document's settings schema against `class Settings`, and the skill kept
+  free of a settings table; future failure on release; heartbeat after
   expiry.
 - Compatibility: `tiny_sft`, `tiny_rl` and one cookbook recipe against the
   changed server with the pinned SDK and the newest SDK, confirming the
