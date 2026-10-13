@@ -179,9 +179,12 @@ def parse_trainer_backend(value: str) -> str:
 
 class Settings(BaseModel):
   """The descriptions are what get_server_capabilities and the skill show, so
-  they are written for the client choosing a value."""
+  they are written for the client choosing a value. Each field's wire name is
+  its alias, openrl.<field>: pydantic validates the user_metadata keys as the
+  client wrote them, names them that way in errors, and puts them in the JSON
+  Schema that capabilities and /openapi.json publish."""
 
-  model_config = ConfigDict(extra="forbid")
+  model_config = ConfigDict(extra="forbid", alias_generator=lambda field: f"{SETTINGS_PREFIX}{field}", populate_by_name=True)
 
   sampler_replicas: int = Field(default=1, ge=1, le=8, description="Single-GPU samplers that drain the model's sampling queue together.")
   exclusive: Annotated[bool, BeforeValidator(parse_bool)] = Field(
@@ -225,14 +228,15 @@ JSON_TYPE_NAMES = {"integer": "int", "boolean": "bool", "string": "string"}
 
 def settings_catalog() -> list[dict[str, Any]]:
   """The openrl. settings as get_server_capabilities reports them: one entry
-  per field of Settings, reshaped from pydantic's JSON Schema so the endpoint,
-  the skill and /openapi.json (components.schemas.OpenRLSettings) agree."""
+  per field of Settings, flattened from pydantic's JSON Schema (which already
+  carries the openrl. names) so the endpoint, the skill and /openapi.json
+  (components.schemas.OpenRLSettings) agree."""
   catalog = []
   for name, prop in Settings.model_json_schema()["properties"].items():
     # An optional field arrives as anyOf [X, null]; the setting is simply unset by default.
     options = [option for option in prop.get("anyOf", [prop]) if option.get("type") != "null"]
     schema = options[0] if len(options) == 1 else {"type": "string"}
-    entry: dict[str, Any] = {"name": f"{SETTINGS_PREFIX}{name}", "type": JSON_TYPE_NAMES.get(schema.get("type"), "string")}
+    entry: dict[str, Any] = {"name": name, "type": JSON_TYPE_NAMES.get(schema.get("type"), "string")}
     if "enum" in schema:
       entry["allowed"] = list(schema["enum"])
     entry["default"] = prop.get("default")
@@ -263,14 +267,16 @@ def resolve_settings(*user_metadata: dict[str, Any]) -> Settings:
   unknown openrl. key or a bad value is an error, not a silent default."""
   merged = {}
   for layer in reversed(user_metadata):
-    merged.update({key.removeprefix(SETTINGS_PREFIX): value for key, value in (layer or {}).items() if key.startswith(SETTINGS_PREFIX)})
+    # The user's own metadata keys stay out; the openrl. keys go in as written and
+    # pydantic matches them to the fields by alias.
+    merged.update({key: value for key, value in (layer or {}).items() if key.startswith(SETTINGS_PREFIX)})
   try:
     return Settings.model_validate(merged)
   except ValidationError as exc:
     problems = []
     for error in exc.errors():
       message = "unknown setting" if error["type"] == "extra_forbidden" else error["msg"].removeprefix("Value error, ")
-      problems.append(f"{SETTINGS_PREFIX}{error['loc'][0]}: {message}")
+      problems.append(f"{error['loc'][0]}: {message}")
     raise ValueError("; ".join(problems)) from None
 
 

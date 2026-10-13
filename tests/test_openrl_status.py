@@ -87,8 +87,9 @@ class StatusViewsTest(unittest.IsolatedAsyncioTestCase):
   async def test_the_openapi_document_carries_the_settings_schema(self):
     spec = (await self.client.get("/openapi.json")).json()
     schema = spec["components"]["schemas"]["OpenRLSettings"]
-    self.assertEqual(set(schema["properties"]), set(api_server.Settings.model_fields))
-    self.assertEqual(schema["properties"]["sampler_replicas"]["maximum"], 8)
+    self.assertEqual(set(schema["properties"]), {field.alias for field in api_server.Settings.model_fields.values()})
+    self.assertIn("openrl.sampler_replicas", schema["properties"])
+    self.assertEqual(schema["properties"]["openrl.sampler_replicas"]["maximum"], 8)
     # The request models say where the settings go.
     field = spec["components"]["schemas"]["CreateSessionRequest"]["properties"]["user_metadata"]
     self.assertIn("OpenRLSettings", field["description"])

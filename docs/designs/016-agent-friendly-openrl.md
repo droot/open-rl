@@ -145,9 +145,12 @@ version OpenRL supports.
 }
 ```
 
-- `settings` is pydantic's JSON Schema for `class Settings`, reshaped:
-  the `openrl.` prefix on each name, nullable unions collapsed, `minimum`
-  and `maximum` as `min` and `max`, `enum` as `allowed`. The same schema
+- `settings` is pydantic's JSON Schema for `class Settings`, flattened:
+  nullable unions collapsed, `minimum` and `maximum` as `min` and `max`,
+  `enum` as `allowed`. The `openrl.` names are the fields' aliases, set by
+  an alias generator on the model, so pydantic validates `user_metadata`
+  keys as the client wrote them, names them that way in 400s, and emits
+  them in the schema; nothing adds or strips the prefix by hand. The same schema
   is published unchanged in `/openapi.json` as
   `components.schemas.OpenRLSettings`, and the `user_metadata` fields of
   the request models point at it, so a client that reads the spec rather
