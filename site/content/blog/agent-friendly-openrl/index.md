@@ -73,11 +73,14 @@ curl -s $OPENRL/api/v1/get_server_capabilities | jq .openrl
   "version": "vVERSION",
   "worker_launcher": "scheduler",
   "fft_enabled": true,
-  "settings": [
-    {"name": "openrl.fine_tuning_type", "type": "string", "allowed": ["lora", "full"], "default": null,
-     "description": "lora unless set. A model restored from a checkpoint takes the checkpoint's type."},
-    "..."
-  ],
+  "settings": {
+    "type": "object",
+    "properties": {
+      "openrl.fine_tuning_type": {"anyOf": [{"type": "string", "enum": ["lora", "full"]}, {"type": "null"}], "default": null,
+                                  "description": "lora unless set. A model restored from a checkpoint takes the checkpoint's type."},
+      "...": {}
+    }
+  },
   "limits": {"session_ttl_seconds": 120, "session_reap_interval_seconds": 30},
   "skill_url": "https://github.com/gke-labs/open-rl/releases/download/vVERSION/openrl-skill.tar.gz"
 }
