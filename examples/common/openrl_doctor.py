@@ -100,9 +100,11 @@ def check_train(report: Report, base_url: str) -> None:
   script = Path(__file__).resolve().parents[1] / "tiny" / "tiny_sft.py"
   cmd = [sys.executable, str(script), f"base_url={base_url}", "steps=3", "min_loss_drop=0.0", "sample_after_train=true"]
   started = time.monotonic()
-  # Stream the example's own lines as they come, so the loss lines show up
-  # while it runs rather than all at the end.
-  proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+  # Stream the example's own lines as they come, so the model id and the loss
+  # lines show up while it runs rather than all at the end. Python block-buffers
+  # stdout into a pipe, so ask the child not to.
+  env = {**os.environ, "PYTHONUNBUFFERED": "1"}
+  proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=env)
   lines: list[str] = []
   last = "no output"
   assert proc.stdout is not None
