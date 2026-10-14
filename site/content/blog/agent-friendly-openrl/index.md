@@ -1,10 +1,10 @@
 ---
 title: "Point your coding agent at OpenRL"
-date: 2026-10-12
+date: 2026-10-14
 authors: ["Sunil Arora"]
-summary: "OpenRL vVERSION describes itself to the agent that drives it: the server reports its version and limits and publishes every setting in its OpenAPI document, one endpoint says what a run is waiting for, and a skill tells the agent what differs from hosted Tinker. Install it in one command."
+summary: "OpenRL v0.0.7 describes itself to the agent that drives it: the server reports its version and limits and publishes every setting in its OpenAPI document, one endpoint says what a run is waiting for, and a skill tells the agent what differs from hosted Tinker. Install it in one command."
 tags: ["release", "agents"]
-draft: true
+draft: false
 ---
 
 Most people who train with OpenRL do not type the training loop themselves. They tell a coding agent what they want, and the agent writes the loop, runs it, and watches it. This release is for that agent.
@@ -70,12 +70,12 @@ curl -s $OPENRL/api/v1/get_server_capabilities | jq .openrl
 
 ```json
 {
-  "version": "vVERSION",
+  "version": "v0.0.7",
   "worker_launcher": "scheduler",
   "fft_enabled": true,
   "settings_schema_url": "/openapi.json#/components/schemas/OpenRLSettings",
   "limits": {"session_ttl_seconds": 120, "session_reap_interval_seconds": 30},
-  "skill_url": "https://github.com/gke-labs/open-rl/releases/download/vVERSION/openrl-skill.tar.gz"
+  "skill_url": "https://github.com/gke-labs/open-rl/releases/download/v0.0.7/openrl-skill.tar.gz"
 }
 ```
 
@@ -157,4 +157,4 @@ Two things are known and planned. First, when the server releases a run's worker
 
 Point your agent at the endpoint. It learns what the server is from `get_server_capabilities`, what a run is waiting for from the model view, and how to use OpenRL from the skill the server links. Install the OpenRL skill and the tinker-cookbook skills side by side, in `~/.agents/skills/` or your agent's own directory, and ask.
 
-The release notes are on [GitHub](https://github.com/gke-labs/open-rl/releases/tag/vVERSION). The [getting-started guide](https://github.com/gke-labs/open-rl/blob/main/docs/getting-started.md) has the deployment side.
+The release notes are on [GitHub](https://github.com/gke-labs/open-rl/releases/tag/v0.0.7). The [getting-started guide](https://github.com/gke-labs/open-rl/blob/main/docs/getting-started.md) has the deployment side.
