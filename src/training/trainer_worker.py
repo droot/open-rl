@@ -27,6 +27,9 @@ class BaseTrainerWorker:
 
   def __init__(self):
     self.tokenizer: PreTrainedTokenizerBase | None = None
+    # When the model load started and finished, and what the page-cache
+    # prefetch did; the request processor publishes it with the ready key.
+    self.load_phases: dict[str, Any] = {}
 
     if torch.cuda.is_available():
       self.device = torch.device("cuda", local_rank())

@@ -4,6 +4,7 @@ either a LoRA adapter (lora_id) or a whole-model weights version (weights_path).
 import argparse
 import asyncio
 import hashlib
+import json
 import os
 import signal
 import time
@@ -32,6 +33,7 @@ tracer = trace.get_tracer("vllm.inference.worker")
 SHUTDOWN_SENTINEL = "SHUTDOWN_SENTINEL"
 TMP_DIR = os.getenv("OPEN_RL_TMP_DIR", "/tmp/open-rl")
 READY_TTL_SECONDS = 3600
+PROCESS_STARTED_AT = time.time()
 ENGINE_POLL_SECONDS = 5
 
 
@@ -274,9 +276,11 @@ async def process_request(sampler: Sampler, store: RequestStore, request: dict[s
     await store.set_future(request["request_id"], result)
 
 
-async def mark_ready(state: StateStore, model_id: str) -> None:
-  """The gateway waits on this key. A shared LoRA sampler outlives the TTL, so the loop refreshes it."""
-  await state.set_value(f"open_rl:sampler_ready:{model_id}", "1", ttl_seconds=READY_TTL_SECONDS)
+async def mark_ready(state: StateStore, model_id: str, record: dict[str, Any] | None = None) -> None:
+  """The gateway waits on this key. A shared LoRA sampler outlives the TTL, so the loop refreshes it.
+  The value records when the sampler became ready and how long the engine took to build
+  (design 016, A6); vLLM's own load, compile and capture timings stay in its log."""
+  await state.set_value(f"open_rl:sampler_ready:{model_id}", json.dumps(record or {"ready_at": time.time()}), ttl_seconds=READY_TTL_SECONDS)
 
 
 async def serve(
@@ -291,11 +295,16 @@ async def serve(
   Queue and store errors are retried. A dead engine or a process the time slicer
   could not park raises, so the worker exits and is restarted.
   """
+  engine_build_start = time.time()
   async with holding_gpu(time_slicer, workload):
     sampler = Sampler(make_engine())
     if time_slicer is not None:
       await sampler.sleep()  # give the memory back before releasing the slot
   state = get_state_store()
+  record = {
+    "ready_at": time.time(),
+    "phases": {"process_start": PROCESS_STARTED_AT, "engine_build_start": engine_build_start, "engine_ready": time.time()},
+  }
   try:
     try:
       ready_at = float("-inf")
@@ -306,7 +315,7 @@ async def serve(
         started = False
         try:
           if time.monotonic() - ready_at > 60:
-            await mark_ready(state, model_id)
+            await mark_ready(state, model_id, record)
             ready_at = time.monotonic()
           batch = await store.get_sampling_requests_for_model(model_id)
           if not batch:
