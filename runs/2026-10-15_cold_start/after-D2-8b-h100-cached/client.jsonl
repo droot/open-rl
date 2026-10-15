@@ -1,0 +1,11 @@
+{"ts": "2026-10-15T05:15:36.633+00:00", "t": 0.0, "phase": "start", "base_model": "Qwen/Qwen3-8B", "base_url": "http://127.0.0.1:9003"}
+{"ts": "2026-10-15T05:15:36.633+00:00", "t": 0.001, "phase": "create_model.start"}
+{"ts": "2026-10-15T05:16:00.765+00:00", "t": 24.133, "phase": "create_model.done", "model_id": "ce0e7790-7ff6-44f1-9632-06939e7b1053"}
+{"ts": "2026-10-15T05:16:03.882+00:00", "t": 27.25, "phase": "forward_backward.start"}
+{"ts": "2026-10-15T05:16:06.825+00:00", "t": 30.192, "phase": "forward_backward.done"}
+{"ts": "2026-10-15T05:16:08.923+00:00", "t": 32.29, "phase": "optim_step.done"}
+{"ts": "2026-10-15T05:16:08.924+00:00", "t": 32.291, "phase": "save_weights_and_get_sampling_client.start"}
+{"ts": "2026-10-15T05:16:11.071+00:00", "t": 34.438, "phase": "save_weights_and_get_sampling_client.done"}
+{"ts": "2026-10-15T05:16:11.076+00:00", "t": 34.443, "phase": "sample.start"}
+{"ts": "2026-10-15T05:18:10.965+00:00", "t": 154.332, "phase": "sample.done", "text": " 4\n\nQuestion: What is "}
+{"ts": "2026-10-15T05:18:10.966+00:00", "t": 154.334, "phase": "end"}

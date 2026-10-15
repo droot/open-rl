@@ -1,0 +1,269 @@
+{
+    "apiVersion": "v1",
+    "items": [
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-10-15T02:59:36Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "name": "orw-lora-qwen-qwen2-5-0-5b-0-sampler",
+                "namespace": "openrl-system",
+                "resourceVersion": "1792033176697983001",
+                "uid": "358c385e-4cb7-4890-b522-cc6257e4c0a2"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-10-15T02:59:36Z",
+            "message": "Successfully assigned openrl-system/orw-lora-qwen-qwen2-5-0-5b-0-sampler to gke-open-rl-dra-l4-sampler-2x-1ad5171e-bs96",
+            "metadata": {
+                "creationTimestamp": "2026-10-15T02:59:36Z",
+                "name": "orw-lora-qwen-qwen2-5-0-5b-0-sampler.18de94ae008553cd",
+                "namespace": "openrl-system",
+                "resourceVersion": "1792033176815007016",
+                "uid": "363bd5d3-147c-4b0d-8500-d3a3b6232789"
+            },
+            "reason": "Scheduled",
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": "",
+            "source": {
+                "component": "default-scheduler"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-10-15T02:59:40Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{worker}",
+                "kind": "Pod",
+                "name": "orw-lora-qwen-qwen2-5-0-5b-0-sampler",
+                "namespace": "openrl-system",
+                "resourceVersion": "1792033176788543001",
+                "uid": "358c385e-4cb7-4890-b522-cc6257e4c0a2"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-10-15T02:59:40Z",
+            "message": "Container image \"us-central1-docker.pkg.dev/cdrollouts-sunilarora/open-rl/open-rl-server:agent3-9f8dc13\" already present on machine and can be accessed by the pod",
+            "metadata": {
+                "creationTimestamp": "2026-10-15T02:59:40Z",
+                "name": "orw-lora-qwen-qwen2-5-0-5b-0-sampler.18de94aed139d233",
+                "namespace": "openrl-system",
+                "resourceVersion": "1792033180304687014",
+                "uid": "2463b9b8-32de-4c33-af86-ca945ab359e3"
+            },
+            "reason": "Pulled",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "gke-open-rl-dra-l4-sampler-2x-1ad5171e-bs96",
+            "source": {
+                "component": "kubelet",
+                "host": "gke-open-rl-dra-l4-sampler-2x-1ad5171e-bs96"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-10-15T02:59:40Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{worker}",
+                "kind": "Pod",
+                "name": "orw-lora-qwen-qwen2-5-0-5b-0-sampler",
+                "namespace": "openrl-system",
+                "resourceVersion": "1792033176788543001",
+                "uid": "358c385e-4cb7-4890-b522-cc6257e4c0a2"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-10-15T02:59:40Z",
+            "message": "Container created",
+            "metadata": {
+                "creationTimestamp": "2026-10-15T02:59:40Z",
+                "name": "orw-lora-qwen-qwen2-5-0-5b-0-sampler.18de94aed2f06544",
+                "namespace": "openrl-system",
+                "resourceVersion": "1792033180345279015",
+                "uid": "4766979d-5fb4-4934-96f7-b8e5c1833efa"
+            },
+            "reason": "Created",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "gke-open-rl-dra-l4-sampler-2x-1ad5171e-bs96",
+            "source": {
+                "component": "kubelet",
+                "host": "gke-open-rl-dra-l4-sampler-2x-1ad5171e-bs96"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-10-15T02:59:40Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{worker}",
+                "kind": "Pod",
+                "name": "orw-lora-qwen-qwen2-5-0-5b-0-sampler",
+                "namespace": "openrl-system",
+                "resourceVersion": "1792033176788543001",
+                "uid": "358c385e-4cb7-4890-b522-cc6257e4c0a2"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-10-15T02:59:40Z",
+            "message": "Container started",
+            "metadata": {
+                "creationTimestamp": "2026-10-15T02:59:40Z",
+                "name": "orw-lora-qwen-qwen2-5-0-5b-0-sampler.18de94aedddd6086",
+                "namespace": "openrl-system",
+                "resourceVersion": "1792033180517807014",
+                "uid": "e1c7e13f-7b29-4ed9-afdb-cc1a062a32d2"
+            },
+            "reason": "Started",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "gke-open-rl-dra-l4-sampler-2x-1ad5171e-bs96",
+            "source": {
+                "component": "kubelet",
+                "host": "gke-open-rl-dra-l4-sampler-2x-1ad5171e-bs96"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-10-15T02:59:13Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "name": "orw-lora-qwen-qwen2-5-0-5b-0-trainer",
+                "namespace": "openrl-system",
+                "resourceVersion": "1792033153094671012",
+                "uid": "23e4198a-f0bf-48c8-b99a-93881e0d62f6"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-10-15T02:59:13Z",
+            "message": "Successfully assigned openrl-system/orw-lora-qwen-qwen2-5-0-5b-0-trainer to gke-open-rl-dra-l4-trainer-2x-67d40c4c-sr2c",
+            "metadata": {
+                "creationTimestamp": "2026-10-15T02:59:13Z",
+                "name": "orw-lora-qwen-qwen2-5-0-5b-0-trainer.18de94a883fadef0",
+                "namespace": "openrl-system",
+                "resourceVersion": "1792033153265231011",
+                "uid": "62c5cae6-2deb-43a0-a097-73157e760539"
+            },
+            "reason": "Scheduled",
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": "",
+            "source": {
+                "component": "default-scheduler"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-10-15T02:59:17Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{worker}",
+                "kind": "Pod",
+                "name": "orw-lora-qwen-qwen2-5-0-5b-0-trainer",
+                "namespace": "openrl-system",
+                "resourceVersion": "1792033153224047012",
+                "uid": "23e4198a-f0bf-48c8-b99a-93881e0d62f6"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-10-15T02:59:17Z",
+            "message": "Container image \"us-central1-docker.pkg.dev/cdrollouts-sunilarora/open-rl/open-rl-server:agent3-9f8dc13\" already present on machine and can be accessed by the pod",
+            "metadata": {
+                "creationTimestamp": "2026-10-15T02:59:17Z",
+                "name": "orw-lora-qwen-qwen2-5-0-5b-0-trainer.18de94a9671f24f0",
+                "namespace": "openrl-system",
+                "resourceVersion": "1792033157084143008",
+                "uid": "9472795b-31b9-478f-a545-6146795d5503"
+            },
+            "reason": "Pulled",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "gke-open-rl-dra-l4-trainer-2x-67d40c4c-sr2c",
+            "source": {
+                "component": "kubelet",
+                "host": "gke-open-rl-dra-l4-trainer-2x-67d40c4c-sr2c"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-10-15T02:59:17Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{worker}",
+                "kind": "Pod",
+                "name": "orw-lora-qwen-qwen2-5-0-5b-0-trainer",
+                "namespace": "openrl-system",
+                "resourceVersion": "1792033153224047012",
+                "uid": "23e4198a-f0bf-48c8-b99a-93881e0d62f6"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-10-15T02:59:17Z",
+            "message": "Container created",
+            "metadata": {
+                "creationTimestamp": "2026-10-15T02:59:17Z",
+                "name": "orw-lora-qwen-qwen2-5-0-5b-0-trainer.18de94a968b7d635",
+                "namespace": "openrl-system",
+                "resourceVersion": "1792033157103615024",
+                "uid": "11d1cf36-8464-42c3-94e2-1843723223c8"
+            },
+            "reason": "Created",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "gke-open-rl-dra-l4-trainer-2x-67d40c4c-sr2c",
+            "source": {
+                "component": "kubelet",
+                "host": "gke-open-rl-dra-l4-trainer-2x-67d40c4c-sr2c"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-10-15T02:59:17Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{worker}",
+                "kind": "Pod",
+                "name": "orw-lora-qwen-qwen2-5-0-5b-0-trainer",
+                "namespace": "openrl-system",
+                "resourceVersion": "1792033153224047012",
+                "uid": "23e4198a-f0bf-48c8-b99a-93881e0d62f6"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-10-15T02:59:17Z",
+            "message": "Container started",
+            "metadata": {
+                "creationTimestamp": "2026-10-15T02:59:17Z",
+                "name": "orw-lora-qwen-qwen2-5-0-5b-0-trainer.18de94a973285d70",
+                "namespace": "openrl-system",
+                "resourceVersion": "1792033157264271007",
+                "uid": "8fa654a4-608f-4e8c-804f-9d1d5c91650a"
+            },
+            "reason": "Started",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "gke-open-rl-dra-l4-trainer-2x-67d40c4c-sr2c",
+            "source": {
+                "component": "kubelet",
+                "host": "gke-open-rl-dra-l4-trainer-2x-67d40c4c-sr2c"
+            },
+            "type": "Normal"
+        }
+    ],
+    "kind": "List",
+    "metadata": {
+        "resourceVersion": ""
+    }
+}

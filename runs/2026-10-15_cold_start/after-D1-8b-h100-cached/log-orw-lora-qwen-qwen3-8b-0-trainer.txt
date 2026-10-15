@@ -1,0 +1,50 @@
+2026-10-15T05:11:54.291598722Z 
+2026-10-15T05:11:54.291658474Z ==================================================
+2026-10-15T05:11:54.291662792Z       Open-RL PyTorch Training Worker
+2026-10-15T05:11:54.291663922Z ==================================================
+2026-10-15T05:11:54.291664928Z -> Hardware : CUDA_VISIBLE_DEVICES=ALL
+2026-10-15T05:11:54.307386428Z -> Fine-Tuning Type: lora (Is LoRA: True)
+2026-10-15T05:11:54.307409055Z 
+2026-10-15T05:11:54.511196464Z Loading base model Qwen/Qwen3-8B to cuda:0...
+2026-10-15T05:11:54.620348814Z Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-10-15T05:11:55.488744741Z [prefetch] reading 5 file(s), 15.26 GiB, from nfs into the page cache with 8 threads
+2026-10-15T05:12:05.401433205Z [prefetch] done: 15.26 GiB in 9.9 s (1576 MiB/s)
+2026-10-15T05:12:07.881306965Z 
+Loading weights:   0%|          | 0/399 [00:00<?, ?it/s]
+Loading weights:   0%|          | 1/399 [00:00<00:50,  7.83it/s]
+Loading weights:   1%|          | 2/399 [00:00<00:56,  7.03it/s]
+Loading weights:   6%|▋         | 25/399 [00:00<00:04, 86.14it/s]
+Loading weights:  12%|█▏        | 49/399 [00:00<00:02, 133.99it/s]
+Loading weights:  18%|█▊        | 72/399 [00:00<00:02, 159.42it/s]
+Loading weights:  25%|██▍       | 98/399 [00:00<00:01, 188.31it/s]
+Loading weights:  31%|███       | 122/399 [00:00<00:01, 202.74it/s]
+Loading weights:  37%|███▋      | 146/399 [00:00<00:01, 206.63it/s]
+Loading weights:  43%|████▎     | 170/399 [00:01<00:01, 210.65it/s]
+Loading weights:  48%|████▊     | 193/399 [00:01<00:00, 210.66it/s]
+Loading weights:  55%|█████▍    | 219/399 [00:01<00:00, 222.92it/s]
+Loading weights:  61%|██████    | 243/399 [00:01<00:00, 226.42it/s]
+Loading weights:  67%|██████▋   | 268/399 [00:01<00:00, 227.37it/s]
+Loading weights:  73%|███████▎  | 291/399 [00:01<00:00, 221.60it/s]
+Loading weights:  79%|███████▊  | 314/399 [00:01<00:00, 217.23it/s]
+Loading weights:  85%|████████▌ | 340/399 [00:01<00:00, 227.42it/s]
+Loading weights:  91%|█████████ | 364/399 [00:01<00:00, 230.22it/s]
+Loading weights:  97%|█████████▋| 389/399 [00:02<00:00, 221.26it/s]
+Loading weights: 100%|██████████| 399/399 [00:02<00:00, 196.34it/s]
+2026-10-15T05:12:08.031266542Z Successfully loaded.
+2026-10-15T05:12:08.033054916Z [WORKER] Training requests processor started (model=Qwen/Qwen3-8B active_set=Qwen/Qwen3-8B-1).
+2026-10-15T05:12:08.038397810Z 
+2026-10-15T05:12:08.038601084Z [TRAINING REQUESTS] Popped 1 requests for model: 428ca04c-2ae6-41ed-9a4b-94f1cd79c97e: create_model:428ca04c-2ae6-41ed-9a4b-94f1cd79c97e
+2026-10-15T05:12:08.039048794Z Base model Qwen/Qwen3-8B already loaded.
+2026-10-15T05:12:08.039057476Z Creating LoRA adapter '428ca04c-2ae6-41ed-9a4b-94f1cd79c97e'...
+2026-10-15T05:12:08.588074559Z Gradient checkpointing and input require grads enabled on PEFT model.
+2026-10-15T05:12:08.593600530Z LoRA adapter '428ca04c-2ae6-41ed-9a4b-94f1cd79c97e' created and set to active.
+2026-10-15T05:12:10.443692872Z Auto-saved adapter '428ca04c-2ae6-41ed-9a4b-94f1cd79c97e' to /mnt/shared/open-rl/peft/428ca04c-2ae6-41ed-9a4b-94f1cd79c97e
+2026-10-15T05:12:13.423204553Z 
+2026-10-15T05:12:13.423245094Z [TRAINING REQUESTS] Popped 1 requests for model: 428ca04c-2ae6-41ed-9a4b-94f1cd79c97e: forward_backward:641d3bab-a7c0-4047-b609-7ca88e07767a
+2026-10-15T05:12:16.357300336Z 
+2026-10-15T05:12:16.357342369Z [TRAINING REQUESTS] Popped 1 requests for model: 428ca04c-2ae6-41ed-9a4b-94f1cd79c97e: optim_step:cb0f1a0a-f9af-4b9d-9aeb-e82e91a14640
+2026-10-15T05:12:16.366874542Z Initializing AdamW optimizer for '428ca04c-2ae6-41ed-9a4b-94f1cd79c97e' with lr=0.0001
+2026-10-15T05:12:18.292832404Z Auto-saved adapter '428ca04c-2ae6-41ed-9a4b-94f1cd79c97e' to /mnt/shared/open-rl/peft/428ca04c-2ae6-41ed-9a4b-94f1cd79c97e
+2026-10-15T05:12:18.480251748Z 
+2026-10-15T05:12:18.480289600Z [TRAINING REQUESTS] Popped 1 requests for model: 428ca04c-2ae6-41ed-9a4b-94f1cd79c97e: save_weights_for_sampler:bfeec1f4-669e-4b5b-b8c0-b876b9cae9dc
+2026-10-15T05:12:20.196452161Z Auto-saved adapter '428ca04c-2ae6-41ed-9a4b-94f1cd79c97e' to /mnt/shared/open-rl/peft/428ca04c-2ae6-41ed-9a4b-94f1cd79c97e

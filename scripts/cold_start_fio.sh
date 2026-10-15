@@ -47,13 +47,17 @@ echo "file: $FILE" | tee "$OUT/file.txt"
 kubectl -n "$NS" exec $POD -- bash -c "ls -l $FILE; grep -A30 ' /mnt/shared ' /proc/self/mountstats" > "$OUT/mountstats-before.txt"
 kubectl -n "$NS" exec $POD -- fio --name=seqread --filename="$FILE" --rw=read --bs=1M --direct=1 --ioengine=psync --numjobs=1 --runtime=60 --time_based=0 --output-format=json > "$OUT/fio-seqread-1M-direct.json"
 kubectl -n "$NS" exec $POD -- fio --name=randread --filename="$FILE" --rw=randread --bs=4k --direct=1 --ioengine=psync --numjobs=1 --runtime=30 --time_based=1 --output-format=json > "$OUT/fio-randread-4k-direct.json"
+# The trainer's observed pattern: one synchronous ~256 KiB read at a time.
+kubectl -n "$NS" exec $POD -- fio --name=seqread-256k-qd1 --filename="$FILE" --rw=read --bs=256k --direct=1 --ioengine=psync --numjobs=1 --runtime=30 --time_based=1 --output-format=json > "$OUT/fio-seqread-256k-qd1-direct.json"
+# Headroom: four readers at once, 1 MiB each, different offsets of the same file.
+kubectl -n "$NS" exec $POD -- fio --name=seqread-1M-4jobs --filename="$FILE" --rw=read --bs=1M --direct=1 --ioengine=psync --numjobs=4 --offset_increment=20% --runtime=30 --time_based=1 --group_reporting --output-format=json > "$OUT/fio-seqread-1M-4jobs-direct.json"
 kubectl -n "$NS" exec $POD -- fio --name=seqread-buffered --filename="$FILE" --rw=read --bs=1M --direct=0 --ioengine=psync --numjobs=1 --runtime=60 --time_based=0 --output-format=json > "$OUT/fio-seqread-1M-buffered.json"
 kubectl -n "$NS" exec $POD -- bash -c "grep -A30 ' /mnt/shared ' /proc/self/mountstats" > "$OUT/mountstats-after.txt"
 kubectl -n "$NS" delete pod "$POD" --wait=false >/dev/null
 python3 - "$OUT" <<'EOF'
 import json, sys, pathlib
 out = pathlib.Path(sys.argv[1])
-for name in ("fio-seqread-1M-direct", "fio-randread-4k-direct", "fio-seqread-1M-buffered"):
+for name in ("fio-seqread-1M-direct", "fio-randread-4k-direct", "fio-seqread-256k-qd1-direct", "fio-seqread-1M-4jobs-direct", "fio-seqread-1M-buffered"):
   d = json.load(open(out / f"{name}.json"))["jobs"][0]["read"]
   print(f"{name:26} {d['bw_bytes']/2**20:8.1f} MiB/s  {d['iops']:9.1f} IOPS  mean lat {d['lat_ns']['mean']/1e6:7.2f} ms  read {d['io_bytes']/2**30:.2f} GiB in {d['runtime']/1000:.1f} s")
 EOF

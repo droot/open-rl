@@ -1,0 +1,12 @@
+[cold-start]    0.000s start {'base_model': 'Qwen/Qwen2.5-0.5B', 'base_url': 'http://127.0.0.1:9003'}
+[cold-start]    0.000s create_model.start 
+[cold-start]  197.076s create_model.done {'model_id': 'c34fd223-1dd8-443e-850e-68d16b0d897e'}
+[cold-start]  199.827s forward_backward.start 
+[cold-start]  203.059s forward_backward.done 
+[cold-start]  203.961s optim_step.done 
+[cold-start]  203.962s save_weights_and_get_sampling_client.start 
+[cold-start]  204.551s save_weights_and_get_sampling_client.done 
+[cold-start]  204.551s sample.start 
+[cold-start]  493.725s sample.done {'text': ' 4'}
+[cold-start]  493.728s end 
+EXIT=0

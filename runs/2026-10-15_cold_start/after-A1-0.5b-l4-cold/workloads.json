@@ -1,0 +1,355 @@
+{
+    "apiVersion": "v1",
+    "items": [
+        {
+            "apiVersion": "openrl.io/v1alpha1",
+            "kind": "Workload",
+            "metadata": {
+                "creationTimestamp": "2026-10-15T04:51:15Z",
+                "finalizers": [
+                    "openrl.io/placement"
+                ],
+                "generation": 2,
+                "labels": {
+                    "app.kubernetes.io/managed-by": "open-rl-api-server"
+                },
+                "name": "lora-qwen-qwen2-5-0-5b-0-sampler",
+                "namespace": "openrl-system",
+                "resourceVersion": "1792040062551935001",
+                "uid": "0752a694-3e75-44aa-9348-ae1c3f3fff13"
+            },
+            "spec": {
+                "accelerator": {
+                    "memory": "4Gi",
+                    "mode": "SingleGPU"
+                },
+                "exclusive": true,
+                "modelID": "Qwen/Qwen2.5-0.5B",
+                "ownerID": "qwen-qwen2-5-0-5b",
+                "role": "sampler",
+                "template": {
+                    "metadata": {},
+                    "spec": {
+                        "containers": [
+                            {
+                                "args": [
+                                    "--model-id",
+                                    "Qwen/Qwen2.5-0.5B"
+                                ],
+                                "command": [
+                                    "uv",
+                                    "run",
+                                    "python",
+                                    "-u",
+                                    "-m",
+                                    "server.vllm_sampler"
+                                ],
+                                "env": [
+                                    {
+                                        "name": "REDIS_URL",
+                                        "value": "redis://redis-service:6379?max_connections=500"
+                                    },
+                                    {
+                                        "name": "OPEN_RL_TMP_DIR",
+                                        "value": "/mnt/shared/open-rl"
+                                    },
+                                    {
+                                        "name": "HF_HOME",
+                                        "value": "/mnt/shared/open-rl/huggingface"
+                                    },
+                                    {
+                                        "name": "BASE_MODEL",
+                                        "value": "Qwen/Qwen2.5-0.5B"
+                                    },
+                                    {
+                                        "name": "OPEN_RL_BASE_MODEL",
+                                        "value": "Qwen/Qwen2.5-0.5B"
+                                    },
+                                    {
+                                        "name": "OPEN_RL_ENABLE_FFT",
+                                        "value": "false"
+                                    },
+                                    {
+                                        "name": "OPEN_RL_FINE_TUNING_TYPE",
+                                        "value": "lora"
+                                    },
+                                    {
+                                        "name": "OPEN_RL_ACCELERATOR_MEMORY",
+                                        "value": "3589169104"
+                                    },
+                                    {
+                                        "name": "OPEN_RL_WEIGHT_SYNC_STRATEGY",
+                                        "value": "delta"
+                                    },
+                                    {
+                                        "name": "OPEN_RL_MODEL_ID",
+                                        "value": "Qwen/Qwen2.5-0.5B"
+                                    },
+                                    {
+                                        "name": "VLLM_SERVER_DEV_MODE",
+                                        "value": "1"
+                                    },
+                                    {
+                                        "name": "VLLM_ALLOW_INSECURE_SERIALIZATION",
+                                        "value": "1"
+                                    },
+                                    {
+                                        "name": "OPEN_RL_WORKLOAD_ID",
+                                        "value": "lora-qwen-qwen2-5-0-5b-0-sampler"
+                                    },
+                                    {
+                                        "name": "OPEN_RL_TIME_SLICE_JOB_ID",
+                                        "value": "lora-qwen-qwen2-5-0-5b-0-sampler"
+                                    },
+                                    {
+                                        "name": "OPEN_RL_ACCEL_TIMESLICER_PORT",
+                                        "value": "9753"
+                                    },
+                                    {
+                                        "name": "OPEN_RL_TIME_SLICING",
+                                        "value": "off"
+                                    },
+                                    {
+                                        "name": "OPEN_RL_ACCEL_TIMESLICER_HOST",
+                                        "valueFrom": {
+                                            "fieldRef": {
+                                                "fieldPath": "status.hostIP"
+                                            }
+                                        }
+                                    }
+                                ],
+                                "image": "us-central1-docker.pkg.dev/cdrollouts-sunilarora/open-rl/open-rl-server:coldstart1-dca985a",
+                                "name": "worker",
+                                "resources": {
+                                    "limits": {
+                                        "memory": "25Gi"
+                                    },
+                                    "requests": {
+                                        "memory": "25Gi"
+                                    }
+                                },
+                                "volumeMounts": [
+                                    {
+                                        "mountPath": "/mnt/shared",
+                                        "name": "shared-storage"
+                                    }
+                                ]
+                            }
+                        ],
+                        "restartPolicy": "OnFailure",
+                        "tolerations": [
+                            {
+                                "effect": "NoSchedule",
+                                "key": "nvidia.com/gpu",
+                                "operator": "Exists"
+                            }
+                        ],
+                        "volumes": [
+                            {
+                                "name": "shared-storage",
+                                "persistentVolumeClaim": {
+                                    "claimName": "open-rl-shared-pvc"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "trainingKind": "lora",
+                "workerContainerName": "worker"
+            },
+            "status": {
+                "assignmentID": "ed5c4cfd-e94a-4a7f-a2a6-62ba293d8d04",
+                "claimName": "claim-lora-qwen-qwen2-5-0-5b-0-sampler-0752a694",
+                "conditions": [
+                    {
+                        "lastTransitionTime": "2026-10-15T04:54:22Z",
+                        "message": "worker is running on claim-lora-qwen-qwen2-5-0-5b-0-sampler-0752a694",
+                        "reason": "Placed",
+                        "status": "True",
+                        "type": "Placed"
+                    }
+                ],
+                "deviceCount": 1,
+                "memoryPerDevice": "4Gi",
+                "nodeName": "gke-open-rl-dra-l4-sampler-2x-ab5fdc9d-2208",
+                "observedGeneration": 2,
+                "phase": "Running",
+                "podName": "orw-lora-qwen-qwen2-5-0-5b-0-sampler"
+            }
+        },
+        {
+            "apiVersion": "openrl.io/v1alpha1",
+            "kind": "Workload",
+            "metadata": {
+                "creationTimestamp": "2026-10-15T04:47:51Z",
+                "finalizers": [
+                    "openrl.io/placement"
+                ],
+                "generation": 2,
+                "labels": {
+                    "app.kubernetes.io/managed-by": "open-rl-api-server"
+                },
+                "name": "lora-qwen-qwen2-5-0-5b-0-trainer",
+                "namespace": "openrl-system",
+                "resourceVersion": "1792039845830863015",
+                "uid": "4bef5a35-3bf8-4444-9043-47f86b502e3e"
+            },
+            "spec": {
+                "accelerator": {
+                    "memory": "5Gi",
+                    "mode": "SingleGPU"
+                },
+                "exclusive": true,
+                "modelID": "Qwen/Qwen2.5-0.5B",
+                "ownerID": "qwen-qwen2-5-0-5b",
+                "role": "trainer",
+                "template": {
+                    "metadata": {},
+                    "spec": {
+                        "containers": [
+                            {
+                                "args": [
+                                    "--model-id",
+                                    "Qwen/Qwen2.5-0.5B",
+                                    "--active-tenant-set-id",
+                                    "Qwen/Qwen2.5-0.5B-1"
+                                ],
+                                "command": [
+                                    "uv",
+                                    "run",
+                                    "python",
+                                    "-u",
+                                    "-m",
+                                    "server.training_requests_processor"
+                                ],
+                                "env": [
+                                    {
+                                        "name": "REDIS_URL",
+                                        "value": "redis://redis-service:6379?max_connections=500"
+                                    },
+                                    {
+                                        "name": "OPEN_RL_TMP_DIR",
+                                        "value": "/mnt/shared/open-rl"
+                                    },
+                                    {
+                                        "name": "HF_HOME",
+                                        "value": "/mnt/shared/open-rl/huggingface"
+                                    },
+                                    {
+                                        "name": "BASE_MODEL",
+                                        "value": "Qwen/Qwen2.5-0.5B"
+                                    },
+                                    {
+                                        "name": "OPEN_RL_BASE_MODEL",
+                                        "value": "Qwen/Qwen2.5-0.5B"
+                                    },
+                                    {
+                                        "name": "OPEN_RL_ENABLE_FFT",
+                                        "value": "false"
+                                    },
+                                    {
+                                        "name": "OPEN_RL_FINE_TUNING_TYPE",
+                                        "value": "lora"
+                                    },
+                                    {
+                                        "name": "OPEN_RL_ACCELERATOR_MEMORY",
+                                        "value": "5282967296"
+                                    },
+                                    {
+                                        "name": "OPEN_RL_WEIGHT_SYNC_STRATEGY",
+                                        "value": "delta"
+                                    },
+                                    {
+                                        "name": "PYTORCH_CUDA_ALLOC_CONF",
+                                        "value": "expandable_segments:True"
+                                    },
+                                    {
+                                        "name": "OPEN_RL_WORKLOAD_ID",
+                                        "value": "lora-qwen-qwen2-5-0-5b-0-trainer"
+                                    },
+                                    {
+                                        "name": "OPEN_RL_TIME_SLICE_JOB_ID",
+                                        "value": "lora-qwen-qwen2-5-0-5b-0-trainer"
+                                    },
+                                    {
+                                        "name": "OPEN_RL_ACCEL_TIMESLICER_PORT",
+                                        "value": "9753"
+                                    },
+                                    {
+                                        "name": "OPEN_RL_TIME_SLICING",
+                                        "value": "off"
+                                    },
+                                    {
+                                        "name": "OPEN_RL_ACCEL_TIMESLICER_HOST",
+                                        "valueFrom": {
+                                            "fieldRef": {
+                                                "fieldPath": "status.hostIP"
+                                            }
+                                        }
+                                    }
+                                ],
+                                "image": "us-central1-docker.pkg.dev/cdrollouts-sunilarora/open-rl/open-rl-server:coldstart1-dca985a",
+                                "name": "worker",
+                                "resources": {
+                                    "limits": {
+                                        "memory": "21Gi"
+                                    },
+                                    "requests": {
+                                        "memory": "21Gi"
+                                    }
+                                },
+                                "volumeMounts": [
+                                    {
+                                        "mountPath": "/mnt/shared",
+                                        "name": "shared-storage"
+                                    }
+                                ]
+                            }
+                        ],
+                        "restartPolicy": "OnFailure",
+                        "tolerations": [
+                            {
+                                "effect": "NoSchedule",
+                                "key": "nvidia.com/gpu",
+                                "operator": "Exists"
+                            }
+                        ],
+                        "volumes": [
+                            {
+                                "name": "shared-storage",
+                                "persistentVolumeClaim": {
+                                    "claimName": "open-rl-shared-pvc"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "trainingKind": "lora",
+                "workerContainerName": "worker"
+            },
+            "status": {
+                "assignmentID": "0772feaa-10d8-4243-ac6a-4b4ee0615042",
+                "claimName": "claim-lora-qwen-qwen2-5-0-5b-0-trainer-4bef5a35",
+                "conditions": [
+                    {
+                        "lastTransitionTime": "2026-10-15T04:50:45Z",
+                        "message": "worker is running on claim-lora-qwen-qwen2-5-0-5b-0-trainer-4bef5a35",
+                        "reason": "Placed",
+                        "status": "True",
+                        "type": "Placed"
+                    }
+                ],
+                "deviceCount": 1,
+                "memoryPerDevice": "5Gi",
+                "nodeName": "gke-open-rl-dra-l4-trainer-2x-ed601d8b-lvw8",
+                "observedGeneration": 2,
+                "phase": "Running",
+                "podName": "orw-lora-qwen-qwen2-5-0-5b-0-trainer"
+            }
+        }
+    ],
+    "kind": "List",
+    "metadata": {
+        "resourceVersion": ""
+    }
+}

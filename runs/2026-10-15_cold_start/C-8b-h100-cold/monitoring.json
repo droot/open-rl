@@ -1,0 +1,725 @@
+{
+ "read_bytes_count": {
+  "timeSeries": [
+   {
+    "metric": {
+     "labels": {
+      "file_share": "vol1"
+     },
+     "type": "file.googleapis.com/nfs/server/read_bytes_count"
+    },
+    "resource": {
+     "type": "filestore_instance",
+     "labels": {
+      "project_id": "cdrollouts-sunilarora",
+      "instance_name": "pvc-b69fc9c0-172e-4423-a7bf-abc5d69a95c1",
+      "location": "us-central1-b"
+     }
+    },
+    "metricKind": "GAUGE",
+    "valueType": "DOUBLE",
+    "points": [
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:37:00Z",
+       "endTime": "2026-10-15T03:37:00Z"
+      },
+      "value": {
+       "doubleValue": 182093.65
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:36:00Z",
+       "endTime": "2026-10-15T03:36:00Z"
+      },
+      "value": {
+       "doubleValue": 12149591.816666666
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:35:00Z",
+       "endTime": "2026-10-15T03:35:00Z"
+      },
+      "value": {
+       "doubleValue": 8537925.866666667
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:34:00Z",
+       "endTime": "2026-10-15T03:34:00Z"
+      },
+      "value": {
+       "doubleValue": 124379.23333333334
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:33:00Z",
+       "endTime": "2026-10-15T03:33:00Z"
+      },
+      "value": {
+       "doubleValue": 30091.316666666666
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:32:00Z",
+       "endTime": "2026-10-15T03:32:00Z"
+      },
+      "value": {
+       "doubleValue": 7386553.766666667
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:31:00Z",
+       "endTime": "2026-10-15T03:31:00Z"
+      },
+      "value": {
+       "doubleValue": 10147539.216666667
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:30:00Z",
+       "endTime": "2026-10-15T03:30:00Z"
+      },
+      "value": {
+       "doubleValue": 11296436
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:29:00Z",
+       "endTime": "2026-10-15T03:29:00Z"
+      },
+      "value": {
+       "doubleValue": 10745438.683333334
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:28:00Z",
+       "endTime": "2026-10-15T03:28:00Z"
+      },
+      "value": {
+       "doubleValue": 10122937.4
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:27:00Z",
+       "endTime": "2026-10-15T03:27:00Z"
+      },
+      "value": {
+       "doubleValue": 10150285.75
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:26:00Z",
+       "endTime": "2026-10-15T03:26:00Z"
+      },
+      "value": {
+       "doubleValue": 10524924.6
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:25:00Z",
+       "endTime": "2026-10-15T03:25:00Z"
+      },
+      "value": {
+       "doubleValue": 9486398.516666668
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:24:00Z",
+       "endTime": "2026-10-15T03:24:00Z"
+      },
+      "value": {
+       "doubleValue": 9791893.116666667
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:23:00Z",
+       "endTime": "2026-10-15T03:23:00Z"
+      },
+      "value": {
+       "doubleValue": 11265487.683333334
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:22:00Z",
+       "endTime": "2026-10-15T03:22:00Z"
+      },
+      "value": {
+       "doubleValue": 11422701.683333334
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:21:00Z",
+       "endTime": "2026-10-15T03:21:00Z"
+      },
+      "value": {
+       "doubleValue": 11439304.383333333
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:20:00Z",
+       "endTime": "2026-10-15T03:20:00Z"
+      },
+      "value": {
+       "doubleValue": 10939175.366666667
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:19:00Z",
+       "endTime": "2026-10-15T03:19:00Z"
+      },
+      "value": {
+       "doubleValue": 9949114.616666667
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:18:00Z",
+       "endTime": "2026-10-15T03:18:00Z"
+      },
+      "value": {
+       "doubleValue": 9300795.116666667
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:17:00Z",
+       "endTime": "2026-10-15T03:17:00Z"
+      },
+      "value": {
+       "doubleValue": 1014725.45
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:16:00Z",
+       "endTime": "2026-10-15T03:16:00Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:15:00Z",
+       "endTime": "2026-10-15T03:15:00Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:14:00Z",
+       "endTime": "2026-10-15T03:14:00Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     }
+    ]
+   }
+  ],
+  "unit": "By/s"
+ },
+ "read_ops_count": {
+  "timeSeries": [
+   {
+    "metric": {
+     "labels": {
+      "file_share": "vol1"
+     },
+     "type": "file.googleapis.com/nfs/server/read_ops_count"
+    },
+    "resource": {
+     "type": "filestore_instance",
+     "labels": {
+      "instance_name": "pvc-b69fc9c0-172e-4423-a7bf-abc5d69a95c1",
+      "location": "us-central1-b",
+      "project_id": "cdrollouts-sunilarora"
+     }
+    },
+    "metricKind": "GAUGE",
+    "valueType": "DOUBLE",
+    "points": [
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:37:00Z",
+       "endTime": "2026-10-15T03:37:00Z"
+      },
+      "value": {
+       "doubleValue": 4.066666666666666
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:36:00Z",
+       "endTime": "2026-10-15T03:36:00Z"
+      },
+      "value": {
+       "doubleValue": 67.11666666666666
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:35:00Z",
+       "endTime": "2026-10-15T03:35:00Z"
+      },
+      "value": {
+       "doubleValue": 89.66666666666667
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:34:00Z",
+       "endTime": "2026-10-15T03:34:00Z"
+      },
+      "value": {
+       "doubleValue": 15.75
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:33:00Z",
+       "endTime": "2026-10-15T03:33:00Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:32:00Z",
+       "endTime": "2026-10-15T03:32:00Z"
+      },
+      "value": {
+       "doubleValue": 30.633333333333333
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:31:00Z",
+       "endTime": "2026-10-15T03:31:00Z"
+      },
+      "value": {
+       "doubleValue": 91.25
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:30:00Z",
+       "endTime": "2026-10-15T03:30:00Z"
+      },
+      "value": {
+       "doubleValue": 89.26666666666667
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:29:00Z",
+       "endTime": "2026-10-15T03:29:00Z"
+      },
+      "value": {
+       "doubleValue": 101.65
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:28:00Z",
+       "endTime": "2026-10-15T03:28:00Z"
+      },
+      "value": {
+       "doubleValue": 91.55
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:27:00Z",
+       "endTime": "2026-10-15T03:27:00Z"
+      },
+      "value": {
+       "doubleValue": 93.56666666666666
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:26:00Z",
+       "endTime": "2026-10-15T03:26:00Z"
+      },
+      "value": {
+       "doubleValue": 90.8
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:25:00Z",
+       "endTime": "2026-10-15T03:25:00Z"
+      },
+      "value": {
+       "doubleValue": 81.38333333333334
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:24:00Z",
+       "endTime": "2026-10-15T03:24:00Z"
+      },
+      "value": {
+       "doubleValue": 74.31666666666666
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:23:00Z",
+       "endTime": "2026-10-15T03:23:00Z"
+      },
+      "value": {
+       "doubleValue": 88.81666666666666
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:22:00Z",
+       "endTime": "2026-10-15T03:22:00Z"
+      },
+      "value": {
+       "doubleValue": 94.16666666666667
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:21:00Z",
+       "endTime": "2026-10-15T03:21:00Z"
+      },
+      "value": {
+       "doubleValue": 97.11666666666666
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:20:00Z",
+       "endTime": "2026-10-15T03:20:00Z"
+      },
+      "value": {
+       "doubleValue": 98.36666666666666
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:19:00Z",
+       "endTime": "2026-10-15T03:19:00Z"
+      },
+      "value": {
+       "doubleValue": 91.4
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:18:00Z",
+       "endTime": "2026-10-15T03:18:00Z"
+      },
+      "value": {
+       "doubleValue": 92.73333333333333
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:17:00Z",
+       "endTime": "2026-10-15T03:17:00Z"
+      },
+      "value": {
+       "doubleValue": 30.666666666666668
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:16:00Z",
+       "endTime": "2026-10-15T03:16:00Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:15:00Z",
+       "endTime": "2026-10-15T03:15:00Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:14:00Z",
+       "endTime": "2026-10-15T03:14:00Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     }
+    ]
+   }
+  ],
+  "unit": "{operation}/s"
+ },
+ "write_bytes_count": {
+  "timeSeries": [
+   {
+    "metric": {
+     "labels": {
+      "file_share": "vol1"
+     },
+     "type": "file.googleapis.com/nfs/server/write_bytes_count"
+    },
+    "resource": {
+     "type": "filestore_instance",
+     "labels": {
+      "location": "us-central1-b",
+      "instance_name": "pvc-b69fc9c0-172e-4423-a7bf-abc5d69a95c1",
+      "project_id": "cdrollouts-sunilarora"
+     }
+    },
+    "metricKind": "GAUGE",
+    "valueType": "DOUBLE",
+    "points": [
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:37:00Z",
+       "endTime": "2026-10-15T03:37:00Z"
+      },
+      "value": {
+       "doubleValue": 202.76666666666668
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:36:00Z",
+       "endTime": "2026-10-15T03:36:00Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:35:00Z",
+       "endTime": "2026-10-15T03:35:00Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:34:00Z",
+       "endTime": "2026-10-15T03:34:00Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:33:00Z",
+       "endTime": "2026-10-15T03:33:00Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:32:00Z",
+       "endTime": "2026-10-15T03:32:00Z"
+      },
+      "value": {
+       "doubleValue": 8745127.283333333
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:31:00Z",
+       "endTime": "2026-10-15T03:31:00Z"
+      },
+      "value": {
+       "doubleValue": 1061.5166666666667
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:30:00Z",
+       "endTime": "2026-10-15T03:30:00Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:29:00Z",
+       "endTime": "2026-10-15T03:29:00Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:28:00Z",
+       "endTime": "2026-10-15T03:28:00Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:27:00Z",
+       "endTime": "2026-10-15T03:27:00Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:26:00Z",
+       "endTime": "2026-10-15T03:26:00Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:25:00Z",
+       "endTime": "2026-10-15T03:25:00Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:24:00Z",
+       "endTime": "2026-10-15T03:24:00Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:23:00Z",
+       "endTime": "2026-10-15T03:23:00Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:22:00Z",
+       "endTime": "2026-10-15T03:22:00Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:21:00Z",
+       "endTime": "2026-10-15T03:21:00Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:20:00Z",
+       "endTime": "2026-10-15T03:20:00Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:19:00Z",
+       "endTime": "2026-10-15T03:19:00Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:18:00Z",
+       "endTime": "2026-10-15T03:18:00Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:17:00Z",
+       "endTime": "2026-10-15T03:17:00Z"
+      },
+      "value": {
+       "doubleValue": 819.2
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:16:00Z",
+       "endTime": "2026-10-15T03:16:00Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:15:00Z",
+       "endTime": "2026-10-15T03:15:00Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T03:14:00Z",
+       "endTime": "2026-10-15T03:14:00Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     }
+    ]
+   }
+  ],
+  "unit": "By/s"
+ }
+}

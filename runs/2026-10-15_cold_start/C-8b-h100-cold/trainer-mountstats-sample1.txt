@@ -1,0 +1,14 @@
+device 10.80.45.194:/vol1 mounted on /mnt/shared with fstype nfs statvers=1.1
+	opts:	rw,vers=3,rsize=1048576,wsize=1048576,namlen=255,acregmin=3,acregmax=60,acdirmin=30,acdirmax=60,hard,proto=tcp,timeo=600,retrans=2,sec=sys,mountaddr=10.80.45.194,mountvers=3,mountport=2050,mountproto=tcp,local_lock=none
+	age:	403
+	events:	58 1574 0 0 44 61 1744 0 0 12462 0 0 32 0 28 0 0 23 0 0 0 0 0 0 0 0 0 
+	bytes:	11495181 0 0 0 3265001325 0 797317 0 
+	        READ: 12459 12459 0 1943604 3266596084 221 584552 585076 0
+device /dev/md0 mounted on /etc/hosts with fstype ext4
+device /dev/md0 mounted on /dev/termination-log with fstype ext4
+device /dev/md0 mounted on /etc/hostname with fstype ext4
+device /dev/md0 mounted on /etc/resolv.conf with fstype ext4
+device shm mounted on /dev/shm with fstype tmpfs
+device /dev/nvme0n1p1 mounted on /usr/bin/nvidia-cuda-mps-control with fstype ext4
+device /dev/nvme0n1p1 mounted on /usr/bin/nvidia-cuda-mps-server with fstype ext4
+device /dev/nvme0n1p1 mounted on /usr/bin/nvidia-debugdump with fstype ext4

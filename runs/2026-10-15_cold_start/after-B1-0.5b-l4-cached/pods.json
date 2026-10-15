@@ -1,0 +1,6786 @@
+{
+ "apiVersion": "v1",
+ "items": [
+  {
+   "apiVersion": "v1",
+   "kind": "Pod",
+   "metadata": {
+    "creationTimestamp": "2026-10-12T00:12:28Z",
+    "generateName": "open-rl-accel-timeslicer-",
+    "generation": 1,
+    "labels": {
+     "app": "open-rl-accel-timeslicer",
+     "controller-revision-hash": "74748679dc",
+     "pod-template-generation": "3",
+     "topology.kubernetes.io/region": "us-central1",
+     "topology.kubernetes.io/zone": "us-central1-a"
+    },
+    "name": "open-rl-accel-timeslicer-66wh7",
+    "namespace": "openrl-system",
+    "ownerReferences": [
+     {
+      "apiVersion": "apps/v1",
+      "blockOwnerDeletion": true,
+      "controller": true,
+      "kind": "DaemonSet",
+      "name": "open-rl-accel-timeslicer",
+      "uid": "180e97bf-4415-47ff-9278-ca88d85075cf"
+     }
+    ],
+    "resourceVersion": "1791764209195247009",
+    "uid": "900198f2-ba3a-4af8-8fc8-a73c4af1c45d"
+   },
+   "spec": {
+    "affinity": {
+     "nodeAffinity": {
+      "requiredDuringSchedulingIgnoredDuringExecution": {
+       "nodeSelectorTerms": [
+        {
+         "matchFields": [
+          {
+           "key": "metadata.name",
+           "operator": "In",
+           "values": [
+            "gke-open-rl-dra-l4-trainer-2x-ed601d8b-lvw8"
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     }
+    },
+    "containers": [
+     {
+      "args": [
+       "--listen-host",
+       "0.0.0.0",
+       "--port",
+       "9753",
+       "--backend",
+       "llmd",
+       "--llmd-snapshot-endpoint",
+       "127.0.0.1:9001",
+       "--scheduling-policy",
+       "lrs"
+      ],
+      "command": [
+       "uv",
+       "run",
+       "python",
+       "-m",
+       "accel_timeslicer.serve"
+      ],
+      "image": "ghcr.io/gke-labs/open-rl/server:v0.0.6",
+      "imagePullPolicy": "IfNotPresent",
+      "name": "accel-timeslicer",
+      "ports": [
+       {
+        "containerPort": 9753,
+        "hostPort": 9753,
+        "name": "snapshot",
+        "protocol": "TCP"
+       }
+      ],
+      "resources": {
+       "limits": {
+        "memory": "1Gi"
+       },
+       "requests": {
+        "cpu": "250m",
+        "memory": "256Mi"
+       }
+      },
+      "terminationMessagePath": "/dev/termination-log",
+      "terminationMessagePolicy": "File",
+      "volumeMounts": [
+       {
+        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+        "name": "kube-api-access-cwdlp",
+        "readOnly": true
+       }
+      ]
+     }
+    ],
+    "dnsPolicy": "ClusterFirstWithHostNet",
+    "enableServiceLinks": true,
+    "hostNetwork": true,
+    "nodeName": "gke-open-rl-dra-l4-trainer-2x-ed601d8b-lvw8",
+    "nodeSelector": {
+     "nvidia.com/gpu.present": "true"
+    },
+    "preemptionPolicy": "PreemptLowerPriority",
+    "priority": 1000000,
+    "priorityClassName": "openrl-node-daemon",
+    "restartPolicy": "Always",
+    "schedulerName": "default-scheduler",
+    "securityContext": {},
+    "serviceAccount": "default",
+    "serviceAccountName": "default",
+    "terminationGracePeriodSeconds": 30,
+    "tolerations": [
+     {
+      "effect": "NoSchedule",
+      "key": "nvidia.com/gpu",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoExecute",
+      "key": "node.kubernetes.io/not-ready",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoExecute",
+      "key": "node.kubernetes.io/unreachable",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/disk-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/memory-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/pid-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/unschedulable",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/network-unavailable",
+      "operator": "Exists"
+     }
+    ],
+    "volumes": [
+     {
+      "name": "kube-api-access-cwdlp",
+      "projected": {
+       "defaultMode": 420,
+       "sources": [
+        {
+         "serviceAccountToken": {
+          "expirationSeconds": 3607,
+          "path": "token"
+         }
+        },
+        {
+         "configMap": {
+          "items": [
+           {
+            "key": "ca.crt",
+            "path": "ca.crt"
+           }
+          ],
+          "name": "kube-root-ca.crt"
+         }
+        },
+        {
+         "downwardAPI": {
+          "items": [
+           {
+            "fieldRef": {
+             "apiVersion": "v1",
+             "fieldPath": "metadata.namespace"
+            },
+            "path": "namespace"
+           }
+          ]
+         }
+        }
+       ]
+      }
+     }
+    ]
+   },
+   "status": {
+    "conditions": [
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-12T00:16:49Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "PodReadyToStartContainers"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-12T00:12:28Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "Initialized"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-12T00:16:49Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "Ready"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-12T00:16:49Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "ContainersReady"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-12T00:12:28Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "PodScheduled"
+     }
+    ],
+    "containerStatuses": [
+     {
+      "allocatedResources": {
+       "cpu": "250m",
+       "memory": "256Mi"
+      },
+      "containerID": "containerd://0e27db869c45955b79804657dc3af6c194008cafc72a64a1acbf345cf69747aa",
+      "image": "ghcr.io/gke-labs/open-rl/server:v0.0.6",
+      "imageID": "ghcr.io/gke-labs/open-rl/server@sha256:df79252c079400c0862cd172aeaa5491c260c49e60b65d56c24b360971c3aeec",
+      "lastState": {},
+      "name": "accel-timeslicer",
+      "ready": true,
+      "resources": {
+       "limits": {
+        "memory": "1Gi"
+       },
+       "requests": {
+        "cpu": "250m",
+        "memory": "256Mi"
+       }
+      },
+      "restartCount": 0,
+      "started": true,
+      "state": {
+       "running": {
+        "startedAt": "2026-10-12T00:16:49Z"
+       }
+      },
+      "user": {
+       "linux": {
+        "gid": 0,
+        "supplementalGroups": [
+         0
+        ],
+        "uid": 0
+       }
+      },
+      "volumeMounts": [
+       {
+        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+        "name": "kube-api-access-cwdlp",
+        "readOnly": true,
+        "recursiveReadOnly": "Disabled"
+       }
+      ]
+     }
+    ],
+    "hostIP": "10.128.15.196",
+    "hostIPs": [
+     {
+      "ip": "10.128.15.196"
+     }
+    ],
+    "observedGeneration": 1,
+    "phase": "Running",
+    "podIP": "10.128.15.196",
+    "podIPs": [
+     {
+      "ip": "10.128.15.196"
+     }
+    ],
+    "qosClass": "Burstable",
+    "startTime": "2026-10-12T00:12:28Z"
+   }
+  },
+  {
+   "apiVersion": "v1",
+   "kind": "Pod",
+   "metadata": {
+    "creationTimestamp": "2026-10-14T02:19:20Z",
+    "generateName": "open-rl-accel-timeslicer-",
+    "generation": 1,
+    "labels": {
+     "app": "open-rl-accel-timeslicer",
+     "controller-revision-hash": "74748679dc",
+     "pod-template-generation": "3",
+     "topology.kubernetes.io/region": "us-central1",
+     "topology.kubernetes.io/zone": "us-central1-a"
+    },
+    "name": "open-rl-accel-timeslicer-cm7x6",
+    "namespace": "openrl-system",
+    "ownerReferences": [
+     {
+      "apiVersion": "apps/v1",
+      "blockOwnerDeletion": true,
+      "controller": true,
+      "kind": "DaemonSet",
+      "name": "open-rl-accel-timeslicer",
+      "uid": "180e97bf-4415-47ff-9278-ca88d85075cf"
+     }
+    ],
+    "resourceVersion": "1791945508482719021",
+    "uid": "0cf34645-9d98-4c62-a9f5-de7d8bccf2b9"
+   },
+   "spec": {
+    "affinity": {
+     "nodeAffinity": {
+      "requiredDuringSchedulingIgnoredDuringExecution": {
+       "nodeSelectorTerms": [
+        {
+         "matchFields": [
+          {
+           "key": "metadata.name",
+           "operator": "In",
+           "values": [
+            "gke-open-rl-dra-h100-trainer-702095b4-1g3a"
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     }
+    },
+    "containers": [
+     {
+      "args": [
+       "--listen-host",
+       "0.0.0.0",
+       "--port",
+       "9753",
+       "--backend",
+       "llmd",
+       "--llmd-snapshot-endpoint",
+       "127.0.0.1:9001",
+       "--scheduling-policy",
+       "lrs"
+      ],
+      "command": [
+       "uv",
+       "run",
+       "python",
+       "-m",
+       "accel_timeslicer.serve"
+      ],
+      "image": "ghcr.io/gke-labs/open-rl/server:v0.0.6",
+      "imagePullPolicy": "IfNotPresent",
+      "name": "accel-timeslicer",
+      "ports": [
+       {
+        "containerPort": 9753,
+        "hostPort": 9753,
+        "name": "snapshot",
+        "protocol": "TCP"
+       }
+      ],
+      "resources": {
+       "limits": {
+        "memory": "1Gi"
+       },
+       "requests": {
+        "cpu": "250m",
+        "memory": "256Mi"
+       }
+      },
+      "terminationMessagePath": "/dev/termination-log",
+      "terminationMessagePolicy": "File",
+      "volumeMounts": [
+       {
+        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+        "name": "kube-api-access-zbkzx",
+        "readOnly": true
+       }
+      ]
+     }
+    ],
+    "dnsPolicy": "ClusterFirstWithHostNet",
+    "enableServiceLinks": true,
+    "hostNetwork": true,
+    "nodeName": "gke-open-rl-dra-h100-trainer-702095b4-1g3a",
+    "nodeSelector": {
+     "nvidia.com/gpu.present": "true"
+    },
+    "preemptionPolicy": "PreemptLowerPriority",
+    "priority": 1000000,
+    "priorityClassName": "openrl-node-daemon",
+    "restartPolicy": "Always",
+    "schedulerName": "default-scheduler",
+    "securityContext": {},
+    "serviceAccount": "default",
+    "serviceAccountName": "default",
+    "terminationGracePeriodSeconds": 30,
+    "tolerations": [
+     {
+      "effect": "NoSchedule",
+      "key": "nvidia.com/gpu",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoExecute",
+      "key": "node.kubernetes.io/not-ready",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoExecute",
+      "key": "node.kubernetes.io/unreachable",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/disk-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/memory-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/pid-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/unschedulable",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/network-unavailable",
+      "operator": "Exists"
+     }
+    ],
+    "volumes": [
+     {
+      "name": "kube-api-access-zbkzx",
+      "projected": {
+       "defaultMode": 420,
+       "sources": [
+        {
+         "serviceAccountToken": {
+          "expirationSeconds": 3607,
+          "path": "token"
+         }
+        },
+        {
+         "configMap": {
+          "items": [
+           {
+            "key": "ca.crt",
+            "path": "ca.crt"
+           }
+          ],
+          "name": "kube-root-ca.crt"
+         }
+        },
+        {
+         "downwardAPI": {
+          "items": [
+           {
+            "fieldRef": {
+             "apiVersion": "v1",
+             "fieldPath": "metadata.namespace"
+            },
+            "path": "namespace"
+           }
+          ]
+         }
+        }
+       ]
+      }
+     }
+    ]
+   },
+   "status": {
+    "conditions": [
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-14T02:38:28Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "PodReadyToStartContainers"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-14T02:19:20Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "Initialized"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-14T02:38:28Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "Ready"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-14T02:38:28Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "ContainersReady"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-14T02:19:20Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "PodScheduled"
+     }
+    ],
+    "containerStatuses": [
+     {
+      "allocatedResources": {
+       "cpu": "250m",
+       "memory": "256Mi"
+      },
+      "containerID": "containerd://31feb315f31721f5756689a74bde20205183ae8cc3ffe1e5cb47f96a1c485b6b",
+      "image": "ghcr.io/gke-labs/open-rl/server:v0.0.6",
+      "imageID": "ghcr.io/gke-labs/open-rl/server@sha256:df79252c079400c0862cd172aeaa5491c260c49e60b65d56c24b360971c3aeec",
+      "lastState": {},
+      "name": "accel-timeslicer",
+      "ready": true,
+      "resources": {
+       "limits": {
+        "memory": "1Gi"
+       },
+       "requests": {
+        "cpu": "250m",
+        "memory": "256Mi"
+       }
+      },
+      "restartCount": 0,
+      "started": true,
+      "state": {
+       "running": {
+        "startedAt": "2026-10-14T02:38:27Z"
+       }
+      },
+      "user": {
+       "linux": {
+        "gid": 0,
+        "supplementalGroups": [
+         0
+        ],
+        "uid": 0
+       }
+      },
+      "volumeMounts": [
+       {
+        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+        "name": "kube-api-access-zbkzx",
+        "readOnly": true,
+        "recursiveReadOnly": "Disabled"
+       }
+      ]
+     }
+    ],
+    "hostIP": "10.128.15.211",
+    "hostIPs": [
+     {
+      "ip": "10.128.15.211"
+     }
+    ],
+    "observedGeneration": 1,
+    "phase": "Running",
+    "podIP": "10.128.15.211",
+    "podIPs": [
+     {
+      "ip": "10.128.15.211"
+     }
+    ],
+    "qosClass": "Burstable",
+    "startTime": "2026-10-14T02:19:20Z"
+   }
+  },
+  {
+   "apiVersion": "v1",
+   "kind": "Pod",
+   "metadata": {
+    "creationTimestamp": "2026-10-14T02:18:38Z",
+    "generateName": "open-rl-accel-timeslicer-",
+    "generation": 1,
+    "labels": {
+     "app": "open-rl-accel-timeslicer",
+     "controller-revision-hash": "74748679dc",
+     "pod-template-generation": "3",
+     "topology.kubernetes.io/region": "us-central1",
+     "topology.kubernetes.io/zone": "us-central1-a"
+    },
+    "name": "open-rl-accel-timeslicer-kpp7j",
+    "namespace": "openrl-system",
+    "ownerReferences": [
+     {
+      "apiVersion": "apps/v1",
+      "blockOwnerDeletion": true,
+      "controller": true,
+      "kind": "DaemonSet",
+      "name": "open-rl-accel-timeslicer",
+      "uid": "180e97bf-4415-47ff-9278-ca88d85075cf"
+     }
+    ],
+    "resourceVersion": "1791945505996447017",
+    "uid": "7e2ac944-3783-438d-bb90-7a2f0c0c3b4b"
+   },
+   "spec": {
+    "affinity": {
+     "nodeAffinity": {
+      "requiredDuringSchedulingIgnoredDuringExecution": {
+       "nodeSelectorTerms": [
+        {
+         "matchFields": [
+          {
+           "key": "metadata.name",
+           "operator": "In",
+           "values": [
+            "gke-open-rl-dra-h100-trainer-702095b4-tuqu"
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     }
+    },
+    "containers": [
+     {
+      "args": [
+       "--listen-host",
+       "0.0.0.0",
+       "--port",
+       "9753",
+       "--backend",
+       "llmd",
+       "--llmd-snapshot-endpoint",
+       "127.0.0.1:9001",
+       "--scheduling-policy",
+       "lrs"
+      ],
+      "command": [
+       "uv",
+       "run",
+       "python",
+       "-m",
+       "accel_timeslicer.serve"
+      ],
+      "image": "ghcr.io/gke-labs/open-rl/server:v0.0.6",
+      "imagePullPolicy": "IfNotPresent",
+      "name": "accel-timeslicer",
+      "ports": [
+       {
+        "containerPort": 9753,
+        "hostPort": 9753,
+        "name": "snapshot",
+        "protocol": "TCP"
+       }
+      ],
+      "resources": {
+       "limits": {
+        "memory": "1Gi"
+       },
+       "requests": {
+        "cpu": "250m",
+        "memory": "256Mi"
+       }
+      },
+      "terminationMessagePath": "/dev/termination-log",
+      "terminationMessagePolicy": "File",
+      "volumeMounts": [
+       {
+        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+        "name": "kube-api-access-v9zg5",
+        "readOnly": true
+       }
+      ]
+     }
+    ],
+    "dnsPolicy": "ClusterFirstWithHostNet",
+    "enableServiceLinks": true,
+    "hostNetwork": true,
+    "nodeName": "gke-open-rl-dra-h100-trainer-702095b4-tuqu",
+    "nodeSelector": {
+     "nvidia.com/gpu.present": "true"
+    },
+    "preemptionPolicy": "PreemptLowerPriority",
+    "priority": 1000000,
+    "priorityClassName": "openrl-node-daemon",
+    "restartPolicy": "Always",
+    "schedulerName": "default-scheduler",
+    "securityContext": {},
+    "serviceAccount": "default",
+    "serviceAccountName": "default",
+    "terminationGracePeriodSeconds": 30,
+    "tolerations": [
+     {
+      "effect": "NoSchedule",
+      "key": "nvidia.com/gpu",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoExecute",
+      "key": "node.kubernetes.io/not-ready",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoExecute",
+      "key": "node.kubernetes.io/unreachable",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/disk-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/memory-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/pid-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/unschedulable",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/network-unavailable",
+      "operator": "Exists"
+     }
+    ],
+    "volumes": [
+     {
+      "name": "kube-api-access-v9zg5",
+      "projected": {
+       "defaultMode": 420,
+       "sources": [
+        {
+         "serviceAccountToken": {
+          "expirationSeconds": 3607,
+          "path": "token"
+         }
+        },
+        {
+         "configMap": {
+          "items": [
+           {
+            "key": "ca.crt",
+            "path": "ca.crt"
+           }
+          ],
+          "name": "kube-root-ca.crt"
+         }
+        },
+        {
+         "downwardAPI": {
+          "items": [
+           {
+            "fieldRef": {
+             "apiVersion": "v1",
+             "fieldPath": "metadata.namespace"
+            },
+            "path": "namespace"
+           }
+          ]
+         }
+        }
+       ]
+      }
+     }
+    ]
+   },
+   "status": {
+    "conditions": [
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-14T02:38:25Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "PodReadyToStartContainers"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-14T02:18:38Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "Initialized"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-14T02:38:25Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "Ready"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-14T02:38:25Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "ContainersReady"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-14T02:18:38Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "PodScheduled"
+     }
+    ],
+    "containerStatuses": [
+     {
+      "allocatedResources": {
+       "cpu": "250m",
+       "memory": "256Mi"
+      },
+      "containerID": "containerd://708b908acebdc3de3978320d8be5f5db2297ead93495f7ac5ac1ea5797ac0e35",
+      "image": "ghcr.io/gke-labs/open-rl/server:v0.0.6",
+      "imageID": "ghcr.io/gke-labs/open-rl/server@sha256:df79252c079400c0862cd172aeaa5491c260c49e60b65d56c24b360971c3aeec",
+      "lastState": {},
+      "name": "accel-timeslicer",
+      "ready": true,
+      "resources": {
+       "limits": {
+        "memory": "1Gi"
+       },
+       "requests": {
+        "cpu": "250m",
+        "memory": "256Mi"
+       }
+      },
+      "restartCount": 0,
+      "started": true,
+      "state": {
+       "running": {
+        "startedAt": "2026-10-14T02:38:25Z"
+       }
+      },
+      "user": {
+       "linux": {
+        "gid": 0,
+        "supplementalGroups": [
+         0
+        ],
+        "uid": 0
+       }
+      },
+      "volumeMounts": [
+       {
+        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+        "name": "kube-api-access-v9zg5",
+        "readOnly": true,
+        "recursiveReadOnly": "Disabled"
+       }
+      ]
+     }
+    ],
+    "hostIP": "10.128.15.216",
+    "hostIPs": [
+     {
+      "ip": "10.128.15.216"
+     }
+    ],
+    "observedGeneration": 1,
+    "phase": "Running",
+    "podIP": "10.128.15.216",
+    "podIPs": [
+     {
+      "ip": "10.128.15.216"
+     }
+    ],
+    "qosClass": "Burstable",
+    "startTime": "2026-10-14T02:18:38Z"
+   }
+  },
+  {
+   "apiVersion": "v1",
+   "kind": "Pod",
+   "metadata": {
+    "creationTimestamp": "2026-10-11T23:36:04Z",
+    "generateName": "open-rl-accel-timeslicer-",
+    "generation": 1,
+    "labels": {
+     "app": "open-rl-accel-timeslicer",
+     "controller-revision-hash": "74748679dc",
+     "pod-template-generation": "3",
+     "topology.kubernetes.io/region": "us-central1",
+     "topology.kubernetes.io/zone": "us-central1-b"
+    },
+    "name": "open-rl-accel-timeslicer-rz7fw",
+    "namespace": "openrl-system",
+    "ownerReferences": [
+     {
+      "apiVersion": "apps/v1",
+      "blockOwnerDeletion": true,
+      "controller": true,
+      "kind": "DaemonSet",
+      "name": "open-rl-accel-timeslicer",
+      "uid": "180e97bf-4415-47ff-9278-ca88d85075cf"
+     }
+    ],
+    "resourceVersion": "1791762451790735011",
+    "uid": "84c03e1f-e4b6-41f9-9f21-01f8929470c2"
+   },
+   "spec": {
+    "affinity": {
+     "nodeAffinity": {
+      "requiredDuringSchedulingIgnoredDuringExecution": {
+       "nodeSelectorTerms": [
+        {
+         "matchFields": [
+          {
+           "key": "metadata.name",
+           "operator": "In",
+           "values": [
+            "gke-open-rl-dra-l4-sampler-2x-1ad5171e-bs96"
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     }
+    },
+    "containers": [
+     {
+      "args": [
+       "--listen-host",
+       "0.0.0.0",
+       "--port",
+       "9753",
+       "--backend",
+       "llmd",
+       "--llmd-snapshot-endpoint",
+       "127.0.0.1:9001",
+       "--scheduling-policy",
+       "lrs"
+      ],
+      "command": [
+       "uv",
+       "run",
+       "python",
+       "-m",
+       "accel_timeslicer.serve"
+      ],
+      "image": "ghcr.io/gke-labs/open-rl/server:v0.0.6",
+      "imagePullPolicy": "IfNotPresent",
+      "name": "accel-timeslicer",
+      "ports": [
+       {
+        "containerPort": 9753,
+        "hostPort": 9753,
+        "name": "snapshot",
+        "protocol": "TCP"
+       }
+      ],
+      "resources": {
+       "limits": {
+        "memory": "1Gi"
+       },
+       "requests": {
+        "cpu": "250m",
+        "memory": "256Mi"
+       }
+      },
+      "terminationMessagePath": "/dev/termination-log",
+      "terminationMessagePolicy": "File",
+      "volumeMounts": [
+       {
+        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+        "name": "kube-api-access-mrg4h",
+        "readOnly": true
+       }
+      ]
+     }
+    ],
+    "dnsPolicy": "ClusterFirstWithHostNet",
+    "enableServiceLinks": true,
+    "hostNetwork": true,
+    "nodeName": "gke-open-rl-dra-l4-sampler-2x-1ad5171e-bs96",
+    "nodeSelector": {
+     "nvidia.com/gpu.present": "true"
+    },
+    "preemptionPolicy": "PreemptLowerPriority",
+    "priority": 1000000,
+    "priorityClassName": "openrl-node-daemon",
+    "restartPolicy": "Always",
+    "schedulerName": "default-scheduler",
+    "securityContext": {},
+    "serviceAccount": "default",
+    "serviceAccountName": "default",
+    "terminationGracePeriodSeconds": 30,
+    "tolerations": [
+     {
+      "effect": "NoSchedule",
+      "key": "nvidia.com/gpu",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoExecute",
+      "key": "node.kubernetes.io/not-ready",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoExecute",
+      "key": "node.kubernetes.io/unreachable",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/disk-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/memory-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/pid-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/unschedulable",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/network-unavailable",
+      "operator": "Exists"
+     }
+    ],
+    "volumes": [
+     {
+      "name": "kube-api-access-mrg4h",
+      "projected": {
+       "defaultMode": 420,
+       "sources": [
+        {
+         "serviceAccountToken": {
+          "expirationSeconds": 3607,
+          "path": "token"
+         }
+        },
+        {
+         "configMap": {
+          "items": [
+           {
+            "key": "ca.crt",
+            "path": "ca.crt"
+           }
+          ],
+          "name": "kube-root-ca.crt"
+         }
+        },
+        {
+         "downwardAPI": {
+          "items": [
+           {
+            "fieldRef": {
+             "apiVersion": "v1",
+             "fieldPath": "metadata.namespace"
+            },
+            "path": "namespace"
+           }
+          ]
+         }
+        }
+       ]
+      }
+     }
+    ]
+   },
+   "status": {
+    "conditions": [
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-11T23:47:31Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "PodReadyToStartContainers"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-11T23:36:04Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "Initialized"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-11T23:47:31Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "Ready"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-11T23:47:31Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "ContainersReady"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-11T23:36:04Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "PodScheduled"
+     }
+    ],
+    "containerStatuses": [
+     {
+      "allocatedResources": {
+       "cpu": "250m",
+       "memory": "256Mi"
+      },
+      "containerID": "containerd://92ff7214a9423f362487d1815eb7310817b33217c03df6a6a0090f081ef33d4b",
+      "image": "ghcr.io/gke-labs/open-rl/server:v0.0.6",
+      "imageID": "ghcr.io/gke-labs/open-rl/server@sha256:df79252c079400c0862cd172aeaa5491c260c49e60b65d56c24b360971c3aeec",
+      "lastState": {},
+      "name": "accel-timeslicer",
+      "ready": true,
+      "resources": {
+       "limits": {
+        "memory": "1Gi"
+       },
+       "requests": {
+        "cpu": "250m",
+        "memory": "256Mi"
+       }
+      },
+      "restartCount": 0,
+      "started": true,
+      "state": {
+       "running": {
+        "startedAt": "2026-10-11T23:47:31Z"
+       }
+      },
+      "user": {
+       "linux": {
+        "gid": 0,
+        "supplementalGroups": [
+         0
+        ],
+        "uid": 0
+       }
+      },
+      "volumeMounts": [
+       {
+        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+        "name": "kube-api-access-mrg4h",
+        "readOnly": true,
+        "recursiveReadOnly": "Disabled"
+       }
+      ]
+     }
+    ],
+    "hostIP": "10.128.15.194",
+    "hostIPs": [
+     {
+      "ip": "10.128.15.194"
+     }
+    ],
+    "observedGeneration": 1,
+    "phase": "Running",
+    "podIP": "10.128.15.194",
+    "podIPs": [
+     {
+      "ip": "10.128.15.194"
+     }
+    ],
+    "qosClass": "Burstable",
+    "startTime": "2026-10-11T23:36:04Z"
+   }
+  },
+  {
+   "apiVersion": "v1",
+   "kind": "Pod",
+   "metadata": {
+    "creationTimestamp": "2026-10-11T23:47:32Z",
+    "generateName": "open-rl-accel-timeslicer-",
+    "generation": 1,
+    "labels": {
+     "app": "open-rl-accel-timeslicer",
+     "controller-revision-hash": "74748679dc",
+     "pod-template-generation": "3",
+     "topology.kubernetes.io/region": "us-central1",
+     "topology.kubernetes.io/zone": "us-central1-a"
+    },
+    "name": "open-rl-accel-timeslicer-t99wd",
+    "namespace": "openrl-system",
+    "ownerReferences": [
+     {
+      "apiVersion": "apps/v1",
+      "blockOwnerDeletion": true,
+      "controller": true,
+      "kind": "DaemonSet",
+      "name": "open-rl-accel-timeslicer",
+      "uid": "180e97bf-4415-47ff-9278-ca88d85075cf"
+     }
+    ],
+    "resourceVersion": "1791762969945423016",
+    "uid": "24ddf14d-a173-4360-b179-064929dbff94"
+   },
+   "spec": {
+    "affinity": {
+     "nodeAffinity": {
+      "requiredDuringSchedulingIgnoredDuringExecution": {
+       "nodeSelectorTerms": [
+        {
+         "matchFields": [
+          {
+           "key": "metadata.name",
+           "operator": "In",
+           "values": [
+            "gke-open-rl-dra-l4-sampler-2x-ab5fdc9d-2208"
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     }
+    },
+    "containers": [
+     {
+      "args": [
+       "--listen-host",
+       "0.0.0.0",
+       "--port",
+       "9753",
+       "--backend",
+       "llmd",
+       "--llmd-snapshot-endpoint",
+       "127.0.0.1:9001",
+       "--scheduling-policy",
+       "lrs"
+      ],
+      "command": [
+       "uv",
+       "run",
+       "python",
+       "-m",
+       "accel_timeslicer.serve"
+      ],
+      "image": "ghcr.io/gke-labs/open-rl/server:v0.0.6",
+      "imagePullPolicy": "IfNotPresent",
+      "name": "accel-timeslicer",
+      "ports": [
+       {
+        "containerPort": 9753,
+        "hostPort": 9753,
+        "name": "snapshot",
+        "protocol": "TCP"
+       }
+      ],
+      "resources": {
+       "limits": {
+        "memory": "1Gi"
+       },
+       "requests": {
+        "cpu": "250m",
+        "memory": "256Mi"
+       }
+      },
+      "terminationMessagePath": "/dev/termination-log",
+      "terminationMessagePolicy": "File",
+      "volumeMounts": [
+       {
+        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+        "name": "kube-api-access-j7fh2",
+        "readOnly": true
+       }
+      ]
+     }
+    ],
+    "dnsPolicy": "ClusterFirstWithHostNet",
+    "enableServiceLinks": true,
+    "hostNetwork": true,
+    "nodeName": "gke-open-rl-dra-l4-sampler-2x-ab5fdc9d-2208",
+    "nodeSelector": {
+     "nvidia.com/gpu.present": "true"
+    },
+    "preemptionPolicy": "PreemptLowerPriority",
+    "priority": 1000000,
+    "priorityClassName": "openrl-node-daemon",
+    "restartPolicy": "Always",
+    "schedulerName": "default-scheduler",
+    "securityContext": {},
+    "serviceAccount": "default",
+    "serviceAccountName": "default",
+    "terminationGracePeriodSeconds": 30,
+    "tolerations": [
+     {
+      "effect": "NoSchedule",
+      "key": "nvidia.com/gpu",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoExecute",
+      "key": "node.kubernetes.io/not-ready",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoExecute",
+      "key": "node.kubernetes.io/unreachable",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/disk-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/memory-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/pid-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/unschedulable",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/network-unavailable",
+      "operator": "Exists"
+     }
+    ],
+    "volumes": [
+     {
+      "name": "kube-api-access-j7fh2",
+      "projected": {
+       "defaultMode": 420,
+       "sources": [
+        {
+         "serviceAccountToken": {
+          "expirationSeconds": 3607,
+          "path": "token"
+         }
+        },
+        {
+         "configMap": {
+          "items": [
+           {
+            "key": "ca.crt",
+            "path": "ca.crt"
+           }
+          ],
+          "name": "kube-root-ca.crt"
+         }
+        },
+        {
+         "downwardAPI": {
+          "items": [
+           {
+            "fieldRef": {
+             "apiVersion": "v1",
+             "fieldPath": "metadata.namespace"
+            },
+            "path": "namespace"
+           }
+          ]
+         }
+        }
+       ]
+      }
+     }
+    ]
+   },
+   "status": {
+    "conditions": [
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-11T23:56:09Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "PodReadyToStartContainers"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-11T23:47:32Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "Initialized"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-11T23:56:09Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "Ready"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-11T23:56:09Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "ContainersReady"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-11T23:47:32Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "PodScheduled"
+     }
+    ],
+    "containerStatuses": [
+     {
+      "allocatedResources": {
+       "cpu": "250m",
+       "memory": "256Mi"
+      },
+      "containerID": "containerd://a493064396312e2617fc7ce361f853fc3a990b70cd7bd197a7439105d635c79b",
+      "image": "ghcr.io/gke-labs/open-rl/server:v0.0.6",
+      "imageID": "ghcr.io/gke-labs/open-rl/server@sha256:df79252c079400c0862cd172aeaa5491c260c49e60b65d56c24b360971c3aeec",
+      "lastState": {},
+      "name": "accel-timeslicer",
+      "ready": true,
+      "resources": {
+       "limits": {
+        "memory": "1Gi"
+       },
+       "requests": {
+        "cpu": "250m",
+        "memory": "256Mi"
+       }
+      },
+      "restartCount": 0,
+      "started": true,
+      "state": {
+       "running": {
+        "startedAt": "2026-10-11T23:56:09Z"
+       }
+      },
+      "user": {
+       "linux": {
+        "gid": 0,
+        "supplementalGroups": [
+         0
+        ],
+        "uid": 0
+       }
+      },
+      "volumeMounts": [
+       {
+        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+        "name": "kube-api-access-j7fh2",
+        "readOnly": true,
+        "recursiveReadOnly": "Disabled"
+       }
+      ]
+     }
+    ],
+    "hostIP": "10.128.15.202",
+    "hostIPs": [
+     {
+      "ip": "10.128.15.202"
+     }
+    ],
+    "observedGeneration": 1,
+    "phase": "Running",
+    "podIP": "10.128.15.202",
+    "podIPs": [
+     {
+      "ip": "10.128.15.202"
+     }
+    ],
+    "qosClass": "Burstable",
+    "startTime": "2026-10-11T23:47:32Z"
+   }
+  },
+  {
+   "apiVersion": "v1",
+   "kind": "Pod",
+   "metadata": {
+    "creationTimestamp": "2026-10-12T00:03:54Z",
+    "generateName": "open-rl-accel-timeslicer-",
+    "generation": 1,
+    "labels": {
+     "app": "open-rl-accel-timeslicer",
+     "controller-revision-hash": "74748679dc",
+     "pod-template-generation": "3",
+     "topology.kubernetes.io/region": "us-central1",
+     "topology.kubernetes.io/zone": "us-central1-b"
+    },
+    "name": "open-rl-accel-timeslicer-vlvfv",
+    "namespace": "openrl-system",
+    "ownerReferences": [
+     {
+      "apiVersion": "apps/v1",
+      "blockOwnerDeletion": true,
+      "controller": true,
+      "kind": "DaemonSet",
+      "name": "open-rl-accel-timeslicer",
+      "uid": "180e97bf-4415-47ff-9278-ca88d85075cf"
+     }
+    ],
+    "resourceVersion": "1791763946154111000",
+    "uid": "bab0f25b-d268-4e89-91f5-d882fec173ed"
+   },
+   "spec": {
+    "affinity": {
+     "nodeAffinity": {
+      "requiredDuringSchedulingIgnoredDuringExecution": {
+       "nodeSelectorTerms": [
+        {
+         "matchFields": [
+          {
+           "key": "metadata.name",
+           "operator": "In",
+           "values": [
+            "gke-open-rl-dra-l4-trainer-2x-67d40c4c-sr2c"
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     }
+    },
+    "containers": [
+     {
+      "args": [
+       "--listen-host",
+       "0.0.0.0",
+       "--port",
+       "9753",
+       "--backend",
+       "llmd",
+       "--llmd-snapshot-endpoint",
+       "127.0.0.1:9001",
+       "--scheduling-policy",
+       "lrs"
+      ],
+      "command": [
+       "uv",
+       "run",
+       "python",
+       "-m",
+       "accel_timeslicer.serve"
+      ],
+      "image": "ghcr.io/gke-labs/open-rl/server:v0.0.6",
+      "imagePullPolicy": "IfNotPresent",
+      "name": "accel-timeslicer",
+      "ports": [
+       {
+        "containerPort": 9753,
+        "hostPort": 9753,
+        "name": "snapshot",
+        "protocol": "TCP"
+       }
+      ],
+      "resources": {
+       "limits": {
+        "memory": "1Gi"
+       },
+       "requests": {
+        "cpu": "250m",
+        "memory": "256Mi"
+       }
+      },
+      "terminationMessagePath": "/dev/termination-log",
+      "terminationMessagePolicy": "File",
+      "volumeMounts": [
+       {
+        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+        "name": "kube-api-access-9c6fw",
+        "readOnly": true
+       }
+      ]
+     }
+    ],
+    "dnsPolicy": "ClusterFirstWithHostNet",
+    "enableServiceLinks": true,
+    "hostNetwork": true,
+    "nodeName": "gke-open-rl-dra-l4-trainer-2x-67d40c4c-sr2c",
+    "nodeSelector": {
+     "nvidia.com/gpu.present": "true"
+    },
+    "preemptionPolicy": "PreemptLowerPriority",
+    "priority": 1000000,
+    "priorityClassName": "openrl-node-daemon",
+    "restartPolicy": "Always",
+    "schedulerName": "default-scheduler",
+    "securityContext": {},
+    "serviceAccount": "default",
+    "serviceAccountName": "default",
+    "terminationGracePeriodSeconds": 30,
+    "tolerations": [
+     {
+      "effect": "NoSchedule",
+      "key": "nvidia.com/gpu",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoExecute",
+      "key": "node.kubernetes.io/not-ready",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoExecute",
+      "key": "node.kubernetes.io/unreachable",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/disk-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/memory-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/pid-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/unschedulable",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/network-unavailable",
+      "operator": "Exists"
+     }
+    ],
+    "volumes": [
+     {
+      "name": "kube-api-access-9c6fw",
+      "projected": {
+       "defaultMode": 420,
+       "sources": [
+        {
+         "serviceAccountToken": {
+          "expirationSeconds": 3607,
+          "path": "token"
+         }
+        },
+        {
+         "configMap": {
+          "items": [
+           {
+            "key": "ca.crt",
+            "path": "ca.crt"
+           }
+          ],
+          "name": "kube-root-ca.crt"
+         }
+        },
+        {
+         "downwardAPI": {
+          "items": [
+           {
+            "fieldRef": {
+             "apiVersion": "v1",
+             "fieldPath": "metadata.namespace"
+            },
+            "path": "namespace"
+           }
+          ]
+         }
+        }
+       ]
+      }
+     }
+    ]
+   },
+   "status": {
+    "conditions": [
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-12T00:12:26Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "PodReadyToStartContainers"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-12T00:03:54Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "Initialized"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-12T00:12:26Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "Ready"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-12T00:12:26Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "ContainersReady"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-12T00:03:54Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "PodScheduled"
+     }
+    ],
+    "containerStatuses": [
+     {
+      "allocatedResources": {
+       "cpu": "250m",
+       "memory": "256Mi"
+      },
+      "containerID": "containerd://0be5a113e58f1d262baa2e7714bc811f8a2b7adf0303a19e5c569564dab51cf1",
+      "image": "ghcr.io/gke-labs/open-rl/server:v0.0.6",
+      "imageID": "ghcr.io/gke-labs/open-rl/server@sha256:df79252c079400c0862cd172aeaa5491c260c49e60b65d56c24b360971c3aeec",
+      "lastState": {},
+      "name": "accel-timeslicer",
+      "ready": true,
+      "resources": {
+       "limits": {
+        "memory": "1Gi"
+       },
+       "requests": {
+        "cpu": "250m",
+        "memory": "256Mi"
+       }
+      },
+      "restartCount": 0,
+      "started": true,
+      "state": {
+       "running": {
+        "startedAt": "2026-10-12T00:12:25Z"
+       }
+      },
+      "user": {
+       "linux": {
+        "gid": 0,
+        "supplementalGroups": [
+         0
+        ],
+        "uid": 0
+       }
+      },
+      "volumeMounts": [
+       {
+        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+        "name": "kube-api-access-9c6fw",
+        "readOnly": true,
+        "recursiveReadOnly": "Disabled"
+       }
+      ]
+     }
+    ],
+    "hostIP": "10.128.15.201",
+    "hostIPs": [
+     {
+      "ip": "10.128.15.201"
+     }
+    ],
+    "observedGeneration": 1,
+    "phase": "Running",
+    "podIP": "10.128.15.201",
+    "podIPs": [
+     {
+      "ip": "10.128.15.201"
+     }
+    ],
+    "qosClass": "Burstable",
+    "startTime": "2026-10-12T00:03:54Z"
+   }
+  },
+  {
+   "apiVersion": "v1",
+   "kind": "Pod",
+   "metadata": {
+    "creationTimestamp": "2026-10-12T00:16:49Z",
+    "generateName": "open-rl-accel-timeslicer-",
+    "generation": 1,
+    "labels": {
+     "app": "open-rl-accel-timeslicer",
+     "controller-revision-hash": "74748679dc",
+     "pod-template-generation": "3",
+     "topology.kubernetes.io/region": "us-central1",
+     "topology.kubernetes.io/zone": "us-central1-a"
+    },
+    "name": "open-rl-accel-timeslicer-vvwn6",
+    "namespace": "openrl-system",
+    "ownerReferences": [
+     {
+      "apiVersion": "apps/v1",
+      "blockOwnerDeletion": true,
+      "controller": true,
+      "kind": "DaemonSet",
+      "name": "open-rl-accel-timeslicer",
+      "uid": "180e97bf-4415-47ff-9278-ca88d85075cf"
+     }
+    ],
+    "resourceVersion": "1791764758862255017",
+    "uid": "d62cd1a5-7f1c-4121-acce-1153d3b03e60"
+   },
+   "spec": {
+    "affinity": {
+     "nodeAffinity": {
+      "requiredDuringSchedulingIgnoredDuringExecution": {
+       "nodeSelectorTerms": [
+        {
+         "matchFields": [
+          {
+           "key": "metadata.name",
+           "operator": "In",
+           "values": [
+            "gke-open-rl-dra-h100-sampler-a721f127-0853"
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     }
+    },
+    "containers": [
+     {
+      "args": [
+       "--listen-host",
+       "0.0.0.0",
+       "--port",
+       "9753",
+       "--backend",
+       "llmd",
+       "--llmd-snapshot-endpoint",
+       "127.0.0.1:9001",
+       "--scheduling-policy",
+       "lrs"
+      ],
+      "command": [
+       "uv",
+       "run",
+       "python",
+       "-m",
+       "accel_timeslicer.serve"
+      ],
+      "image": "ghcr.io/gke-labs/open-rl/server:v0.0.6",
+      "imagePullPolicy": "IfNotPresent",
+      "name": "accel-timeslicer",
+      "ports": [
+       {
+        "containerPort": 9753,
+        "hostPort": 9753,
+        "name": "snapshot",
+        "protocol": "TCP"
+       }
+      ],
+      "resources": {
+       "limits": {
+        "memory": "1Gi"
+       },
+       "requests": {
+        "cpu": "250m",
+        "memory": "256Mi"
+       }
+      },
+      "terminationMessagePath": "/dev/termination-log",
+      "terminationMessagePolicy": "File",
+      "volumeMounts": [
+       {
+        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+        "name": "kube-api-access-rfs22",
+        "readOnly": true
+       }
+      ]
+     }
+    ],
+    "dnsPolicy": "ClusterFirstWithHostNet",
+    "enableServiceLinks": true,
+    "hostNetwork": true,
+    "nodeName": "gke-open-rl-dra-h100-sampler-a721f127-0853",
+    "nodeSelector": {
+     "nvidia.com/gpu.present": "true"
+    },
+    "preemptionPolicy": "PreemptLowerPriority",
+    "priority": 1000000,
+    "priorityClassName": "openrl-node-daemon",
+    "restartPolicy": "Always",
+    "schedulerName": "default-scheduler",
+    "securityContext": {},
+    "serviceAccount": "default",
+    "serviceAccountName": "default",
+    "terminationGracePeriodSeconds": 30,
+    "tolerations": [
+     {
+      "effect": "NoSchedule",
+      "key": "nvidia.com/gpu",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoExecute",
+      "key": "node.kubernetes.io/not-ready",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoExecute",
+      "key": "node.kubernetes.io/unreachable",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/disk-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/memory-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/pid-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/unschedulable",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/network-unavailable",
+      "operator": "Exists"
+     }
+    ],
+    "volumes": [
+     {
+      "name": "kube-api-access-rfs22",
+      "projected": {
+       "defaultMode": 420,
+       "sources": [
+        {
+         "serviceAccountToken": {
+          "expirationSeconds": 3607,
+          "path": "token"
+         }
+        },
+        {
+         "configMap": {
+          "items": [
+           {
+            "key": "ca.crt",
+            "path": "ca.crt"
+           }
+          ],
+          "name": "kube-root-ca.crt"
+         }
+        },
+        {
+         "downwardAPI": {
+          "items": [
+           {
+            "fieldRef": {
+             "apiVersion": "v1",
+             "fieldPath": "metadata.namespace"
+            },
+            "path": "namespace"
+           }
+          ]
+         }
+        }
+       ]
+      }
+     }
+    ]
+   },
+   "status": {
+    "conditions": [
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-12T00:25:58Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "PodReadyToStartContainers"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-12T00:16:49Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "Initialized"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-12T00:25:58Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "Ready"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-12T00:25:58Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "ContainersReady"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-12T00:16:49Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "PodScheduled"
+     }
+    ],
+    "containerStatuses": [
+     {
+      "allocatedResources": {
+       "cpu": "250m",
+       "memory": "256Mi"
+      },
+      "containerID": "containerd://d04cf3bd448504809a4a4b454e85c3509d35ee36478560d7cbbe1a555bbaa7a4",
+      "image": "ghcr.io/gke-labs/open-rl/server:v0.0.6",
+      "imageID": "ghcr.io/gke-labs/open-rl/server@sha256:df79252c079400c0862cd172aeaa5491c260c49e60b65d56c24b360971c3aeec",
+      "lastState": {},
+      "name": "accel-timeslicer",
+      "ready": true,
+      "resources": {
+       "limits": {
+        "memory": "1Gi"
+       },
+       "requests": {
+        "cpu": "250m",
+        "memory": "256Mi"
+       }
+      },
+      "restartCount": 0,
+      "started": true,
+      "state": {
+       "running": {
+        "startedAt": "2026-10-12T00:25:58Z"
+       }
+      },
+      "user": {
+       "linux": {
+        "gid": 0,
+        "supplementalGroups": [
+         0
+        ],
+        "uid": 0
+       }
+      },
+      "volumeMounts": [
+       {
+        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+        "name": "kube-api-access-rfs22",
+        "readOnly": true,
+        "recursiveReadOnly": "Disabled"
+       }
+      ]
+     }
+    ],
+    "hostIP": "10.128.15.197",
+    "hostIPs": [
+     {
+      "ip": "10.128.15.197"
+     }
+    ],
+    "observedGeneration": 1,
+    "phase": "Running",
+    "podIP": "10.128.15.197",
+    "podIPs": [
+     {
+      "ip": "10.128.15.197"
+     }
+    ],
+    "qosClass": "Burstable",
+    "startTime": "2026-10-12T00:16:49Z"
+   }
+  },
+  {
+   "apiVersion": "v1",
+   "kind": "Pod",
+   "metadata": {
+    "creationTimestamp": "2026-10-11T23:26:48Z",
+    "generateName": "open-rl-accel-timeslicer-",
+    "generation": 1,
+    "labels": {
+     "app": "open-rl-accel-timeslicer",
+     "controller-revision-hash": "74748679dc",
+     "pod-template-generation": "3",
+     "topology.kubernetes.io/region": "us-central1",
+     "topology.kubernetes.io/zone": "us-central1-a"
+    },
+    "name": "open-rl-accel-timeslicer-xqx9j",
+    "namespace": "openrl-system",
+    "ownerReferences": [
+     {
+      "apiVersion": "apps/v1",
+      "blockOwnerDeletion": true,
+      "controller": true,
+      "kind": "DaemonSet",
+      "name": "open-rl-accel-timeslicer",
+      "uid": "180e97bf-4415-47ff-9278-ca88d85075cf"
+     }
+    ],
+    "resourceVersion": "1791761764168719003",
+    "uid": "1b4d7707-110e-46db-84de-c07d21826f92"
+   },
+   "spec": {
+    "affinity": {
+     "nodeAffinity": {
+      "requiredDuringSchedulingIgnoredDuringExecution": {
+       "nodeSelectorTerms": [
+        {
+         "matchFields": [
+          {
+           "key": "metadata.name",
+           "operator": "In",
+           "values": [
+            "gke-open-rl-dra-h100-sampler-a721f127-ed3t"
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     }
+    },
+    "containers": [
+     {
+      "args": [
+       "--listen-host",
+       "0.0.0.0",
+       "--port",
+       "9753",
+       "--backend",
+       "llmd",
+       "--llmd-snapshot-endpoint",
+       "127.0.0.1:9001",
+       "--scheduling-policy",
+       "lrs"
+      ],
+      "command": [
+       "uv",
+       "run",
+       "python",
+       "-m",
+       "accel_timeslicer.serve"
+      ],
+      "image": "ghcr.io/gke-labs/open-rl/server:v0.0.6",
+      "imagePullPolicy": "IfNotPresent",
+      "name": "accel-timeslicer",
+      "ports": [
+       {
+        "containerPort": 9753,
+        "hostPort": 9753,
+        "name": "snapshot",
+        "protocol": "TCP"
+       }
+      ],
+      "resources": {
+       "limits": {
+        "memory": "1Gi"
+       },
+       "requests": {
+        "cpu": "250m",
+        "memory": "256Mi"
+       }
+      },
+      "terminationMessagePath": "/dev/termination-log",
+      "terminationMessagePolicy": "File",
+      "volumeMounts": [
+       {
+        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+        "name": "kube-api-access-9tztl",
+        "readOnly": true
+       }
+      ]
+     }
+    ],
+    "dnsPolicy": "ClusterFirstWithHostNet",
+    "enableServiceLinks": true,
+    "hostNetwork": true,
+    "nodeName": "gke-open-rl-dra-h100-sampler-a721f127-ed3t",
+    "nodeSelector": {
+     "nvidia.com/gpu.present": "true"
+    },
+    "preemptionPolicy": "PreemptLowerPriority",
+    "priority": 1000000,
+    "priorityClassName": "openrl-node-daemon",
+    "restartPolicy": "Always",
+    "schedulerName": "default-scheduler",
+    "securityContext": {},
+    "serviceAccount": "default",
+    "serviceAccountName": "default",
+    "terminationGracePeriodSeconds": 30,
+    "tolerations": [
+     {
+      "effect": "NoSchedule",
+      "key": "nvidia.com/gpu",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoExecute",
+      "key": "node.kubernetes.io/not-ready",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoExecute",
+      "key": "node.kubernetes.io/unreachable",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/disk-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/memory-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/pid-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/unschedulable",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/network-unavailable",
+      "operator": "Exists"
+     }
+    ],
+    "volumes": [
+     {
+      "name": "kube-api-access-9tztl",
+      "projected": {
+       "defaultMode": 420,
+       "sources": [
+        {
+         "serviceAccountToken": {
+          "expirationSeconds": 3607,
+          "path": "token"
+         }
+        },
+        {
+         "configMap": {
+          "items": [
+           {
+            "key": "ca.crt",
+            "path": "ca.crt"
+           }
+          ],
+          "name": "kube-root-ca.crt"
+         }
+        },
+        {
+         "downwardAPI": {
+          "items": [
+           {
+            "fieldRef": {
+             "apiVersion": "v1",
+             "fieldPath": "metadata.namespace"
+            },
+            "path": "namespace"
+           }
+          ]
+         }
+        }
+       ]
+      }
+     }
+    ]
+   },
+   "status": {
+    "conditions": [
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-11T23:36:04Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "PodReadyToStartContainers"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-11T23:26:48Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "Initialized"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-11T23:36:04Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "Ready"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-11T23:36:04Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "ContainersReady"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-11T23:26:48Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "PodScheduled"
+     }
+    ],
+    "containerStatuses": [
+     {
+      "allocatedResources": {
+       "cpu": "250m",
+       "memory": "256Mi"
+      },
+      "containerID": "containerd://2fdc26968e42642e0405b68804d696215995102f09f1fb3c69f48c7a6101193f",
+      "image": "ghcr.io/gke-labs/open-rl/server:v0.0.6",
+      "imageID": "ghcr.io/gke-labs/open-rl/server@sha256:df79252c079400c0862cd172aeaa5491c260c49e60b65d56c24b360971c3aeec",
+      "lastState": {},
+      "name": "accel-timeslicer",
+      "ready": true,
+      "resources": {
+       "limits": {
+        "memory": "1Gi"
+       },
+       "requests": {
+        "cpu": "250m",
+        "memory": "256Mi"
+       }
+      },
+      "restartCount": 0,
+      "started": true,
+      "state": {
+       "running": {
+        "startedAt": "2026-10-11T23:36:03Z"
+       }
+      },
+      "user": {
+       "linux": {
+        "gid": 0,
+        "supplementalGroups": [
+         0
+        ],
+        "uid": 0
+       }
+      },
+      "volumeMounts": [
+       {
+        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+        "name": "kube-api-access-9tztl",
+        "readOnly": true,
+        "recursiveReadOnly": "Disabled"
+       }
+      ]
+     }
+    ],
+    "hostIP": "10.128.0.10",
+    "hostIPs": [
+     {
+      "ip": "10.128.0.10"
+     }
+    ],
+    "observedGeneration": 1,
+    "phase": "Running",
+    "podIP": "10.128.0.10",
+    "podIPs": [
+     {
+      "ip": "10.128.0.10"
+     }
+    ],
+    "qosClass": "Burstable",
+    "startTime": "2026-10-11T23:26:48Z"
+   }
+  },
+  {
+   "apiVersion": "v1",
+   "kind": "Pod",
+   "metadata": {
+    "creationTimestamp": "2026-10-15T04:45:45Z",
+    "generateName": "open-rl-api-server-6d86b498f5-",
+    "generation": 1,
+    "labels": {
+     "app": "open-rl-api-server",
+     "pod-template-hash": "6d86b498f5",
+     "topology.kubernetes.io/region": "us-central1",
+     "topology.kubernetes.io/zone": "us-central1-b"
+    },
+    "name": "open-rl-api-server-6d86b498f5-65swc",
+    "namespace": "openrl-system",
+    "ownerReferences": [
+     {
+      "apiVersion": "apps/v1",
+      "blockOwnerDeletion": true,
+      "controller": true,
+      "kind": "ReplicaSet",
+      "name": "open-rl-api-server-6d86b498f5",
+      "uid": "638d78f3-dfa9-48e1-9a44-2e27cab2c0ad"
+     }
+    ],
+    "resourceVersion": "1792039570790271003",
+    "uid": "6e1edc03-0aef-4a5b-8ed9-a1839f82057b"
+   },
+   "spec": {
+    "containers": [
+     {
+      "command": [
+       "uv",
+       "run",
+       "uvicorn",
+       "server.api_server:app",
+       "--host",
+       "0.0.0.0",
+       "--port",
+       "8000"
+      ],
+      "env": [
+       {
+        "name": "OPEN_RL_ENABLE_FFT",
+        "value": "true"
+       },
+       {
+        "name": "ENABLE_GCP_TRACE",
+        "valueFrom": {
+         "configMapKeyRef": {
+          "key": "ENABLE_GCP_TRACE",
+          "name": "open-rl-config"
+         }
+        }
+       },
+       {
+        "name": "REDIS_URL",
+        "value": "redis://redis-service:6379?max_connections=500"
+       },
+       {
+        "name": "BASE_MODEL",
+        "valueFrom": {
+         "configMapKeyRef": {
+          "key": "BASE_MODEL",
+          "name": "open-rl-config"
+         }
+        }
+       },
+       {
+        "name": "OPEN_RL_TMP_DIR",
+        "value": "/mnt/shared/open-rl"
+       },
+       {
+        "name": "SAMPLING_BACKEND",
+        "value": "vllm"
+       },
+       {
+        "name": "OPEN_RL_WORKER_MANAGER",
+        "value": "scheduler"
+       },
+       {
+        "name": "OPEN_RL_WORKER_NAMESPACE",
+        "valueFrom": {
+         "fieldRef": {
+          "apiVersion": "v1",
+          "fieldPath": "metadata.namespace"
+         }
+        }
+       },
+       {
+        "name": "OPEN_RL_WORKER_IMAGE",
+        "valueFrom": {
+         "configMapKeyRef": {
+          "key": "worker",
+          "name": "open-rl-images"
+         }
+        }
+       }
+      ],
+      "image": "us-central1-docker.pkg.dev/cdrollouts-sunilarora/open-rl/open-rl-api-server:coldstart1-dca985a",
+      "imagePullPolicy": "IfNotPresent",
+      "name": "api-server",
+      "ports": [
+       {
+        "containerPort": 8000,
+        "protocol": "TCP"
+       }
+      ],
+      "readinessProbe": {
+       "failureThreshold": 30,
+       "httpGet": {
+        "path": "/api/v1/healthz",
+        "port": 8000,
+        "scheme": "HTTP"
+       },
+       "initialDelaySeconds": 5,
+       "periodSeconds": 10,
+       "successThreshold": 1,
+       "timeoutSeconds": 5
+      },
+      "resources": {
+       "limits": {
+        "memory": "2Gi"
+       },
+       "requests": {
+        "cpu": "500m",
+        "memory": "1Gi"
+       }
+      },
+      "terminationMessagePath": "/dev/termination-log",
+      "terminationMessagePolicy": "File",
+      "volumeMounts": [
+       {
+        "mountPath": "/mnt/shared",
+        "name": "shared-storage"
+       },
+       {
+        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+        "name": "kube-api-access-2ns79",
+        "readOnly": true
+       }
+      ]
+     }
+    ],
+    "dnsPolicy": "ClusterFirst",
+    "enableServiceLinks": true,
+    "nodeName": "gke-open-rl-dra-default-pool-c19e0101-2bk0",
+    "preemptionPolicy": "PreemptLowerPriority",
+    "priority": 0,
+    "restartPolicy": "Always",
+    "schedulerName": "default-scheduler",
+    "securityContext": {},
+    "serviceAccount": "open-rl-sa",
+    "serviceAccountName": "open-rl-sa",
+    "terminationGracePeriodSeconds": 30,
+    "tolerations": [
+     {
+      "effect": "NoExecute",
+      "key": "node.kubernetes.io/not-ready",
+      "operator": "Exists",
+      "tolerationSeconds": 300
+     },
+     {
+      "effect": "NoExecute",
+      "key": "node.kubernetes.io/unreachable",
+      "operator": "Exists",
+      "tolerationSeconds": 300
+     }
+    ],
+    "volumes": [
+     {
+      "name": "shared-storage",
+      "persistentVolumeClaim": {
+       "claimName": "open-rl-shared-pvc"
+      }
+     },
+     {
+      "name": "kube-api-access-2ns79",
+      "projected": {
+       "defaultMode": 420,
+       "sources": [
+        {
+         "serviceAccountToken": {
+          "expirationSeconds": 3607,
+          "path": "token"
+         }
+        },
+        {
+         "configMap": {
+          "items": [
+           {
+            "key": "ca.crt",
+            "path": "ca.crt"
+           }
+          ],
+          "name": "kube-root-ca.crt"
+         }
+        },
+        {
+         "downwardAPI": {
+          "items": [
+           {
+            "fieldRef": {
+             "apiVersion": "v1",
+             "fieldPath": "metadata.namespace"
+            },
+            "path": "namespace"
+           }
+          ]
+         }
+        }
+       ]
+      }
+     }
+    ]
+   },
+   "status": {
+    "conditions": [
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-15T04:45:59Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "PodReadyToStartContainers"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-15T04:45:46Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "Initialized"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-15T04:46:10Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "Ready"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-15T04:46:10Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "ContainersReady"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-15T04:45:46Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "PodScheduled"
+     }
+    ],
+    "containerStatuses": [
+     {
+      "allocatedResources": {
+       "cpu": "500m",
+       "memory": "1Gi"
+      },
+      "containerID": "containerd://9d4ff1c8b4d2b04081c194684d2d3d5448979f1b9bd6bc973dc0575d5d558846",
+      "image": "us-central1-docker.pkg.dev/cdrollouts-sunilarora/open-rl/open-rl-api-server:coldstart1-dca985a",
+      "imageID": "us-central1-docker.pkg.dev/cdrollouts-sunilarora/open-rl/open-rl-api-server@sha256:bfca2a106deada9c28763a16007ac4803f31ca02d30e9e87b1f2d019865a6c66",
+      "lastState": {},
+      "name": "api-server",
+      "ready": true,
+      "resources": {
+       "limits": {
+        "memory": "2Gi"
+       },
+       "requests": {
+        "cpu": "500m",
+        "memory": "1Gi"
+       }
+      },
+      "restartCount": 0,
+      "started": true,
+      "state": {
+       "running": {
+        "startedAt": "2026-10-15T04:45:58Z"
+       }
+      },
+      "user": {
+       "linux": {
+        "gid": 0,
+        "supplementalGroups": [
+         0
+        ],
+        "uid": 0
+       }
+      },
+      "volumeMounts": [
+       {
+        "mountPath": "/mnt/shared",
+        "name": "shared-storage"
+       },
+       {
+        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+        "name": "kube-api-access-2ns79",
+        "readOnly": true,
+        "recursiveReadOnly": "Disabled"
+       }
+      ]
+     }
+    ],
+    "hostIP": "10.128.15.214",
+    "hostIPs": [
+     {
+      "ip": "10.128.15.214"
+     }
+    ],
+    "observedGeneration": 1,
+    "phase": "Running",
+    "podIP": "10.32.3.11",
+    "podIPs": [
+     {
+      "ip": "10.32.3.11"
+     }
+    ],
+    "qosClass": "Burstable",
+    "startTime": "2026-10-15T04:45:46Z"
+   }
+  },
+  {
+   "apiVersion": "v1",
+   "kind": "Pod",
+   "metadata": {
+    "creationTimestamp": "2026-10-14T01:25:14Z",
+    "generateName": "open-rl-scheduler-7cf9d4bc47-",
+    "generation": 1,
+    "labels": {
+     "app": "open-rl-scheduler",
+     "pod-template-hash": "7cf9d4bc47",
+     "topology.kubernetes.io/region": "us-central1",
+     "topology.kubernetes.io/zone": "us-central1-b"
+    },
+    "name": "open-rl-scheduler-7cf9d4bc47-jtsrl",
+    "namespace": "openrl-system",
+    "ownerReferences": [
+     {
+      "apiVersion": "apps/v1",
+      "blockOwnerDeletion": true,
+      "controller": true,
+      "kind": "ReplicaSet",
+      "name": "open-rl-scheduler-7cf9d4bc47",
+      "uid": "d943141e-ff09-4f94-9b1b-870d28c23dd0"
+     }
+    ],
+    "resourceVersion": "1791941144533087007",
+    "uid": "56193bb8-a36c-4ad7-81b5-ff1d7c2ef0ba"
+   },
+   "spec": {
+    "containers": [
+     {
+      "args": [
+       "--leader-elect",
+       "--health-probe-bind-address=:8081",
+       "--metrics-bind-address=:8080"
+      ],
+      "env": [
+       {
+        "name": "OPEN_RL_PLACEMENT_TIMEOUT",
+        "value": "0"
+       },
+       {
+        "name": "OPEN_RL_WORKER_NAMESPACE",
+        "valueFrom": {
+         "fieldRef": {
+          "apiVersion": "v1",
+          "fieldPath": "metadata.namespace"
+         }
+        }
+       },
+       {
+        "name": "OPEN_RL_RECONCILE_INTERVAL",
+        "value": "10s"
+       },
+       {
+        "name": "OPEN_RL_DEVICE_CLASS",
+        "value": "gpu.nvidia.com"
+       },
+       {
+        "name": "OPEN_RL_DEVICE_DRIVER",
+        "value": "gpu.nvidia.com"
+       }
+      ],
+      "image": "ghcr.io/gke-labs/open-rl/scheduler:v0.0.6",
+      "imagePullPolicy": "IfNotPresent",
+      "livenessProbe": {
+       "failureThreshold": 3,
+       "httpGet": {
+        "path": "/healthz",
+        "port": 8081,
+        "scheme": "HTTP"
+       },
+       "initialDelaySeconds": 15,
+       "periodSeconds": 20,
+       "successThreshold": 1,
+       "timeoutSeconds": 1
+      },
+      "name": "manager",
+      "ports": [
+       {
+        "containerPort": 8080,
+        "name": "metrics",
+        "protocol": "TCP"
+       }
+      ],
+      "readinessProbe": {
+       "failureThreshold": 3,
+       "httpGet": {
+        "path": "/readyz",
+        "port": 8081,
+        "scheme": "HTTP"
+       },
+       "initialDelaySeconds": 5,
+       "periodSeconds": 10,
+       "successThreshold": 1,
+       "timeoutSeconds": 1
+      },
+      "resources": {
+       "limits": {
+        "memory": "512Mi"
+       },
+       "requests": {
+        "cpu": "100m",
+        "memory": "128Mi"
+       }
+      },
+      "securityContext": {
+       "allowPrivilegeEscalation": false,
+       "capabilities": {
+        "drop": [
+         "ALL"
+        ]
+       },
+       "readOnlyRootFilesystem": true
+      },
+      "terminationMessagePath": "/dev/termination-log",
+      "terminationMessagePolicy": "File",
+      "volumeMounts": [
+       {
+        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+        "name": "kube-api-access-kwbhw",
+        "readOnly": true
+       }
+      ]
+     }
+    ],
+    "dnsPolicy": "ClusterFirst",
+    "enableServiceLinks": true,
+    "nodeName": "gke-open-rl-dra-default-pool-c19e0101-2bk0",
+    "preemptionPolicy": "PreemptLowerPriority",
+    "priority": 0,
+    "restartPolicy": "Always",
+    "schedulerName": "default-scheduler",
+    "securityContext": {
+     "runAsNonRoot": true
+    },
+    "serviceAccount": "open-rl-sa",
+    "serviceAccountName": "open-rl-sa",
+    "terminationGracePeriodSeconds": 30,
+    "tolerations": [
+     {
+      "effect": "NoExecute",
+      "key": "node.kubernetes.io/not-ready",
+      "operator": "Exists",
+      "tolerationSeconds": 300
+     },
+     {
+      "effect": "NoExecute",
+      "key": "node.kubernetes.io/unreachable",
+      "operator": "Exists",
+      "tolerationSeconds": 300
+     }
+    ],
+    "volumes": [
+     {
+      "name": "kube-api-access-kwbhw",
+      "projected": {
+       "defaultMode": 420,
+       "sources": [
+        {
+         "serviceAccountToken": {
+          "expirationSeconds": 3607,
+          "path": "token"
+         }
+        },
+        {
+         "configMap": {
+          "items": [
+           {
+            "key": "ca.crt",
+            "path": "ca.crt"
+           }
+          ],
+          "name": "kube-root-ca.crt"
+         }
+        },
+        {
+         "downwardAPI": {
+          "items": [
+           {
+            "fieldRef": {
+             "apiVersion": "v1",
+             "fieldPath": "metadata.namespace"
+            },
+            "path": "namespace"
+           }
+          ]
+         }
+        }
+       ]
+      }
+     }
+    ]
+   },
+   "status": {
+    "conditions": [
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-14T01:25:33Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "PodReadyToStartContainers"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-14T01:25:14Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "Initialized"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-14T01:25:44Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "Ready"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-14T01:25:44Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "ContainersReady"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-14T01:25:14Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "PodScheduled"
+     }
+    ],
+    "containerStatuses": [
+     {
+      "allocatedResources": {
+       "cpu": "100m",
+       "memory": "128Mi"
+      },
+      "containerID": "containerd://4c48a59a0bffcf3176ecea7a0646b10bd68db0eff4f22218d3d3365cec1fb735",
+      "image": "ghcr.io/gke-labs/open-rl/scheduler:v0.0.6",
+      "imageID": "ghcr.io/gke-labs/open-rl/scheduler@sha256:c07b638d5b71c89de7df9a578b138e09fd334004a73c7310bd726e062ca13d73",
+      "lastState": {},
+      "name": "manager",
+      "ready": true,
+      "resources": {
+       "limits": {
+        "memory": "512Mi"
+       },
+       "requests": {
+        "cpu": "100m",
+        "memory": "128Mi"
+       }
+      },
+      "restartCount": 0,
+      "started": true,
+      "state": {
+       "running": {
+        "startedAt": "2026-10-14T01:25:32Z"
+       }
+      },
+      "user": {
+       "linux": {
+        "gid": 65532,
+        "supplementalGroups": [
+         65532
+        ],
+        "uid": 65532
+       }
+      },
+      "volumeMounts": [
+       {
+        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+        "name": "kube-api-access-kwbhw",
+        "readOnly": true,
+        "recursiveReadOnly": "Disabled"
+       }
+      ]
+     }
+    ],
+    "hostIP": "10.128.15.214",
+    "hostIPs": [
+     {
+      "ip": "10.128.15.214"
+     }
+    ],
+    "observedGeneration": 1,
+    "phase": "Running",
+    "podIP": "10.32.3.9",
+    "podIPs": [
+     {
+      "ip": "10.32.3.9"
+     }
+    ],
+    "qosClass": "Burstable",
+    "startTime": "2026-10-14T01:25:14Z"
+   }
+  },
+  {
+   "apiVersion": "v1",
+   "kind": "Pod",
+   "metadata": {
+    "annotations": {
+     "cloud.google.com/cluster_autoscaler_unhelpable_since": "2026-10-15T04:57:44+0000",
+     "cloud.google.com/cluster_autoscaler_unhelpable_until": "Inf"
+    },
+    "creationTimestamp": "2026-10-15T04:57:44Z",
+    "generation": 1,
+    "labels": {
+     "accel-timeslicer": "true",
+     "app": "open-rl-sampler-worker",
+     "openrl.io/claim": "claim-lora-qwen-qwen2-5-0-5b-0-sampler-4ce140e7",
+     "openrl.io/role": "sampler",
+     "openrl.io/worker": "lora-qwen-qwen2-5-0-5b-0-sampler",
+     "timeslice.io/group": "claim-lora-qwen-qwen2-5-0-5b-0-sampler-4ce140e7",
+     "timeslice.io/job-id": "lora-qwen-qwen2-5-0-5b-0-sampler",
+     "timeslice.io/owner": "qwen-qwen2-5-0-5b",
+     "topology.kubernetes.io/region": "us-central1",
+     "topology.kubernetes.io/zone": "us-central1-a"
+    },
+    "name": "orw-lora-qwen-qwen2-5-0-5b-0-sampler",
+    "namespace": "openrl-system",
+    "ownerReferences": [
+     {
+      "apiVersion": "openrl.io/v1alpha1",
+      "blockOwnerDeletion": true,
+      "controller": true,
+      "kind": "Workload",
+      "name": "lora-qwen-qwen2-5-0-5b-0-sampler",
+      "uid": "4ce140e7-4f1e-4b14-9877-bb659f6e0343"
+     }
+    ],
+    "resourceVersion": "1792040297125103001",
+    "uid": "570d2f8f-3f53-4819-bae7-d9abd474d51d"
+   },
+   "spec": {
+    "affinity": {
+     "nodeAffinity": {
+      "requiredDuringSchedulingIgnoredDuringExecution": {
+       "nodeSelectorTerms": [
+        {
+         "matchExpressions": [
+          {
+           "key": "openrl.io/enabled",
+           "operator": "In",
+           "values": [
+            "true"
+           ]
+          },
+          {
+           "key": "openrl.io/sampler",
+           "operator": "In",
+           "values": [
+            "true"
+           ]
+          }
+         ]
+        },
+        {
+         "matchExpressions": [
+          {
+           "key": "openrl.io/enabled",
+           "operator": "In",
+           "values": [
+            "true"
+           ]
+          },
+          {
+           "key": "openrl.io/trainer",
+           "operator": "DoesNotExist"
+          },
+          {
+           "key": "openrl.io/sampler",
+           "operator": "DoesNotExist"
+          }
+         ]
+        }
+       ]
+      }
+     }
+    },
+    "containers": [
+     {
+      "args": [
+       "--model-id",
+       "Qwen/Qwen2.5-0.5B"
+      ],
+      "command": [
+       "uv",
+       "run",
+       "python",
+       "-u",
+       "-m",
+       "server.vllm_sampler"
+      ],
+      "env": [
+       {
+        "name": "REDIS_URL",
+        "value": "redis://redis-service:6379?max_connections=500"
+       },
+       {
+        "name": "OPEN_RL_TMP_DIR",
+        "value": "/mnt/shared/open-rl"
+       },
+       {
+        "name": "HF_HOME",
+        "value": "/mnt/shared/open-rl/huggingface"
+       },
+       {
+        "name": "BASE_MODEL",
+        "value": "Qwen/Qwen2.5-0.5B"
+       },
+       {
+        "name": "OPEN_RL_BASE_MODEL",
+        "value": "Qwen/Qwen2.5-0.5B"
+       },
+       {
+        "name": "OPEN_RL_ENABLE_FFT",
+        "value": "false"
+       },
+       {
+        "name": "OPEN_RL_FINE_TUNING_TYPE",
+        "value": "lora"
+       },
+       {
+        "name": "OPEN_RL_ACCELERATOR_MEMORY",
+        "value": "3589169104"
+       },
+       {
+        "name": "OPEN_RL_WEIGHT_SYNC_STRATEGY",
+        "value": "delta"
+       },
+       {
+        "name": "OPEN_RL_MODEL_ID",
+        "value": "Qwen/Qwen2.5-0.5B"
+       },
+       {
+        "name": "VLLM_SERVER_DEV_MODE",
+        "value": "1"
+       },
+       {
+        "name": "VLLM_ALLOW_INSECURE_SERIALIZATION",
+        "value": "1"
+       },
+       {
+        "name": "OPEN_RL_WORKLOAD_ID",
+        "value": "lora-qwen-qwen2-5-0-5b-0-sampler"
+       },
+       {
+        "name": "OPEN_RL_TIME_SLICE_JOB_ID",
+        "value": "lora-qwen-qwen2-5-0-5b-0-sampler"
+       },
+       {
+        "name": "OPEN_RL_ACCEL_TIMESLICER_PORT",
+        "value": "9753"
+       },
+       {
+        "name": "OPEN_RL_TIME_SLICING",
+        "value": "off"
+       },
+       {
+        "name": "OPEN_RL_ACCEL_TIMESLICER_HOST",
+        "valueFrom": {
+         "fieldRef": {
+          "apiVersion": "v1",
+          "fieldPath": "status.hostIP"
+         }
+        }
+       },
+       {
+        "name": "OPEN_RL_TIME_SLICE_GROUP",
+        "value": "claim-lora-qwen-qwen2-5-0-5b-0-sampler-4ce140e7"
+       },
+       {
+        "name": "OPEN_RL_CLAIM_LEDGER",
+        "value": "ledger-lora-qwen-qwen2-5-0-5b-0-sampler-4ce140e7"
+       },
+       {
+        "name": "OPEN_RL_ASSIGNMENT_ID",
+        "value": "2ee5c8bd-e346-48b6-8cb1-eb62a873538d"
+       }
+      ],
+      "image": "us-central1-docker.pkg.dev/cdrollouts-sunilarora/open-rl/open-rl-server:coldstart1-dca985a",
+      "imagePullPolicy": "IfNotPresent",
+      "name": "worker",
+      "resources": {
+       "claims": [
+        {
+         "name": "gpu"
+        }
+       ],
+       "limits": {
+        "memory": "25Gi"
+       },
+       "requests": {
+        "memory": "25Gi"
+       }
+      },
+      "terminationMessagePath": "/dev/termination-log",
+      "terminationMessagePolicy": "File",
+      "volumeMounts": [
+       {
+        "mountPath": "/mnt/shared",
+        "name": "shared-storage"
+       },
+       {
+        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+        "name": "kube-api-access-j4zlp",
+        "readOnly": true
+       }
+      ]
+     }
+    ],
+    "dnsPolicy": "ClusterFirst",
+    "enableServiceLinks": true,
+    "nodeName": "gke-open-rl-dra-l4-sampler-2x-ab5fdc9d-2208",
+    "preemptionPolicy": "PreemptLowerPriority",
+    "priority": 0,
+    "resourceClaims": [
+     {
+      "name": "gpu",
+      "resourceClaimName": "claim-lora-qwen-qwen2-5-0-5b-0-sampler-4ce140e7"
+     }
+    ],
+    "restartPolicy": "OnFailure",
+    "schedulerName": "default-scheduler",
+    "securityContext": {},
+    "serviceAccount": "default",
+    "serviceAccountName": "default",
+    "terminationGracePeriodSeconds": 30,
+    "tolerations": [
+     {
+      "effect": "NoSchedule",
+      "key": "nvidia.com/gpu",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoExecute",
+      "key": "node.kubernetes.io/not-ready",
+      "operator": "Exists",
+      "tolerationSeconds": 300
+     },
+     {
+      "effect": "NoExecute",
+      "key": "node.kubernetes.io/unreachable",
+      "operator": "Exists",
+      "tolerationSeconds": 300
+     }
+    ],
+    "volumes": [
+     {
+      "name": "shared-storage",
+      "persistentVolumeClaim": {
+       "claimName": "open-rl-shared-pvc"
+      }
+     },
+     {
+      "name": "kube-api-access-j4zlp",
+      "projected": {
+       "defaultMode": 420,
+       "sources": [
+        {
+         "serviceAccountToken": {
+          "expirationSeconds": 3607,
+          "path": "token"
+         }
+        },
+        {
+         "configMap": {
+          "items": [
+           {
+            "key": "ca.crt",
+            "path": "ca.crt"
+           }
+          ],
+          "name": "kube-root-ca.crt"
+         }
+        },
+        {
+         "downwardAPI": {
+          "items": [
+           {
+            "fieldRef": {
+             "apiVersion": "v1",
+             "fieldPath": "metadata.namespace"
+            },
+            "path": "namespace"
+           }
+          ]
+         }
+        }
+       ]
+      }
+     }
+    ]
+   },
+   "status": {
+    "conditions": [
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-15T04:58:17Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "PodReadyToStartContainers"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-15T04:58:13Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "Initialized"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-15T04:58:17Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "Ready"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-15T04:58:17Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "ContainersReady"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-15T04:58:13Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "PodScheduled"
+     }
+    ],
+    "containerStatuses": [
+     {
+      "allocatedResources": {
+       "memory": "25Gi"
+      },
+      "containerID": "containerd://9da0479c74bfc8042a71c292922826c6ce3ad90ac3ac5cb3b018c1f4cff943a0",
+      "image": "us-central1-docker.pkg.dev/cdrollouts-sunilarora/open-rl/open-rl-server:coldstart1-dca985a",
+      "imageID": "us-central1-docker.pkg.dev/cdrollouts-sunilarora/open-rl/open-rl-server@sha256:2e1c95e42a4b43d72496e9a87cb6c299baf3568eea533d01c3bbd84c6bb03801",
+      "lastState": {},
+      "name": "worker",
+      "ready": true,
+      "resources": {
+       "claims": [
+        {
+         "name": "gpu"
+        }
+       ],
+       "limits": {
+        "memory": "25Gi"
+       },
+       "requests": {
+        "memory": "25Gi"
+       }
+      },
+      "restartCount": 0,
+      "started": true,
+      "state": {
+       "running": {
+        "startedAt": "2026-10-15T04:58:16Z"
+       }
+      },
+      "user": {
+       "linux": {
+        "gid": 0,
+        "supplementalGroups": [
+         0
+        ],
+        "uid": 0
+       }
+      },
+      "volumeMounts": [
+       {
+        "mountPath": "/mnt/shared",
+        "name": "shared-storage"
+       },
+       {
+        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+        "name": "kube-api-access-j4zlp",
+        "readOnly": true,
+        "recursiveReadOnly": "Disabled"
+       }
+      ]
+     }
+    ],
+    "hostIP": "10.128.15.202",
+    "hostIPs": [
+     {
+      "ip": "10.128.15.202"
+     }
+    ],
+    "observedGeneration": 1,
+    "phase": "Running",
+    "podIP": "10.32.0.21",
+    "podIPs": [
+     {
+      "ip": "10.32.0.21"
+     }
+    ],
+    "qosClass": "Burstable",
+    "startTime": "2026-10-15T04:58:13Z"
+   }
+  },
+  {
+   "apiVersion": "v1",
+   "kind": "Pod",
+   "metadata": {
+    "creationTimestamp": "2026-10-15T04:57:22Z",
+    "generation": 1,
+    "labels": {
+     "accel-timeslicer": "true",
+     "app": "open-rl-trainer-worker",
+     "openrl.io/claim": "claim-lora-qwen-qwen2-5-0-5b-0-trainer-35aa092e",
+     "openrl.io/role": "trainer",
+     "openrl.io/worker": "lora-qwen-qwen2-5-0-5b-0-trainer",
+     "timeslice.io/group": "claim-lora-qwen-qwen2-5-0-5b-0-trainer-35aa092e",
+     "timeslice.io/job-id": "lora-qwen-qwen2-5-0-5b-0-trainer",
+     "timeslice.io/owner": "qwen-qwen2-5-0-5b",
+     "topology.kubernetes.io/region": "us-central1",
+     "topology.kubernetes.io/zone": "us-central1-a"
+    },
+    "name": "orw-lora-qwen-qwen2-5-0-5b-0-trainer",
+    "namespace": "openrl-system",
+    "ownerReferences": [
+     {
+      "apiVersion": "openrl.io/v1alpha1",
+      "blockOwnerDeletion": true,
+      "controller": true,
+      "kind": "Workload",
+      "name": "lora-qwen-qwen2-5-0-5b-0-trainer",
+      "uid": "35aa092e-27db-4eca-ad32-e9e0d6070c77"
+     }
+    ],
+    "resourceVersion": "1792040246938655012",
+    "uid": "b4b9c50b-214c-4078-8ab9-8b8479a48a71"
+   },
+   "spec": {
+    "affinity": {
+     "nodeAffinity": {
+      "requiredDuringSchedulingIgnoredDuringExecution": {
+       "nodeSelectorTerms": [
+        {
+         "matchExpressions": [
+          {
+           "key": "openrl.io/enabled",
+           "operator": "In",
+           "values": [
+            "true"
+           ]
+          },
+          {
+           "key": "openrl.io/trainer",
+           "operator": "In",
+           "values": [
+            "true"
+           ]
+          }
+         ]
+        },
+        {
+         "matchExpressions": [
+          {
+           "key": "openrl.io/enabled",
+           "operator": "In",
+           "values": [
+            "true"
+           ]
+          },
+          {
+           "key": "openrl.io/trainer",
+           "operator": "DoesNotExist"
+          },
+          {
+           "key": "openrl.io/sampler",
+           "operator": "DoesNotExist"
+          }
+         ]
+        }
+       ]
+      }
+     }
+    },
+    "containers": [
+     {
+      "args": [
+       "--model-id",
+       "Qwen/Qwen2.5-0.5B",
+       "--active-tenant-set-id",
+       "Qwen/Qwen2.5-0.5B-1"
+      ],
+      "command": [
+       "uv",
+       "run",
+       "python",
+       "-u",
+       "-m",
+       "server.training_requests_processor"
+      ],
+      "env": [
+       {
+        "name": "REDIS_URL",
+        "value": "redis://redis-service:6379?max_connections=500"
+       },
+       {
+        "name": "OPEN_RL_TMP_DIR",
+        "value": "/mnt/shared/open-rl"
+       },
+       {
+        "name": "HF_HOME",
+        "value": "/mnt/shared/open-rl/huggingface"
+       },
+       {
+        "name": "BASE_MODEL",
+        "value": "Qwen/Qwen2.5-0.5B"
+       },
+       {
+        "name": "OPEN_RL_BASE_MODEL",
+        "value": "Qwen/Qwen2.5-0.5B"
+       },
+       {
+        "name": "OPEN_RL_ENABLE_FFT",
+        "value": "false"
+       },
+       {
+        "name": "OPEN_RL_FINE_TUNING_TYPE",
+        "value": "lora"
+       },
+       {
+        "name": "OPEN_RL_ACCELERATOR_MEMORY",
+        "value": "5282967296"
+       },
+       {
+        "name": "OPEN_RL_WEIGHT_SYNC_STRATEGY",
+        "value": "delta"
+       },
+       {
+        "name": "PYTORCH_CUDA_ALLOC_CONF",
+        "value": "expandable_segments:True"
+       },
+       {
+        "name": "OPEN_RL_WORKLOAD_ID",
+        "value": "lora-qwen-qwen2-5-0-5b-0-trainer"
+       },
+       {
+        "name": "OPEN_RL_TIME_SLICE_JOB_ID",
+        "value": "lora-qwen-qwen2-5-0-5b-0-trainer"
+       },
+       {
+        "name": "OPEN_RL_ACCEL_TIMESLICER_PORT",
+        "value": "9753"
+       },
+       {
+        "name": "OPEN_RL_TIME_SLICING",
+        "value": "off"
+       },
+       {
+        "name": "OPEN_RL_ACCEL_TIMESLICER_HOST",
+        "valueFrom": {
+         "fieldRef": {
+          "apiVersion": "v1",
+          "fieldPath": "status.hostIP"
+         }
+        }
+       },
+       {
+        "name": "OPEN_RL_TIME_SLICE_GROUP",
+        "value": "claim-lora-qwen-qwen2-5-0-5b-0-trainer-35aa092e"
+       },
+       {
+        "name": "OPEN_RL_CLAIM_LEDGER",
+        "value": "ledger-lora-qwen-qwen2-5-0-5b-0-trainer-35aa092e"
+       },
+       {
+        "name": "OPEN_RL_ASSIGNMENT_ID",
+        "value": "efac33f1-a138-4d61-b066-ff1ef1279fec"
+       }
+      ],
+      "image": "us-central1-docker.pkg.dev/cdrollouts-sunilarora/open-rl/open-rl-server:coldstart1-dca985a",
+      "imagePullPolicy": "IfNotPresent",
+      "name": "worker",
+      "resources": {
+       "claims": [
+        {
+         "name": "gpu"
+        }
+       ],
+       "limits": {
+        "memory": "21Gi"
+       },
+       "requests": {
+        "memory": "21Gi"
+       }
+      },
+      "terminationMessagePath": "/dev/termination-log",
+      "terminationMessagePolicy": "File",
+      "volumeMounts": [
+       {
+        "mountPath": "/mnt/shared",
+        "name": "shared-storage"
+       },
+       {
+        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+        "name": "kube-api-access-gvbfv",
+        "readOnly": true
+       }
+      ]
+     }
+    ],
+    "dnsPolicy": "ClusterFirst",
+    "enableServiceLinks": true,
+    "nodeName": "gke-open-rl-dra-l4-trainer-2x-ed601d8b-lvw8",
+    "preemptionPolicy": "PreemptLowerPriority",
+    "priority": 0,
+    "resourceClaims": [
+     {
+      "name": "gpu",
+      "resourceClaimName": "claim-lora-qwen-qwen2-5-0-5b-0-trainer-35aa092e"
+     }
+    ],
+    "restartPolicy": "OnFailure",
+    "schedulerName": "default-scheduler",
+    "securityContext": {},
+    "serviceAccount": "default",
+    "serviceAccountName": "default",
+    "terminationGracePeriodSeconds": 30,
+    "tolerations": [
+     {
+      "effect": "NoSchedule",
+      "key": "nvidia.com/gpu",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoExecute",
+      "key": "node.kubernetes.io/not-ready",
+      "operator": "Exists",
+      "tolerationSeconds": 300
+     },
+     {
+      "effect": "NoExecute",
+      "key": "node.kubernetes.io/unreachable",
+      "operator": "Exists",
+      "tolerationSeconds": 300
+     }
+    ],
+    "volumes": [
+     {
+      "name": "shared-storage",
+      "persistentVolumeClaim": {
+       "claimName": "open-rl-shared-pvc"
+      }
+     },
+     {
+      "name": "kube-api-access-gvbfv",
+      "projected": {
+       "defaultMode": 420,
+       "sources": [
+        {
+         "serviceAccountToken": {
+          "expirationSeconds": 3607,
+          "path": "token"
+         }
+        },
+        {
+         "configMap": {
+          "items": [
+           {
+            "key": "ca.crt",
+            "path": "ca.crt"
+           }
+          ],
+          "name": "kube-root-ca.crt"
+         }
+        },
+        {
+         "downwardAPI": {
+          "items": [
+           {
+            "fieldRef": {
+             "apiVersion": "v1",
+             "fieldPath": "metadata.namespace"
+            },
+            "path": "namespace"
+           }
+          ]
+         }
+        }
+       ]
+      }
+     }
+    ]
+   },
+   "status": {
+    "conditions": [
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-15T04:57:26Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "PodReadyToStartContainers"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-15T04:57:23Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "Initialized"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-15T04:57:26Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "Ready"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-15T04:57:26Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "ContainersReady"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-15T04:57:23Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "PodScheduled"
+     }
+    ],
+    "containerStatuses": [
+     {
+      "allocatedResources": {
+       "memory": "21Gi"
+      },
+      "containerID": "containerd://2d4343c24b9a9775657cfe3e8106b8ddd769515df55d3f40bbcc45bca83bbd69",
+      "image": "us-central1-docker.pkg.dev/cdrollouts-sunilarora/open-rl/open-rl-server:coldstart1-dca985a",
+      "imageID": "us-central1-docker.pkg.dev/cdrollouts-sunilarora/open-rl/open-rl-server@sha256:2e1c95e42a4b43d72496e9a87cb6c299baf3568eea533d01c3bbd84c6bb03801",
+      "lastState": {},
+      "name": "worker",
+      "ready": true,
+      "resources": {
+       "claims": [
+        {
+         "name": "gpu"
+        }
+       ],
+       "limits": {
+        "memory": "21Gi"
+       },
+       "requests": {
+        "memory": "21Gi"
+       }
+      },
+      "restartCount": 0,
+      "started": true,
+      "state": {
+       "running": {
+        "startedAt": "2026-10-15T04:57:26Z"
+       }
+      },
+      "user": {
+       "linux": {
+        "gid": 0,
+        "supplementalGroups": [
+         0
+        ],
+        "uid": 0
+       }
+      },
+      "volumeMounts": [
+       {
+        "mountPath": "/mnt/shared",
+        "name": "shared-storage"
+       },
+       {
+        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+        "name": "kube-api-access-gvbfv",
+        "readOnly": true,
+        "recursiveReadOnly": "Disabled"
+       }
+      ]
+     }
+    ],
+    "hostIP": "10.128.15.196",
+    "hostIPs": [
+     {
+      "ip": "10.128.15.196"
+     }
+    ],
+    "observedGeneration": 1,
+    "phase": "Running",
+    "podIP": "10.32.13.27",
+    "podIPs": [
+     {
+      "ip": "10.32.13.27"
+     }
+    ],
+    "qosClass": "Burstable",
+    "startTime": "2026-10-15T04:57:23Z"
+   }
+  },
+  {
+   "apiVersion": "v1",
+   "kind": "Pod",
+   "metadata": {
+    "creationTimestamp": "2026-10-14T01:28:42Z",
+    "generateName": "redis-store-86779df594-",
+    "generation": 1,
+    "labels": {
+     "app": "redis",
+     "pod-template-hash": "86779df594",
+     "topology.kubernetes.io/region": "us-central1",
+     "topology.kubernetes.io/zone": "us-central1-a"
+    },
+    "name": "redis-store-86779df594-7dc5x",
+    "namespace": "openrl-system",
+    "ownerReferences": [
+     {
+      "apiVersion": "apps/v1",
+      "blockOwnerDeletion": true,
+      "controller": true,
+      "kind": "ReplicaSet",
+      "name": "redis-store-86779df594",
+      "uid": "74db3302-6e72-4c96-8fb7-7de729fc86f9"
+     }
+    ],
+    "resourceVersion": "1791941333868287008",
+    "uid": "e39bafca-6a3f-41a6-9942-64c1a6fb5744"
+   },
+   "spec": {
+    "containers": [
+     {
+      "image": "redis:7-alpine",
+      "imagePullPolicy": "IfNotPresent",
+      "name": "redis",
+      "ports": [
+       {
+        "containerPort": 6379,
+        "protocol": "TCP"
+       }
+      ],
+      "resources": {
+       "limits": {
+        "memory": "4Gi"
+       },
+       "requests": {
+        "cpu": "1",
+        "memory": "4Gi"
+       }
+      },
+      "terminationMessagePath": "/dev/termination-log",
+      "terminationMessagePolicy": "File",
+      "volumeMounts": [
+       {
+        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+        "name": "kube-api-access-fxgk2",
+        "readOnly": true
+       }
+      ]
+     }
+    ],
+    "dnsPolicy": "ClusterFirst",
+    "enableServiceLinks": true,
+    "nodeName": "gke-open-rl-dra-default-pool-ec729728-6mpx",
+    "preemptionPolicy": "PreemptLowerPriority",
+    "priority": 0,
+    "restartPolicy": "Always",
+    "schedulerName": "default-scheduler",
+    "securityContext": {},
+    "serviceAccount": "default",
+    "serviceAccountName": "default",
+    "terminationGracePeriodSeconds": 30,
+    "tolerations": [
+     {
+      "effect": "NoExecute",
+      "key": "node.kubernetes.io/not-ready",
+      "operator": "Exists",
+      "tolerationSeconds": 300
+     },
+     {
+      "effect": "NoExecute",
+      "key": "node.kubernetes.io/unreachable",
+      "operator": "Exists",
+      "tolerationSeconds": 300
+     }
+    ],
+    "volumes": [
+     {
+      "name": "kube-api-access-fxgk2",
+      "projected": {
+       "defaultMode": 420,
+       "sources": [
+        {
+         "serviceAccountToken": {
+          "expirationSeconds": 3607,
+          "path": "token"
+         }
+        },
+        {
+         "configMap": {
+          "items": [
+           {
+            "key": "ca.crt",
+            "path": "ca.crt"
+           }
+          ],
+          "name": "kube-root-ca.crt"
+         }
+        },
+        {
+         "downwardAPI": {
+          "items": [
+           {
+            "fieldRef": {
+             "apiVersion": "v1",
+             "fieldPath": "metadata.namespace"
+            },
+            "path": "namespace"
+           }
+          ]
+         }
+        }
+       ]
+      }
+     }
+    ]
+   },
+   "status": {
+    "conditions": [
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-14T01:28:53Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "PodReadyToStartContainers"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-14T01:28:42Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "Initialized"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-14T01:28:53Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "Ready"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-14T01:28:53Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "ContainersReady"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-14T01:28:42Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "PodScheduled"
+     }
+    ],
+    "containerStatuses": [
+     {
+      "allocatedResources": {
+       "cpu": "1",
+       "memory": "4Gi"
+      },
+      "containerID": "containerd://cd152f5cfd3aa37e2660832d23c89f90b873fb29f3d1c0464e19acac23935bbf",
+      "image": "docker.io/library/redis:7-alpine",
+      "imageID": "docker.io/library/redis@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499",
+      "lastState": {},
+      "name": "redis",
+      "ready": true,
+      "resources": {
+       "limits": {
+        "memory": "4Gi"
+       },
+       "requests": {
+        "cpu": "1",
+        "memory": "4Gi"
+       }
+      },
+      "restartCount": 0,
+      "started": true,
+      "state": {
+       "running": {
+        "startedAt": "2026-10-14T01:28:52Z"
+       }
+      },
+      "user": {
+       "linux": {
+        "gid": 0,
+        "supplementalGroups": [
+         0,
+         1,
+         2,
+         3,
+         4,
+         6,
+         10,
+         11,
+         20,
+         26,
+         27
+        ],
+        "uid": 0
+       }
+      },
+      "volumeMounts": [
+       {
+        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+        "name": "kube-api-access-fxgk2",
+        "readOnly": true,
+        "recursiveReadOnly": "Disabled"
+       }
+      ]
+     }
+    ],
+    "hostIP": "10.128.15.207",
+    "hostIPs": [
+     {
+      "ip": "10.128.15.207"
+     }
+    ],
+    "observedGeneration": 1,
+    "phase": "Running",
+    "podIP": "10.32.12.9",
+    "podIPs": [
+     {
+      "ip": "10.32.12.9"
+     }
+    ],
+    "qosClass": "Burstable",
+    "startTime": "2026-10-14T01:28:42Z"
+   }
+  },
+  {
+   "apiVersion": "v1",
+   "kind": "Pod",
+   "metadata": {
+    "creationTimestamp": "2026-09-20T07:05:36Z",
+    "generateName": "snapshot-agent-",
+    "generation": 1,
+    "labels": {
+     "app.kubernetes.io/instance": "snapshot-agent",
+     "app.kubernetes.io/name": "snapshot-agent",
+     "controller-revision-hash": "687c7f8b9f",
+     "pod-template-generation": "1",
+     "topology.kubernetes.io/region": "us-central1",
+     "topology.kubernetes.io/zone": "us-central1-b"
+    },
+    "name": "snapshot-agent-9pkbv",
+    "namespace": "openrl-system",
+    "ownerReferences": [
+     {
+      "apiVersion": "apps/v1",
+      "blockOwnerDeletion": true,
+      "controller": true,
+      "kind": "DaemonSet",
+      "name": "snapshot-agent",
+      "uid": "852816d4-070d-4086-8e5d-97cfe9b1e79e"
+     }
+    ],
+    "resourceVersion": "1789887950213247008",
+    "uid": "b1498158-ab9f-4a6a-91fd-2c80be598a94"
+   },
+   "spec": {
+    "affinity": {
+     "nodeAffinity": {
+      "requiredDuringSchedulingIgnoredDuringExecution": {
+       "nodeSelectorTerms": [
+        {
+         "matchFields": [
+          {
+           "key": "metadata.name",
+           "operator": "In",
+           "values": [
+            "gke-open-rl-dra-l4-trainer-2x-67d40c4c-sr2c"
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     }
+    },
+    "containers": [
+     {
+      "env": [
+       {
+        "name": "DEPLOYMENT_MODE",
+        "value": "k8s"
+       },
+       {
+        "name": "PATH",
+        "value": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+       },
+       {
+        "name": "NODE_NAME",
+        "valueFrom": {
+         "fieldRef": {
+          "apiVersion": "v1",
+          "fieldPath": "spec.nodeName"
+         }
+        }
+       },
+       {
+        "name": "AGENT_PORT",
+        "value": "9001"
+       },
+       {
+        "name": "LD_LIBRARY_PATH",
+        "value": "/usr/local/nvidia/lib64"
+       },
+       {
+        "name": "NVIDIA_VISIBLE_DEVICES",
+        "value": "all"
+       },
+       {
+        "name": "NVIDIA_DRIVER_CAPABILITIES",
+        "value": "compute,utility"
+       }
+      ],
+      "image": "ghcr.io/llm-d-incubation/llm-d-rl-time-slicing/snapshot-agent:v0.1.0",
+      "imagePullPolicy": "Always",
+      "name": "snapshot-agent",
+      "ports": [
+       {
+        "containerPort": 9001,
+        "hostPort": 9001,
+        "name": "grpc",
+        "protocol": "TCP"
+       }
+      ],
+      "resources": {},
+      "securityContext": {
+       "privileged": true
+      },
+      "terminationMessagePath": "/dev/termination-log",
+      "terminationMessagePolicy": "File",
+      "volumeMounts": [
+       {
+        "mountPath": "/usr/local/nvidia",
+        "name": "nvidia-driver",
+        "readOnly": true
+       },
+       {
+        "mountPath": "/dev",
+        "name": "nvidia-devices"
+       },
+       {
+        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+        "name": "kube-api-access-mm47f",
+        "readOnly": true
+       }
+      ]
+     }
+    ],
+    "dnsPolicy": "ClusterFirst",
+    "enableServiceLinks": true,
+    "hostNetwork": true,
+    "hostPID": true,
+    "nodeName": "gke-open-rl-dra-l4-trainer-2x-67d40c4c-sr2c",
+    "nodeSelector": {
+     "nvidia.com/gpu.present": "true"
+    },
+    "preemptionPolicy": "PreemptLowerPriority",
+    "priority": 0,
+    "restartPolicy": "Always",
+    "schedulerName": "default-scheduler",
+    "securityContext": {},
+    "serviceAccount": "snapshot-agent",
+    "serviceAccountName": "snapshot-agent",
+    "terminationGracePeriodSeconds": 30,
+    "tolerations": [
+     {
+      "effect": "NoSchedule",
+      "key": "nvidia.com/gpu",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoExecute",
+      "key": "node.kubernetes.io/not-ready",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoExecute",
+      "key": "node.kubernetes.io/unreachable",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/disk-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/memory-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/pid-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/unschedulable",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/network-unavailable",
+      "operator": "Exists"
+     }
+    ],
+    "volumes": [
+     {
+      "hostPath": {
+       "path": "/home/kubernetes/bin/nvidia",
+       "type": "Directory"
+      },
+      "name": "nvidia-driver"
+     },
+     {
+      "hostPath": {
+       "path": "/dev",
+       "type": "Directory"
+      },
+      "name": "nvidia-devices"
+     },
+     {
+      "name": "kube-api-access-mm47f",
+      "projected": {
+       "defaultMode": 420,
+       "sources": [
+        {
+         "serviceAccountToken": {
+          "expirationSeconds": 3607,
+          "path": "token"
+         }
+        },
+        {
+         "configMap": {
+          "items": [
+           {
+            "key": "ca.crt",
+            "path": "ca.crt"
+           }
+          ],
+          "name": "kube-root-ca.crt"
+         }
+        },
+        {
+         "downwardAPI": {
+          "items": [
+           {
+            "fieldRef": {
+             "apiVersion": "v1",
+             "fieldPath": "metadata.namespace"
+            },
+            "path": "namespace"
+           }
+          ]
+         }
+        }
+       ]
+      }
+     }
+    ]
+   },
+   "status": {
+    "conditions": [
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-09-20T07:05:50Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "PodReadyToStartContainers"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-09-20T07:05:37Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "Initialized"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-09-20T07:05:50Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "Ready"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-09-20T07:05:50Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "ContainersReady"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-09-20T07:05:37Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "PodScheduled"
+     }
+    ],
+    "containerStatuses": [
+     {
+      "containerID": "containerd://ca02ee4696d8e513f3817262e87899a1c277dbcc441912270216af53e1582f96",
+      "image": "ghcr.io/llm-d-incubation/llm-d-rl-time-slicing/snapshot-agent:v0.1.0",
+      "imageID": "ghcr.io/llm-d-incubation/llm-d-rl-time-slicing/snapshot-agent@sha256:84fc38b10554c5a64f7e52f8bfd98f386406a807d1647a33502e0b8a2a4cf829",
+      "lastState": {},
+      "name": "snapshot-agent",
+      "ready": true,
+      "resources": {},
+      "restartCount": 0,
+      "started": true,
+      "state": {
+       "running": {
+        "startedAt": "2026-09-20T07:05:50Z"
+       }
+      },
+      "user": {
+       "linux": {
+        "gid": 0,
+        "supplementalGroups": [
+         0
+        ],
+        "uid": 0
+       }
+      },
+      "volumeMounts": [
+       {
+        "mountPath": "/usr/local/nvidia",
+        "name": "nvidia-driver",
+        "readOnly": true,
+        "recursiveReadOnly": "Disabled"
+       },
+       {
+        "mountPath": "/dev",
+        "name": "nvidia-devices"
+       },
+       {
+        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+        "name": "kube-api-access-mm47f",
+        "readOnly": true,
+        "recursiveReadOnly": "Disabled"
+       }
+      ]
+     }
+    ],
+    "hostIP": "10.128.15.201",
+    "hostIPs": [
+     {
+      "ip": "10.128.15.201"
+     }
+    ],
+    "observedGeneration": 1,
+    "phase": "Running",
+    "podIP": "10.128.15.201",
+    "podIPs": [
+     {
+      "ip": "10.128.15.201"
+     }
+    ],
+    "qosClass": "BestEffort",
+    "startTime": "2026-09-20T07:05:37Z"
+   }
+  },
+  {
+   "apiVersion": "v1",
+   "kind": "Pod",
+   "metadata": {
+    "creationTimestamp": "2026-10-14T02:18:38Z",
+    "generateName": "snapshot-agent-",
+    "generation": 1,
+    "labels": {
+     "app.kubernetes.io/instance": "snapshot-agent",
+     "app.kubernetes.io/name": "snapshot-agent",
+     "controller-revision-hash": "687c7f8b9f",
+     "pod-template-generation": "1",
+     "topology.kubernetes.io/region": "us-central1",
+     "topology.kubernetes.io/zone": "us-central1-a"
+    },
+    "name": "snapshot-agent-9wd9k",
+    "namespace": "openrl-system",
+    "ownerReferences": [
+     {
+      "apiVersion": "apps/v1",
+      "blockOwnerDeletion": true,
+      "controller": true,
+      "kind": "DaemonSet",
+      "name": "snapshot-agent",
+      "uid": "852816d4-070d-4086-8e5d-97cfe9b1e79e"
+     }
+    ],
+    "resourceVersion": "1791944324015471012",
+    "uid": "ce71cee9-99bc-4214-bc1c-d522556068a2"
+   },
+   "spec": {
+    "affinity": {
+     "nodeAffinity": {
+      "requiredDuringSchedulingIgnoredDuringExecution": {
+       "nodeSelectorTerms": [
+        {
+         "matchFields": [
+          {
+           "key": "metadata.name",
+           "operator": "In",
+           "values": [
+            "gke-open-rl-dra-h100-trainer-702095b4-tuqu"
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     }
+    },
+    "containers": [
+     {
+      "env": [
+       {
+        "name": "DEPLOYMENT_MODE",
+        "value": "k8s"
+       },
+       {
+        "name": "PATH",
+        "value": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+       },
+       {
+        "name": "NODE_NAME",
+        "valueFrom": {
+         "fieldRef": {
+          "apiVersion": "v1",
+          "fieldPath": "spec.nodeName"
+         }
+        }
+       },
+       {
+        "name": "AGENT_PORT",
+        "value": "9001"
+       },
+       {
+        "name": "LD_LIBRARY_PATH",
+        "value": "/usr/local/nvidia/lib64"
+       },
+       {
+        "name": "NVIDIA_VISIBLE_DEVICES",
+        "value": "all"
+       },
+       {
+        "name": "NVIDIA_DRIVER_CAPABILITIES",
+        "value": "compute,utility"
+       }
+      ],
+      "image": "ghcr.io/llm-d-incubation/llm-d-rl-time-slicing/snapshot-agent:v0.1.0",
+      "imagePullPolicy": "Always",
+      "name": "snapshot-agent",
+      "ports": [
+       {
+        "containerPort": 9001,
+        "hostPort": 9001,
+        "name": "grpc",
+        "protocol": "TCP"
+       }
+      ],
+      "resources": {},
+      "securityContext": {
+       "privileged": true
+      },
+      "terminationMessagePath": "/dev/termination-log",
+      "terminationMessagePolicy": "File",
+      "volumeMounts": [
+       {
+        "mountPath": "/usr/local/nvidia",
+        "name": "nvidia-driver",
+        "readOnly": true
+       },
+       {
+        "mountPath": "/dev",
+        "name": "nvidia-devices"
+       },
+       {
+        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+        "name": "kube-api-access-5pb8r",
+        "readOnly": true
+       }
+      ]
+     }
+    ],
+    "dnsPolicy": "ClusterFirst",
+    "enableServiceLinks": true,
+    "hostNetwork": true,
+    "hostPID": true,
+    "nodeName": "gke-open-rl-dra-h100-trainer-702095b4-tuqu",
+    "nodeSelector": {
+     "nvidia.com/gpu.present": "true"
+    },
+    "preemptionPolicy": "PreemptLowerPriority",
+    "priority": 0,
+    "restartPolicy": "Always",
+    "schedulerName": "default-scheduler",
+    "securityContext": {},
+    "serviceAccount": "snapshot-agent",
+    "serviceAccountName": "snapshot-agent",
+    "terminationGracePeriodSeconds": 30,
+    "tolerations": [
+     {
+      "effect": "NoSchedule",
+      "key": "nvidia.com/gpu",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoExecute",
+      "key": "node.kubernetes.io/not-ready",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoExecute",
+      "key": "node.kubernetes.io/unreachable",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/disk-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/memory-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/pid-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/unschedulable",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/network-unavailable",
+      "operator": "Exists"
+     }
+    ],
+    "volumes": [
+     {
+      "hostPath": {
+       "path": "/home/kubernetes/bin/nvidia",
+       "type": "Directory"
+      },
+      "name": "nvidia-driver"
+     },
+     {
+      "hostPath": {
+       "path": "/dev",
+       "type": "Directory"
+      },
+      "name": "nvidia-devices"
+     },
+     {
+      "name": "kube-api-access-5pb8r",
+      "projected": {
+       "defaultMode": 420,
+       "sources": [
+        {
+         "serviceAccountToken": {
+          "expirationSeconds": 3607,
+          "path": "token"
+         }
+        },
+        {
+         "configMap": {
+          "items": [
+           {
+            "key": "ca.crt",
+            "path": "ca.crt"
+           }
+          ],
+          "name": "kube-root-ca.crt"
+         }
+        },
+        {
+         "downwardAPI": {
+          "items": [
+           {
+            "fieldRef": {
+             "apiVersion": "v1",
+             "fieldPath": "metadata.namespace"
+            },
+            "path": "namespace"
+           }
+          ]
+         }
+        }
+       ]
+      }
+     }
+    ]
+   },
+   "status": {
+    "conditions": [
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-14T02:18:43Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "PodReadyToStartContainers"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-14T02:18:38Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "Initialized"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-14T02:18:43Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "Ready"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-14T02:18:43Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "ContainersReady"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-14T02:18:38Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "PodScheduled"
+     }
+    ],
+    "containerStatuses": [
+     {
+      "containerID": "containerd://e2c3f518f9671fd9786f2879537008ae20e493ccbc432c9e507f808c73dde172",
+      "image": "ghcr.io/llm-d-incubation/llm-d-rl-time-slicing/snapshot-agent:v0.1.0",
+      "imageID": "ghcr.io/llm-d-incubation/llm-d-rl-time-slicing/snapshot-agent@sha256:84fc38b10554c5a64f7e52f8bfd98f386406a807d1647a33502e0b8a2a4cf829",
+      "lastState": {},
+      "name": "snapshot-agent",
+      "ready": true,
+      "resources": {},
+      "restartCount": 0,
+      "started": true,
+      "state": {
+       "running": {
+        "startedAt": "2026-10-14T02:18:43Z"
+       }
+      },
+      "user": {
+       "linux": {
+        "gid": 0,
+        "supplementalGroups": [
+         0
+        ],
+        "uid": 0
+       }
+      },
+      "volumeMounts": [
+       {
+        "mountPath": "/usr/local/nvidia",
+        "name": "nvidia-driver",
+        "readOnly": true,
+        "recursiveReadOnly": "Disabled"
+       },
+       {
+        "mountPath": "/dev",
+        "name": "nvidia-devices"
+       },
+       {
+        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+        "name": "kube-api-access-5pb8r",
+        "readOnly": true,
+        "recursiveReadOnly": "Disabled"
+       }
+      ]
+     }
+    ],
+    "hostIP": "10.128.15.216",
+    "hostIPs": [
+     {
+      "ip": "10.128.15.216"
+     }
+    ],
+    "observedGeneration": 1,
+    "phase": "Running",
+    "podIP": "10.128.15.216",
+    "podIPs": [
+     {
+      "ip": "10.128.15.216"
+     }
+    ],
+    "qosClass": "BestEffort",
+    "startTime": "2026-10-14T02:18:38Z"
+   }
+  },
+  {
+   "apiVersion": "v1",
+   "kind": "Pod",
+   "metadata": {
+    "creationTimestamp": "2026-09-20T07:22:33Z",
+    "generateName": "snapshot-agent-",
+    "generation": 1,
+    "labels": {
+     "app.kubernetes.io/instance": "snapshot-agent",
+     "app.kubernetes.io/name": "snapshot-agent",
+     "controller-revision-hash": "687c7f8b9f",
+     "pod-template-generation": "1",
+     "topology.kubernetes.io/region": "us-central1",
+     "topology.kubernetes.io/zone": "us-central1-a"
+    },
+    "name": "snapshot-agent-b5pg4",
+    "namespace": "openrl-system",
+    "ownerReferences": [
+     {
+      "apiVersion": "apps/v1",
+      "blockOwnerDeletion": true,
+      "controller": true,
+      "kind": "DaemonSet",
+      "name": "snapshot-agent",
+      "uid": "852816d4-070d-4086-8e5d-97cfe9b1e79e"
+     }
+    ],
+    "resourceVersion": "1789888987151695021",
+    "uid": "a8b69520-65ea-4b1e-bc15-77213a279a60"
+   },
+   "spec": {
+    "affinity": {
+     "nodeAffinity": {
+      "requiredDuringSchedulingIgnoredDuringExecution": {
+       "nodeSelectorTerms": [
+        {
+         "matchFields": [
+          {
+           "key": "metadata.name",
+           "operator": "In",
+           "values": [
+            "gke-open-rl-dra-l4-sampler-2x-ab5fdc9d-2208"
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     }
+    },
+    "containers": [
+     {
+      "env": [
+       {
+        "name": "DEPLOYMENT_MODE",
+        "value": "k8s"
+       },
+       {
+        "name": "PATH",
+        "value": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+       },
+       {
+        "name": "NODE_NAME",
+        "valueFrom": {
+         "fieldRef": {
+          "apiVersion": "v1",
+          "fieldPath": "spec.nodeName"
+         }
+        }
+       },
+       {
+        "name": "AGENT_PORT",
+        "value": "9001"
+       },
+       {
+        "name": "LD_LIBRARY_PATH",
+        "value": "/usr/local/nvidia/lib64"
+       },
+       {
+        "name": "NVIDIA_VISIBLE_DEVICES",
+        "value": "all"
+       },
+       {
+        "name": "NVIDIA_DRIVER_CAPABILITIES",
+        "value": "compute,utility"
+       }
+      ],
+      "image": "ghcr.io/llm-d-incubation/llm-d-rl-time-slicing/snapshot-agent:v0.1.0",
+      "imagePullPolicy": "Always",
+      "name": "snapshot-agent",
+      "ports": [
+       {
+        "containerPort": 9001,
+        "hostPort": 9001,
+        "name": "grpc",
+        "protocol": "TCP"
+       }
+      ],
+      "resources": {},
+      "securityContext": {
+       "privileged": true
+      },
+      "terminationMessagePath": "/dev/termination-log",
+      "terminationMessagePolicy": "File",
+      "volumeMounts": [
+       {
+        "mountPath": "/usr/local/nvidia",
+        "name": "nvidia-driver",
+        "readOnly": true
+       },
+       {
+        "mountPath": "/dev",
+        "name": "nvidia-devices"
+       },
+       {
+        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+        "name": "kube-api-access-pgqxm",
+        "readOnly": true
+       }
+      ]
+     }
+    ],
+    "dnsPolicy": "ClusterFirst",
+    "enableServiceLinks": true,
+    "hostNetwork": true,
+    "hostPID": true,
+    "nodeName": "gke-open-rl-dra-l4-sampler-2x-ab5fdc9d-2208",
+    "nodeSelector": {
+     "nvidia.com/gpu.present": "true"
+    },
+    "preemptionPolicy": "PreemptLowerPriority",
+    "priority": 0,
+    "restartPolicy": "Always",
+    "schedulerName": "default-scheduler",
+    "securityContext": {},
+    "serviceAccount": "snapshot-agent",
+    "serviceAccountName": "snapshot-agent",
+    "terminationGracePeriodSeconds": 30,
+    "tolerations": [
+     {
+      "effect": "NoSchedule",
+      "key": "nvidia.com/gpu",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoExecute",
+      "key": "node.kubernetes.io/not-ready",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoExecute",
+      "key": "node.kubernetes.io/unreachable",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/disk-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/memory-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/pid-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/unschedulable",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/network-unavailable",
+      "operator": "Exists"
+     }
+    ],
+    "volumes": [
+     {
+      "hostPath": {
+       "path": "/home/kubernetes/bin/nvidia",
+       "type": "Directory"
+      },
+      "name": "nvidia-driver"
+     },
+     {
+      "hostPath": {
+       "path": "/dev",
+       "type": "Directory"
+      },
+      "name": "nvidia-devices"
+     },
+     {
+      "name": "kube-api-access-pgqxm",
+      "projected": {
+       "defaultMode": 420,
+       "sources": [
+        {
+         "serviceAccountToken": {
+          "expirationSeconds": 3607,
+          "path": "token"
+         }
+        },
+        {
+         "configMap": {
+          "items": [
+           {
+            "key": "ca.crt",
+            "path": "ca.crt"
+           }
+          ],
+          "name": "kube-root-ca.crt"
+         }
+        },
+        {
+         "downwardAPI": {
+          "items": [
+           {
+            "fieldRef": {
+             "apiVersion": "v1",
+             "fieldPath": "metadata.namespace"
+            },
+            "path": "namespace"
+           }
+          ]
+         }
+        }
+       ]
+      }
+     }
+    ]
+   },
+   "status": {
+    "conditions": [
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-09-20T07:23:07Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "PodReadyToStartContainers"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-09-20T07:22:33Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "Initialized"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-09-20T07:23:07Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "Ready"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-09-20T07:23:07Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "ContainersReady"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-09-20T07:22:33Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "PodScheduled"
+     }
+    ],
+    "containerStatuses": [
+     {
+      "containerID": "containerd://03349a3992ebcdd981463c61332d3245437fed1514ec22320c3972098ce1a57f",
+      "image": "ghcr.io/llm-d-incubation/llm-d-rl-time-slicing/snapshot-agent:v0.1.0",
+      "imageID": "ghcr.io/llm-d-incubation/llm-d-rl-time-slicing/snapshot-agent@sha256:84fc38b10554c5a64f7e52f8bfd98f386406a807d1647a33502e0b8a2a4cf829",
+      "lastState": {},
+      "name": "snapshot-agent",
+      "ready": true,
+      "resources": {},
+      "restartCount": 0,
+      "started": true,
+      "state": {
+       "running": {
+        "startedAt": "2026-09-20T07:23:06Z"
+       }
+      },
+      "user": {
+       "linux": {
+        "gid": 0,
+        "supplementalGroups": [
+         0
+        ],
+        "uid": 0
+       }
+      },
+      "volumeMounts": [
+       {
+        "mountPath": "/usr/local/nvidia",
+        "name": "nvidia-driver",
+        "readOnly": true,
+        "recursiveReadOnly": "Disabled"
+       },
+       {
+        "mountPath": "/dev",
+        "name": "nvidia-devices"
+       },
+       {
+        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+        "name": "kube-api-access-pgqxm",
+        "readOnly": true,
+        "recursiveReadOnly": "Disabled"
+       }
+      ]
+     }
+    ],
+    "hostIP": "10.128.15.202",
+    "hostIPs": [
+     {
+      "ip": "10.128.15.202"
+     }
+    ],
+    "observedGeneration": 1,
+    "phase": "Running",
+    "podIP": "10.128.15.202",
+    "podIPs": [
+     {
+      "ip": "10.128.15.202"
+     }
+    ],
+    "qosClass": "BestEffort",
+    "startTime": "2026-09-20T07:22:33Z"
+   }
+  },
+  {
+   "apiVersion": "v1",
+   "kind": "Pod",
+   "metadata": {
+    "creationTimestamp": "2026-09-20T07:03:24Z",
+    "generateName": "snapshot-agent-",
+    "generation": 1,
+    "labels": {
+     "app.kubernetes.io/instance": "snapshot-agent",
+     "app.kubernetes.io/name": "snapshot-agent",
+     "controller-revision-hash": "687c7f8b9f",
+     "pod-template-generation": "1",
+     "topology.kubernetes.io/region": "us-central1",
+     "topology.kubernetes.io/zone": "us-central1-a"
+    },
+    "name": "snapshot-agent-dclxl",
+    "namespace": "openrl-system",
+    "ownerReferences": [
+     {
+      "apiVersion": "apps/v1",
+      "blockOwnerDeletion": true,
+      "controller": true,
+      "kind": "DaemonSet",
+      "name": "snapshot-agent",
+      "uid": "852816d4-070d-4086-8e5d-97cfe9b1e79e"
+     }
+    ],
+    "resourceVersion": "1789887814636575001",
+    "uid": "8484edfa-0dc8-4fac-a17a-36ce78fb8710"
+   },
+   "spec": {
+    "affinity": {
+     "nodeAffinity": {
+      "requiredDuringSchedulingIgnoredDuringExecution": {
+       "nodeSelectorTerms": [
+        {
+         "matchFields": [
+          {
+           "key": "metadata.name",
+           "operator": "In",
+           "values": [
+            "gke-open-rl-dra-l4-trainer-2x-ed601d8b-lvw8"
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     }
+    },
+    "containers": [
+     {
+      "env": [
+       {
+        "name": "DEPLOYMENT_MODE",
+        "value": "k8s"
+       },
+       {
+        "name": "PATH",
+        "value": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+       },
+       {
+        "name": "NODE_NAME",
+        "valueFrom": {
+         "fieldRef": {
+          "apiVersion": "v1",
+          "fieldPath": "spec.nodeName"
+         }
+        }
+       },
+       {
+        "name": "AGENT_PORT",
+        "value": "9001"
+       },
+       {
+        "name": "LD_LIBRARY_PATH",
+        "value": "/usr/local/nvidia/lib64"
+       },
+       {
+        "name": "NVIDIA_VISIBLE_DEVICES",
+        "value": "all"
+       },
+       {
+        "name": "NVIDIA_DRIVER_CAPABILITIES",
+        "value": "compute,utility"
+       }
+      ],
+      "image": "ghcr.io/llm-d-incubation/llm-d-rl-time-slicing/snapshot-agent:v0.1.0",
+      "imagePullPolicy": "Always",
+      "name": "snapshot-agent",
+      "ports": [
+       {
+        "containerPort": 9001,
+        "hostPort": 9001,
+        "name": "grpc",
+        "protocol": "TCP"
+       }
+      ],
+      "resources": {},
+      "securityContext": {
+       "privileged": true
+      },
+      "terminationMessagePath": "/dev/termination-log",
+      "terminationMessagePolicy": "File",
+      "volumeMounts": [
+       {
+        "mountPath": "/usr/local/nvidia",
+        "name": "nvidia-driver",
+        "readOnly": true
+       },
+       {
+        "mountPath": "/dev",
+        "name": "nvidia-devices"
+       },
+       {
+        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+        "name": "kube-api-access-tq64h",
+        "readOnly": true
+       }
+      ]
+     }
+    ],
+    "dnsPolicy": "ClusterFirst",
+    "enableServiceLinks": true,
+    "hostNetwork": true,
+    "hostPID": true,
+    "nodeName": "gke-open-rl-dra-l4-trainer-2x-ed601d8b-lvw8",
+    "nodeSelector": {
+     "nvidia.com/gpu.present": "true"
+    },
+    "preemptionPolicy": "PreemptLowerPriority",
+    "priority": 0,
+    "restartPolicy": "Always",
+    "schedulerName": "default-scheduler",
+    "securityContext": {},
+    "serviceAccount": "snapshot-agent",
+    "serviceAccountName": "snapshot-agent",
+    "terminationGracePeriodSeconds": 30,
+    "tolerations": [
+     {
+      "effect": "NoSchedule",
+      "key": "nvidia.com/gpu",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoExecute",
+      "key": "node.kubernetes.io/not-ready",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoExecute",
+      "key": "node.kubernetes.io/unreachable",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/disk-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/memory-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/pid-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/unschedulable",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/network-unavailable",
+      "operator": "Exists"
+     }
+    ],
+    "volumes": [
+     {
+      "hostPath": {
+       "path": "/home/kubernetes/bin/nvidia",
+       "type": "Directory"
+      },
+      "name": "nvidia-driver"
+     },
+     {
+      "hostPath": {
+       "path": "/dev",
+       "type": "Directory"
+      },
+      "name": "nvidia-devices"
+     },
+     {
+      "name": "kube-api-access-tq64h",
+      "projected": {
+       "defaultMode": 420,
+       "sources": [
+        {
+         "serviceAccountToken": {
+          "expirationSeconds": 3607,
+          "path": "token"
+         }
+        },
+        {
+         "configMap": {
+          "items": [
+           {
+            "key": "ca.crt",
+            "path": "ca.crt"
+           }
+          ],
+          "name": "kube-root-ca.crt"
+         }
+        },
+        {
+         "downwardAPI": {
+          "items": [
+           {
+            "fieldRef": {
+             "apiVersion": "v1",
+             "fieldPath": "metadata.namespace"
+            },
+            "path": "namespace"
+           }
+          ]
+         }
+        }
+       ]
+      }
+     }
+    ]
+   },
+   "status": {
+    "conditions": [
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-09-20T07:03:34Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "PodReadyToStartContainers"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-09-20T07:03:24Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "Initialized"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-09-20T07:03:34Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "Ready"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-09-20T07:03:34Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "ContainersReady"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-09-20T07:03:24Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "PodScheduled"
+     }
+    ],
+    "containerStatuses": [
+     {
+      "containerID": "containerd://dce9f7fa4663eb33d5815df9dea677b1b52c18d81054c1199da370f1c970d3a1",
+      "image": "ghcr.io/llm-d-incubation/llm-d-rl-time-slicing/snapshot-agent:v0.1.0",
+      "imageID": "ghcr.io/llm-d-incubation/llm-d-rl-time-slicing/snapshot-agent@sha256:84fc38b10554c5a64f7e52f8bfd98f386406a807d1647a33502e0b8a2a4cf829",
+      "lastState": {},
+      "name": "snapshot-agent",
+      "ready": true,
+      "resources": {},
+      "restartCount": 0,
+      "started": true,
+      "state": {
+       "running": {
+        "startedAt": "2026-09-20T07:03:34Z"
+       }
+      },
+      "user": {
+       "linux": {
+        "gid": 0,
+        "supplementalGroups": [
+         0
+        ],
+        "uid": 0
+       }
+      },
+      "volumeMounts": [
+       {
+        "mountPath": "/usr/local/nvidia",
+        "name": "nvidia-driver",
+        "readOnly": true,
+        "recursiveReadOnly": "Disabled"
+       },
+       {
+        "mountPath": "/dev",
+        "name": "nvidia-devices"
+       },
+       {
+        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+        "name": "kube-api-access-tq64h",
+        "readOnly": true,
+        "recursiveReadOnly": "Disabled"
+       }
+      ]
+     }
+    ],
+    "hostIP": "10.128.15.196",
+    "hostIPs": [
+     {
+      "ip": "10.128.15.196"
+     }
+    ],
+    "observedGeneration": 1,
+    "phase": "Running",
+    "podIP": "10.128.15.196",
+    "podIPs": [
+     {
+      "ip": "10.128.15.196"
+     }
+    ],
+    "qosClass": "BestEffort",
+    "startTime": "2026-09-20T07:03:24Z"
+   }
+  },
+  {
+   "apiVersion": "v1",
+   "kind": "Pod",
+   "metadata": {
+    "creationTimestamp": "2026-10-05T18:38:27Z",
+    "generateName": "snapshot-agent-",
+    "generation": 1,
+    "labels": {
+     "app.kubernetes.io/instance": "snapshot-agent",
+     "app.kubernetes.io/name": "snapshot-agent",
+     "controller-revision-hash": "687c7f8b9f",
+     "pod-template-generation": "1",
+     "topology.kubernetes.io/region": "us-central1",
+     "topology.kubernetes.io/zone": "us-central1-a"
+    },
+    "name": "snapshot-agent-hcb9v",
+    "namespace": "openrl-system",
+    "ownerReferences": [
+     {
+      "apiVersion": "apps/v1",
+      "blockOwnerDeletion": true,
+      "controller": true,
+      "kind": "DaemonSet",
+      "name": "snapshot-agent",
+      "uid": "852816d4-070d-4086-8e5d-97cfe9b1e79e"
+     }
+    ],
+    "resourceVersion": "1791225513211215020",
+    "uid": "15b054e4-c82f-4cee-bf19-c0bfdcd8b577"
+   },
+   "spec": {
+    "affinity": {
+     "nodeAffinity": {
+      "requiredDuringSchedulingIgnoredDuringExecution": {
+       "nodeSelectorTerms": [
+        {
+         "matchFields": [
+          {
+           "key": "metadata.name",
+           "operator": "In",
+           "values": [
+            "gke-open-rl-dra-h100-sampler-a721f127-0853"
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     }
+    },
+    "containers": [
+     {
+      "env": [
+       {
+        "name": "DEPLOYMENT_MODE",
+        "value": "k8s"
+       },
+       {
+        "name": "PATH",
+        "value": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+       },
+       {
+        "name": "NODE_NAME",
+        "valueFrom": {
+         "fieldRef": {
+          "apiVersion": "v1",
+          "fieldPath": "spec.nodeName"
+         }
+        }
+       },
+       {
+        "name": "AGENT_PORT",
+        "value": "9001"
+       },
+       {
+        "name": "LD_LIBRARY_PATH",
+        "value": "/usr/local/nvidia/lib64"
+       },
+       {
+        "name": "NVIDIA_VISIBLE_DEVICES",
+        "value": "all"
+       },
+       {
+        "name": "NVIDIA_DRIVER_CAPABILITIES",
+        "value": "compute,utility"
+       }
+      ],
+      "image": "ghcr.io/llm-d-incubation/llm-d-rl-time-slicing/snapshot-agent:v0.1.0",
+      "imagePullPolicy": "Always",
+      "name": "snapshot-agent",
+      "ports": [
+       {
+        "containerPort": 9001,
+        "hostPort": 9001,
+        "name": "grpc",
+        "protocol": "TCP"
+       }
+      ],
+      "resources": {},
+      "securityContext": {
+       "privileged": true
+      },
+      "terminationMessagePath": "/dev/termination-log",
+      "terminationMessagePolicy": "File",
+      "volumeMounts": [
+       {
+        "mountPath": "/usr/local/nvidia",
+        "name": "nvidia-driver",
+        "readOnly": true
+       },
+       {
+        "mountPath": "/dev",
+        "name": "nvidia-devices"
+       },
+       {
+        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+        "name": "kube-api-access-pbcm9",
+        "readOnly": true
+       }
+      ]
+     }
+    ],
+    "dnsPolicy": "ClusterFirst",
+    "enableServiceLinks": true,
+    "hostNetwork": true,
+    "hostPID": true,
+    "nodeName": "gke-open-rl-dra-h100-sampler-a721f127-0853",
+    "nodeSelector": {
+     "nvidia.com/gpu.present": "true"
+    },
+    "preemptionPolicy": "PreemptLowerPriority",
+    "priority": 0,
+    "restartPolicy": "Always",
+    "schedulerName": "default-scheduler",
+    "securityContext": {},
+    "serviceAccount": "snapshot-agent",
+    "serviceAccountName": "snapshot-agent",
+    "terminationGracePeriodSeconds": 30,
+    "tolerations": [
+     {
+      "effect": "NoSchedule",
+      "key": "nvidia.com/gpu",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoExecute",
+      "key": "node.kubernetes.io/not-ready",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoExecute",
+      "key": "node.kubernetes.io/unreachable",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/disk-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/memory-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/pid-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/unschedulable",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/network-unavailable",
+      "operator": "Exists"
+     }
+    ],
+    "volumes": [
+     {
+      "hostPath": {
+       "path": "/home/kubernetes/bin/nvidia",
+       "type": "Directory"
+      },
+      "name": "nvidia-driver"
+     },
+     {
+      "hostPath": {
+       "path": "/dev",
+       "type": "Directory"
+      },
+      "name": "nvidia-devices"
+     },
+     {
+      "name": "kube-api-access-pbcm9",
+      "projected": {
+       "defaultMode": 420,
+       "sources": [
+        {
+         "serviceAccountToken": {
+          "expirationSeconds": 3607,
+          "path": "token"
+         }
+        },
+        {
+         "configMap": {
+          "items": [
+           {
+            "key": "ca.crt",
+            "path": "ca.crt"
+           }
+          ],
+          "name": "kube-root-ca.crt"
+         }
+        },
+        {
+         "downwardAPI": {
+          "items": [
+           {
+            "fieldRef": {
+             "apiVersion": "v1",
+             "fieldPath": "metadata.namespace"
+            },
+            "path": "namespace"
+           }
+          ]
+         }
+        }
+       ]
+      }
+     }
+    ]
+   },
+   "status": {
+    "conditions": [
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-05T18:38:33Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "PodReadyToStartContainers"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-05T18:38:27Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "Initialized"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-05T18:38:33Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "Ready"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-05T18:38:33Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "ContainersReady"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-05T18:38:27Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "PodScheduled"
+     }
+    ],
+    "containerStatuses": [
+     {
+      "containerID": "containerd://a8760998fb8f6c64ebcac928fb2af8964b56d3bb885e8b3eb952742d7435b181",
+      "image": "ghcr.io/llm-d-incubation/llm-d-rl-time-slicing/snapshot-agent:v0.1.0",
+      "imageID": "ghcr.io/llm-d-incubation/llm-d-rl-time-slicing/snapshot-agent@sha256:84fc38b10554c5a64f7e52f8bfd98f386406a807d1647a33502e0b8a2a4cf829",
+      "lastState": {},
+      "name": "snapshot-agent",
+      "ready": true,
+      "resources": {},
+      "restartCount": 0,
+      "started": true,
+      "state": {
+       "running": {
+        "startedAt": "2026-10-05T18:38:32Z"
+       }
+      },
+      "user": {
+       "linux": {
+        "gid": 0,
+        "supplementalGroups": [
+         0
+        ],
+        "uid": 0
+       }
+      },
+      "volumeMounts": [
+       {
+        "mountPath": "/usr/local/nvidia",
+        "name": "nvidia-driver",
+        "readOnly": true,
+        "recursiveReadOnly": "Disabled"
+       },
+       {
+        "mountPath": "/dev",
+        "name": "nvidia-devices"
+       },
+       {
+        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+        "name": "kube-api-access-pbcm9",
+        "readOnly": true,
+        "recursiveReadOnly": "Disabled"
+       }
+      ]
+     }
+    ],
+    "hostIP": "10.128.15.197",
+    "hostIPs": [
+     {
+      "ip": "10.128.15.197"
+     }
+    ],
+    "observedGeneration": 1,
+    "phase": "Running",
+    "podIP": "10.128.15.197",
+    "podIPs": [
+     {
+      "ip": "10.128.15.197"
+     }
+    ],
+    "qosClass": "BestEffort",
+    "startTime": "2026-10-05T18:38:27Z"
+   }
+  },
+  {
+   "apiVersion": "v1",
+   "kind": "Pod",
+   "metadata": {
+    "creationTimestamp": "2026-09-20T07:24:14Z",
+    "generateName": "snapshot-agent-",
+    "generation": 1,
+    "labels": {
+     "app.kubernetes.io/instance": "snapshot-agent",
+     "app.kubernetes.io/name": "snapshot-agent",
+     "controller-revision-hash": "687c7f8b9f",
+     "pod-template-generation": "1",
+     "topology.kubernetes.io/region": "us-central1",
+     "topology.kubernetes.io/zone": "us-central1-b"
+    },
+    "name": "snapshot-agent-k8qtd",
+    "namespace": "openrl-system",
+    "ownerReferences": [
+     {
+      "apiVersion": "apps/v1",
+      "blockOwnerDeletion": true,
+      "controller": true,
+      "kind": "DaemonSet",
+      "name": "snapshot-agent",
+      "uid": "852816d4-070d-4086-8e5d-97cfe9b1e79e"
+     }
+    ],
+    "resourceVersion": "1789889066585295015",
+    "uid": "bfa4c0fd-e19e-4be6-9d1c-6f96bef1c82a"
+   },
+   "spec": {
+    "affinity": {
+     "nodeAffinity": {
+      "requiredDuringSchedulingIgnoredDuringExecution": {
+       "nodeSelectorTerms": [
+        {
+         "matchFields": [
+          {
+           "key": "metadata.name",
+           "operator": "In",
+           "values": [
+            "gke-open-rl-dra-l4-sampler-2x-1ad5171e-bs96"
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     }
+    },
+    "containers": [
+     {
+      "env": [
+       {
+        "name": "DEPLOYMENT_MODE",
+        "value": "k8s"
+       },
+       {
+        "name": "PATH",
+        "value": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+       },
+       {
+        "name": "NODE_NAME",
+        "valueFrom": {
+         "fieldRef": {
+          "apiVersion": "v1",
+          "fieldPath": "spec.nodeName"
+         }
+        }
+       },
+       {
+        "name": "AGENT_PORT",
+        "value": "9001"
+       },
+       {
+        "name": "LD_LIBRARY_PATH",
+        "value": "/usr/local/nvidia/lib64"
+       },
+       {
+        "name": "NVIDIA_VISIBLE_DEVICES",
+        "value": "all"
+       },
+       {
+        "name": "NVIDIA_DRIVER_CAPABILITIES",
+        "value": "compute,utility"
+       }
+      ],
+      "image": "ghcr.io/llm-d-incubation/llm-d-rl-time-slicing/snapshot-agent:v0.1.0",
+      "imagePullPolicy": "Always",
+      "name": "snapshot-agent",
+      "ports": [
+       {
+        "containerPort": 9001,
+        "hostPort": 9001,
+        "name": "grpc",
+        "protocol": "TCP"
+       }
+      ],
+      "resources": {},
+      "securityContext": {
+       "privileged": true
+      },
+      "terminationMessagePath": "/dev/termination-log",
+      "terminationMessagePolicy": "File",
+      "volumeMounts": [
+       {
+        "mountPath": "/usr/local/nvidia",
+        "name": "nvidia-driver",
+        "readOnly": true
+       },
+       {
+        "mountPath": "/dev",
+        "name": "nvidia-devices"
+       },
+       {
+        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+        "name": "kube-api-access-bkd68",
+        "readOnly": true
+       }
+      ]
+     }
+    ],
+    "dnsPolicy": "ClusterFirst",
+    "enableServiceLinks": true,
+    "hostNetwork": true,
+    "hostPID": true,
+    "nodeName": "gke-open-rl-dra-l4-sampler-2x-1ad5171e-bs96",
+    "nodeSelector": {
+     "nvidia.com/gpu.present": "true"
+    },
+    "preemptionPolicy": "PreemptLowerPriority",
+    "priority": 0,
+    "restartPolicy": "Always",
+    "schedulerName": "default-scheduler",
+    "securityContext": {},
+    "serviceAccount": "snapshot-agent",
+    "serviceAccountName": "snapshot-agent",
+    "terminationGracePeriodSeconds": 30,
+    "tolerations": [
+     {
+      "effect": "NoSchedule",
+      "key": "nvidia.com/gpu",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoExecute",
+      "key": "node.kubernetes.io/not-ready",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoExecute",
+      "key": "node.kubernetes.io/unreachable",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/disk-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/memory-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/pid-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/unschedulable",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/network-unavailable",
+      "operator": "Exists"
+     }
+    ],
+    "volumes": [
+     {
+      "hostPath": {
+       "path": "/home/kubernetes/bin/nvidia",
+       "type": "Directory"
+      },
+      "name": "nvidia-driver"
+     },
+     {
+      "hostPath": {
+       "path": "/dev",
+       "type": "Directory"
+      },
+      "name": "nvidia-devices"
+     },
+     {
+      "name": "kube-api-access-bkd68",
+      "projected": {
+       "defaultMode": 420,
+       "sources": [
+        {
+         "serviceAccountToken": {
+          "expirationSeconds": 3607,
+          "path": "token"
+         }
+        },
+        {
+         "configMap": {
+          "items": [
+           {
+            "key": "ca.crt",
+            "path": "ca.crt"
+           }
+          ],
+          "name": "kube-root-ca.crt"
+         }
+        },
+        {
+         "downwardAPI": {
+          "items": [
+           {
+            "fieldRef": {
+             "apiVersion": "v1",
+             "fieldPath": "metadata.namespace"
+            },
+            "path": "namespace"
+           }
+          ]
+         }
+        }
+       ]
+      }
+     }
+    ]
+   },
+   "status": {
+    "conditions": [
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-09-20T07:24:26Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "PodReadyToStartContainers"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-09-20T07:24:14Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "Initialized"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-09-20T07:24:26Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "Ready"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-09-20T07:24:26Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "ContainersReady"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-09-20T07:24:14Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "PodScheduled"
+     }
+    ],
+    "containerStatuses": [
+     {
+      "containerID": "containerd://8b934ecb0fae9981de1fe2f716a013d5087d23c5b680e09822db36102b76b09d",
+      "image": "ghcr.io/llm-d-incubation/llm-d-rl-time-slicing/snapshot-agent:v0.1.0",
+      "imageID": "ghcr.io/llm-d-incubation/llm-d-rl-time-slicing/snapshot-agent@sha256:84fc38b10554c5a64f7e52f8bfd98f386406a807d1647a33502e0b8a2a4cf829",
+      "lastState": {},
+      "name": "snapshot-agent",
+      "ready": true,
+      "resources": {},
+      "restartCount": 0,
+      "started": true,
+      "state": {
+       "running": {
+        "startedAt": "2026-09-20T07:24:25Z"
+       }
+      },
+      "user": {
+       "linux": {
+        "gid": 0,
+        "supplementalGroups": [
+         0
+        ],
+        "uid": 0
+       }
+      },
+      "volumeMounts": [
+       {
+        "mountPath": "/usr/local/nvidia",
+        "name": "nvidia-driver",
+        "readOnly": true,
+        "recursiveReadOnly": "Disabled"
+       },
+       {
+        "mountPath": "/dev",
+        "name": "nvidia-devices"
+       },
+       {
+        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+        "name": "kube-api-access-bkd68",
+        "readOnly": true,
+        "recursiveReadOnly": "Disabled"
+       }
+      ]
+     }
+    ],
+    "hostIP": "10.128.15.194",
+    "hostIPs": [
+     {
+      "ip": "10.128.15.194"
+     }
+    ],
+    "observedGeneration": 1,
+    "phase": "Running",
+    "podIP": "10.128.15.194",
+    "podIPs": [
+     {
+      "ip": "10.128.15.194"
+     }
+    ],
+    "qosClass": "BestEffort",
+    "startTime": "2026-09-20T07:24:14Z"
+   }
+  },
+  {
+   "apiVersion": "v1",
+   "kind": "Pod",
+   "metadata": {
+    "creationTimestamp": "2026-09-30T18:57:25Z",
+    "generateName": "snapshot-agent-",
+    "generation": 1,
+    "labels": {
+     "app.kubernetes.io/instance": "snapshot-agent",
+     "app.kubernetes.io/name": "snapshot-agent",
+     "controller-revision-hash": "687c7f8b9f",
+     "pod-template-generation": "1",
+     "topology.kubernetes.io/region": "us-central1",
+     "topology.kubernetes.io/zone": "us-central1-a"
+    },
+    "name": "snapshot-agent-lgbqp",
+    "namespace": "openrl-system",
+    "ownerReferences": [
+     {
+      "apiVersion": "apps/v1",
+      "blockOwnerDeletion": true,
+      "controller": true,
+      "kind": "DaemonSet",
+      "name": "snapshot-agent",
+      "uid": "852816d4-070d-4086-8e5d-97cfe9b1e79e"
+     }
+    ],
+    "resourceVersion": "1790794650142511011",
+    "uid": "8e0ef9ca-5b6e-4ce8-a59e-2bc2167a9904"
+   },
+   "spec": {
+    "affinity": {
+     "nodeAffinity": {
+      "requiredDuringSchedulingIgnoredDuringExecution": {
+       "nodeSelectorTerms": [
+        {
+         "matchFields": [
+          {
+           "key": "metadata.name",
+           "operator": "In",
+           "values": [
+            "gke-open-rl-dra-h100-sampler-a721f127-ed3t"
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     }
+    },
+    "containers": [
+     {
+      "env": [
+       {
+        "name": "DEPLOYMENT_MODE",
+        "value": "k8s"
+       },
+       {
+        "name": "PATH",
+        "value": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+       },
+       {
+        "name": "NODE_NAME",
+        "valueFrom": {
+         "fieldRef": {
+          "apiVersion": "v1",
+          "fieldPath": "spec.nodeName"
+         }
+        }
+       },
+       {
+        "name": "AGENT_PORT",
+        "value": "9001"
+       },
+       {
+        "name": "LD_LIBRARY_PATH",
+        "value": "/usr/local/nvidia/lib64"
+       },
+       {
+        "name": "NVIDIA_VISIBLE_DEVICES",
+        "value": "all"
+       },
+       {
+        "name": "NVIDIA_DRIVER_CAPABILITIES",
+        "value": "compute,utility"
+       }
+      ],
+      "image": "ghcr.io/llm-d-incubation/llm-d-rl-time-slicing/snapshot-agent:v0.1.0",
+      "imagePullPolicy": "Always",
+      "name": "snapshot-agent",
+      "ports": [
+       {
+        "containerPort": 9001,
+        "hostPort": 9001,
+        "name": "grpc",
+        "protocol": "TCP"
+       }
+      ],
+      "resources": {},
+      "securityContext": {
+       "privileged": true
+      },
+      "terminationMessagePath": "/dev/termination-log",
+      "terminationMessagePolicy": "File",
+      "volumeMounts": [
+       {
+        "mountPath": "/usr/local/nvidia",
+        "name": "nvidia-driver",
+        "readOnly": true
+       },
+       {
+        "mountPath": "/dev",
+        "name": "nvidia-devices"
+       },
+       {
+        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+        "name": "kube-api-access-966cp",
+        "readOnly": true
+       }
+      ]
+     }
+    ],
+    "dnsPolicy": "ClusterFirst",
+    "enableServiceLinks": true,
+    "hostNetwork": true,
+    "hostPID": true,
+    "nodeName": "gke-open-rl-dra-h100-sampler-a721f127-ed3t",
+    "nodeSelector": {
+     "nvidia.com/gpu.present": "true"
+    },
+    "preemptionPolicy": "PreemptLowerPriority",
+    "priority": 0,
+    "restartPolicy": "Always",
+    "schedulerName": "default-scheduler",
+    "securityContext": {},
+    "serviceAccount": "snapshot-agent",
+    "serviceAccountName": "snapshot-agent",
+    "terminationGracePeriodSeconds": 30,
+    "tolerations": [
+     {
+      "effect": "NoSchedule",
+      "key": "nvidia.com/gpu",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoExecute",
+      "key": "node.kubernetes.io/not-ready",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoExecute",
+      "key": "node.kubernetes.io/unreachable",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/disk-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/memory-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/pid-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/unschedulable",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/network-unavailable",
+      "operator": "Exists"
+     }
+    ],
+    "volumes": [
+     {
+      "hostPath": {
+       "path": "/home/kubernetes/bin/nvidia",
+       "type": "Directory"
+      },
+      "name": "nvidia-driver"
+     },
+     {
+      "hostPath": {
+       "path": "/dev",
+       "type": "Directory"
+      },
+      "name": "nvidia-devices"
+     },
+     {
+      "name": "kube-api-access-966cp",
+      "projected": {
+       "defaultMode": 420,
+       "sources": [
+        {
+         "serviceAccountToken": {
+          "expirationSeconds": 3607,
+          "path": "token"
+         }
+        },
+        {
+         "configMap": {
+          "items": [
+           {
+            "key": "ca.crt",
+            "path": "ca.crt"
+           }
+          ],
+          "name": "kube-root-ca.crt"
+         }
+        },
+        {
+         "downwardAPI": {
+          "items": [
+           {
+            "fieldRef": {
+             "apiVersion": "v1",
+             "fieldPath": "metadata.namespace"
+            },
+            "path": "namespace"
+           }
+          ]
+         }
+        }
+       ]
+      }
+     }
+    ]
+   },
+   "status": {
+    "conditions": [
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-09-30T18:57:30Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "PodReadyToStartContainers"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-09-30T18:57:25Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "Initialized"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-09-30T18:57:30Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "Ready"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-09-30T18:57:30Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "ContainersReady"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-09-30T18:57:25Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "PodScheduled"
+     }
+    ],
+    "containerStatuses": [
+     {
+      "containerID": "containerd://cd5642bcb66630016bb1b35e619736d41de897d5f29607213d8f4d4150419895",
+      "image": "ghcr.io/llm-d-incubation/llm-d-rl-time-slicing/snapshot-agent:v0.1.0",
+      "imageID": "ghcr.io/llm-d-incubation/llm-d-rl-time-slicing/snapshot-agent@sha256:84fc38b10554c5a64f7e52f8bfd98f386406a807d1647a33502e0b8a2a4cf829",
+      "lastState": {},
+      "name": "snapshot-agent",
+      "ready": true,
+      "resources": {},
+      "restartCount": 0,
+      "started": true,
+      "state": {
+       "running": {
+        "startedAt": "2026-09-30T18:57:29Z"
+       }
+      },
+      "user": {
+       "linux": {
+        "gid": 0,
+        "supplementalGroups": [
+         0
+        ],
+        "uid": 0
+       }
+      },
+      "volumeMounts": [
+       {
+        "mountPath": "/usr/local/nvidia",
+        "name": "nvidia-driver",
+        "readOnly": true,
+        "recursiveReadOnly": "Disabled"
+       },
+       {
+        "mountPath": "/dev",
+        "name": "nvidia-devices"
+       },
+       {
+        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+        "name": "kube-api-access-966cp",
+        "readOnly": true,
+        "recursiveReadOnly": "Disabled"
+       }
+      ]
+     }
+    ],
+    "hostIP": "10.128.0.10",
+    "hostIPs": [
+     {
+      "ip": "10.128.0.10"
+     }
+    ],
+    "observedGeneration": 1,
+    "phase": "Running",
+    "podIP": "10.128.0.10",
+    "podIPs": [
+     {
+      "ip": "10.128.0.10"
+     }
+    ],
+    "qosClass": "BestEffort",
+    "startTime": "2026-09-30T18:57:25Z"
+   }
+  },
+  {
+   "apiVersion": "v1",
+   "kind": "Pod",
+   "metadata": {
+    "creationTimestamp": "2026-10-14T02:19:20Z",
+    "generateName": "snapshot-agent-",
+    "generation": 1,
+    "labels": {
+     "app.kubernetes.io/instance": "snapshot-agent",
+     "app.kubernetes.io/name": "snapshot-agent",
+     "controller-revision-hash": "687c7f8b9f",
+     "pod-template-generation": "1",
+     "topology.kubernetes.io/region": "us-central1",
+     "topology.kubernetes.io/zone": "us-central1-a"
+    },
+    "name": "snapshot-agent-vt9ct",
+    "namespace": "openrl-system",
+    "ownerReferences": [
+     {
+      "apiVersion": "apps/v1",
+      "blockOwnerDeletion": true,
+      "controller": true,
+      "kind": "DaemonSet",
+      "name": "snapshot-agent",
+      "uid": "852816d4-070d-4086-8e5d-97cfe9b1e79e"
+     }
+    ],
+    "resourceVersion": "1791944364158111002",
+    "uid": "13db9aa6-0ca5-4e1b-bf3e-a802caab3be0"
+   },
+   "spec": {
+    "affinity": {
+     "nodeAffinity": {
+      "requiredDuringSchedulingIgnoredDuringExecution": {
+       "nodeSelectorTerms": [
+        {
+         "matchFields": [
+          {
+           "key": "metadata.name",
+           "operator": "In",
+           "values": [
+            "gke-open-rl-dra-h100-trainer-702095b4-1g3a"
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     }
+    },
+    "containers": [
+     {
+      "env": [
+       {
+        "name": "DEPLOYMENT_MODE",
+        "value": "k8s"
+       },
+       {
+        "name": "PATH",
+        "value": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+       },
+       {
+        "name": "NODE_NAME",
+        "valueFrom": {
+         "fieldRef": {
+          "apiVersion": "v1",
+          "fieldPath": "spec.nodeName"
+         }
+        }
+       },
+       {
+        "name": "AGENT_PORT",
+        "value": "9001"
+       },
+       {
+        "name": "LD_LIBRARY_PATH",
+        "value": "/usr/local/nvidia/lib64"
+       },
+       {
+        "name": "NVIDIA_VISIBLE_DEVICES",
+        "value": "all"
+       },
+       {
+        "name": "NVIDIA_DRIVER_CAPABILITIES",
+        "value": "compute,utility"
+       }
+      ],
+      "image": "ghcr.io/llm-d-incubation/llm-d-rl-time-slicing/snapshot-agent:v0.1.0",
+      "imagePullPolicy": "Always",
+      "name": "snapshot-agent",
+      "ports": [
+       {
+        "containerPort": 9001,
+        "hostPort": 9001,
+        "name": "grpc",
+        "protocol": "TCP"
+       }
+      ],
+      "resources": {},
+      "securityContext": {
+       "privileged": true
+      },
+      "terminationMessagePath": "/dev/termination-log",
+      "terminationMessagePolicy": "File",
+      "volumeMounts": [
+       {
+        "mountPath": "/usr/local/nvidia",
+        "name": "nvidia-driver",
+        "readOnly": true
+       },
+       {
+        "mountPath": "/dev",
+        "name": "nvidia-devices"
+       },
+       {
+        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+        "name": "kube-api-access-6vrn7",
+        "readOnly": true
+       }
+      ]
+     }
+    ],
+    "dnsPolicy": "ClusterFirst",
+    "enableServiceLinks": true,
+    "hostNetwork": true,
+    "hostPID": true,
+    "nodeName": "gke-open-rl-dra-h100-trainer-702095b4-1g3a",
+    "nodeSelector": {
+     "nvidia.com/gpu.present": "true"
+    },
+    "preemptionPolicy": "PreemptLowerPriority",
+    "priority": 0,
+    "restartPolicy": "Always",
+    "schedulerName": "default-scheduler",
+    "securityContext": {},
+    "serviceAccount": "snapshot-agent",
+    "serviceAccountName": "snapshot-agent",
+    "terminationGracePeriodSeconds": 30,
+    "tolerations": [
+     {
+      "effect": "NoSchedule",
+      "key": "nvidia.com/gpu",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoExecute",
+      "key": "node.kubernetes.io/not-ready",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoExecute",
+      "key": "node.kubernetes.io/unreachable",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/disk-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/memory-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/pid-pressure",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/unschedulable",
+      "operator": "Exists"
+     },
+     {
+      "effect": "NoSchedule",
+      "key": "node.kubernetes.io/network-unavailable",
+      "operator": "Exists"
+     }
+    ],
+    "volumes": [
+     {
+      "hostPath": {
+       "path": "/home/kubernetes/bin/nvidia",
+       "type": "Directory"
+      },
+      "name": "nvidia-driver"
+     },
+     {
+      "hostPath": {
+       "path": "/dev",
+       "type": "Directory"
+      },
+      "name": "nvidia-devices"
+     },
+     {
+      "name": "kube-api-access-6vrn7",
+      "projected": {
+       "defaultMode": 420,
+       "sources": [
+        {
+         "serviceAccountToken": {
+          "expirationSeconds": 3607,
+          "path": "token"
+         }
+        },
+        {
+         "configMap": {
+          "items": [
+           {
+            "key": "ca.crt",
+            "path": "ca.crt"
+           }
+          ],
+          "name": "kube-root-ca.crt"
+         }
+        },
+        {
+         "downwardAPI": {
+          "items": [
+           {
+            "fieldRef": {
+             "apiVersion": "v1",
+             "fieldPath": "metadata.namespace"
+            },
+            "path": "namespace"
+           }
+          ]
+         }
+        }
+       ]
+      }
+     }
+    ]
+   },
+   "status": {
+    "conditions": [
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-14T02:19:24Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "PodReadyToStartContainers"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-14T02:19:20Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "Initialized"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-14T02:19:24Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "Ready"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-14T02:19:24Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "ContainersReady"
+     },
+     {
+      "lastProbeTime": null,
+      "lastTransitionTime": "2026-10-14T02:19:20Z",
+      "observedGeneration": 1,
+      "status": "True",
+      "type": "PodScheduled"
+     }
+    ],
+    "containerStatuses": [
+     {
+      "containerID": "containerd://7fa2a0e83934db24f10c55b5dda1e9636dc1a3878534f1920a80734d5f23bb82",
+      "image": "ghcr.io/llm-d-incubation/llm-d-rl-time-slicing/snapshot-agent:v0.1.0",
+      "imageID": "ghcr.io/llm-d-incubation/llm-d-rl-time-slicing/snapshot-agent@sha256:84fc38b10554c5a64f7e52f8bfd98f386406a807d1647a33502e0b8a2a4cf829",
+      "lastState": {},
+      "name": "snapshot-agent",
+      "ready": true,
+      "resources": {},
+      "restartCount": 0,
+      "started": true,
+      "state": {
+       "running": {
+        "startedAt": "2026-10-14T02:19:23Z"
+       }
+      },
+      "user": {
+       "linux": {
+        "gid": 0,
+        "supplementalGroups": [
+         0
+        ],
+        "uid": 0
+       }
+      },
+      "volumeMounts": [
+       {
+        "mountPath": "/usr/local/nvidia",
+        "name": "nvidia-driver",
+        "readOnly": true,
+        "recursiveReadOnly": "Disabled"
+       },
+       {
+        "mountPath": "/dev",
+        "name": "nvidia-devices"
+       },
+       {
+        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+        "name": "kube-api-access-6vrn7",
+        "readOnly": true,
+        "recursiveReadOnly": "Disabled"
+       }
+      ]
+     }
+    ],
+    "hostIP": "10.128.15.211",
+    "hostIPs": [
+     {
+      "ip": "10.128.15.211"
+     }
+    ],
+    "observedGeneration": 1,
+    "phase": "Running",
+    "podIP": "10.128.15.211",
+    "podIPs": [
+     {
+      "ip": "10.128.15.211"
+     }
+    ],
+    "qosClass": "BestEffort",
+    "startTime": "2026-10-14T02:19:20Z"
+   }
+  }
+ ],
+ "kind": "List",
+ "metadata": {
+  "resourceVersion": ""
+ }
+}

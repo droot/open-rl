@@ -1,0 +1,32 @@
+lrwxrwxrwx 1 root root 76 Sep 17 20:59 /mnt/shared/open-rl/huggingface/hub/models--Qwen--Qwen3-4B-Instruct-2507/snapshots/cdbee75f17c01a7cc42f958dc650907174af0554/model-00001-of-00003.safetensors -> ../../blobs/75311d91bb08cf0b882913da464a1e722a31fb44db35208663487efb7a3d8ed6
+device 10.80.45.194:/vol1 mounted on /mnt/shared with fstype nfs statvers=1.1
+	opts:	rw,vers=3,rsize=1048576,wsize=1048576,namlen=255,acregmin=3,acregmax=60,acdirmin=30,acdirmax=60,hard,proto=tcp,timeo=600,retrans=2,sec=sys,mountaddr=10.80.45.194,mountvers=3,mountport=2050,mountproto=tcp,local_lock=none
+	age:	13
+	caps:	caps=0xf,wtmult=4096,dtsize=1048576,bsize=0,namlen=255
+	sec:	flavor=1,pseudoflavor=1
+	events:	1 72 0 0 2 9 89 0 0 0 0 0 4 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+	bytes:	0 0 0 0 0 0 0 0 
+	RPC iostats version: 1.1  p/v: 100003/3 (nfs)
+	xprt:	tcp 961 1 2 0 1 30 30 0 30 0 2 0 0
+	per-op statistics
+	        NULL: 1 1 0 44 24 3 1 4 0
+	     GETATTR: 3 3 0 416 336 0 3 3 0
+	     SETATTR: 0 0 0 0 0 0 0 0 0
+	      LOOKUP: 9 9 0 1596 2124 0 8 8 0
+	      ACCESS: 8 8 0 1176 960 0 8 9 0
+	    READLINK: 3 3 0 432 588 0 38 38 0
+	        READ: 0 0 0 0 0 0 0 0 0
+	       WRITE: 0 0 0 0 0 0 0 0 0
+	      CREATE: 0 0 0 0 0 0 0 0 0
+	       MKDIR: 0 0 0 0 0 0 0 0 0
+	     SYMLINK: 0 0 0 0 0 0 0 0 0
+	       MKNOD: 0 0 0 0 0 0 0 0 0
+	      REMOVE: 0 0 0 0 0 0 0 0 0
+	       RMDIR: 0 0 0 0 0 0 0 0 0
+	      RENAME: 0 0 0 0 0 0 0 0 0
+	        LINK: 0 0 0 0 0 0 0 0 0
+	     READDIR: 0 0 0 0 0 0 0 0 0
+	 READDIRPLUS: 2 2 0 336 2764 0 2 2 0
+	      FSSTAT: 0 0 0 0 0 0 0 0 0
+	      FSINFO: 2 2 0 272 160 0 2 2 0
+	    PATHCONF: 1 1 0 136 56 0 1 1 0

@@ -1,0 +1,320 @@
+{
+ "read_bytes_count": {
+  "timeSeries": [
+   {
+    "metric": {
+     "labels": {
+      "file_share": "vol1"
+     },
+     "type": "file.googleapis.com/nfs/server/read_bytes_count"
+    },
+    "resource": {
+     "type": "filestore_instance",
+     "labels": {
+      "location": "us-central1-b",
+      "project_id": "cdrollouts-sunilarora",
+      "instance_name": "pvc-b69fc9c0-172e-4423-a7bf-abc5d69a95c1"
+     }
+    },
+    "metricKind": "GAUGE",
+    "valueType": "DOUBLE",
+    "points": [
+     {
+      "interval": {
+       "startTime": "2026-10-15T05:12:00Z",
+       "endTime": "2026-10-15T05:12:00Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T05:11:00Z",
+       "endTime": "2026-10-15T05:11:00Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T05:10:00Z",
+       "endTime": "2026-10-15T05:10:00Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T05:09:00Z",
+       "endTime": "2026-10-15T05:09:00Z"
+      },
+      "value": {
+       "doubleValue": 1.0166666666666666
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T05:08:00Z",
+       "endTime": "2026-10-15T05:08:00Z"
+      },
+      "value": {
+       "doubleValue": 67.25
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T05:07:00Z",
+       "endTime": "2026-10-15T05:07:00Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T05:06:00Z",
+       "endTime": "2026-10-15T05:06:00Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T05:05:00Z",
+       "endTime": "2026-10-15T05:05:00Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T05:04:00Z",
+       "endTime": "2026-10-15T05:04:00Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     }
+    ]
+   }
+  ],
+  "unit": "By/s"
+ },
+ "read_ops_count": {
+  "timeSeries": [
+   {
+    "metric": {
+     "labels": {
+      "file_share": "vol1"
+     },
+     "type": "file.googleapis.com/nfs/server/read_ops_count"
+    },
+    "resource": {
+     "type": "filestore_instance",
+     "labels": {
+      "instance_name": "pvc-b69fc9c0-172e-4423-a7bf-abc5d69a95c1",
+      "location": "us-central1-b",
+      "project_id": "cdrollouts-sunilarora"
+     }
+    },
+    "metricKind": "GAUGE",
+    "valueType": "DOUBLE",
+    "points": [
+     {
+      "interval": {
+       "startTime": "2026-10-15T05:12:00Z",
+       "endTime": "2026-10-15T05:12:00Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T05:11:00Z",
+       "endTime": "2026-10-15T05:11:00Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T05:10:00Z",
+       "endTime": "2026-10-15T05:10:00Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T05:09:00Z",
+       "endTime": "2026-10-15T05:09:00Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T05:08:00Z",
+       "endTime": "2026-10-15T05:08:00Z"
+      },
+      "value": {
+       "doubleValue": 0.016666666666666666
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T05:07:00Z",
+       "endTime": "2026-10-15T05:07:00Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T05:06:00Z",
+       "endTime": "2026-10-15T05:06:00Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T05:05:00Z",
+       "endTime": "2026-10-15T05:05:00Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T05:04:00Z",
+       "endTime": "2026-10-15T05:04:00Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     }
+    ]
+   }
+  ],
+  "unit": "{operation}/s"
+ },
+ "write_bytes_count": {
+  "timeSeries": [
+   {
+    "metric": {
+     "labels": {
+      "file_share": "vol1"
+     },
+     "type": "file.googleapis.com/nfs/server/write_bytes_count"
+    },
+    "resource": {
+     "type": "filestore_instance",
+     "labels": {
+      "project_id": "cdrollouts-sunilarora",
+      "instance_name": "pvc-b69fc9c0-172e-4423-a7bf-abc5d69a95c1",
+      "location": "us-central1-b"
+     }
+    },
+    "metricKind": "GAUGE",
+    "valueType": "DOUBLE",
+    "points": [
+     {
+      "interval": {
+       "startTime": "2026-10-15T05:12:00Z",
+       "endTime": "2026-10-15T05:12:00Z"
+      },
+      "value": {
+       "doubleValue": 161.33333333333334
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T05:11:00Z",
+       "endTime": "2026-10-15T05:11:00Z"
+      },
+      "value": {
+       "doubleValue": 111.73333333333333
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T05:10:00Z",
+       "endTime": "2026-10-15T05:10:00Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T05:09:00Z",
+       "endTime": "2026-10-15T05:09:00Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T05:08:00Z",
+       "endTime": "2026-10-15T05:08:00Z"
+      },
+      "value": {
+       "doubleValue": 5167254.9
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T05:07:00Z",
+       "endTime": "2026-10-15T05:07:00Z"
+      },
+      "value": {
+       "doubleValue": 3578456.033333333
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T05:06:00Z",
+       "endTime": "2026-10-15T05:06:00Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T05:05:00Z",
+       "endTime": "2026-10-15T05:05:00Z"
+      },
+      "value": {
+       "doubleValue": 70.3
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T05:04:00Z",
+       "endTime": "2026-10-15T05:04:00Z"
+      },
+      "value": {
+       "doubleValue": 202.76666666666668
+      }
+     }
+    ]
+   }
+  ],
+  "unit": "By/s"
+ }
+}

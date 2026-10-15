@@ -1,0 +1,42 @@
+{
+ "gke-open-rl-dra-h100-sampler-a721f127-0853": {
+  "cloud.google.com/gke-nodepool": "h100-sampler",
+  "openrl.io/enabled": "true",
+  "openrl.io/sampler": "true"
+ },
+ "gke-open-rl-dra-h100-sampler-a721f127-ed3t": {
+  "cloud.google.com/gke-nodepool": "h100-sampler",
+  "openrl.io/enabled": "true",
+  "openrl.io/sampler": "true"
+ },
+ "gke-open-rl-dra-h100-trainer-702095b4-1g3a": {
+  "cloud.google.com/gke-nodepool": "h100-trainer",
+  "openrl.io/enabled": "true",
+  "openrl.io/trainer": "true"
+ },
+ "gke-open-rl-dra-h100-trainer-702095b4-tuqu": {
+  "cloud.google.com/gke-nodepool": "h100-trainer",
+  "openrl.io/enabled": "true",
+  "openrl.io/trainer": "true"
+ },
+ "gke-open-rl-dra-l4-sampler-2x-1ad5171e-bs96": {
+  "cloud.google.com/gke-nodepool": "l4-sampler-2x",
+  "openrl.io/enabled": "true",
+  "openrl.io/sampler": "true"
+ },
+ "gke-open-rl-dra-l4-sampler-2x-ab5fdc9d-2208": {
+  "cloud.google.com/gke-nodepool": "l4-sampler-2x",
+  "openrl.io/enabled": "true",
+  "openrl.io/sampler": "true"
+ },
+ "gke-open-rl-dra-l4-trainer-2x-67d40c4c-sr2c": {
+  "cloud.google.com/gke-nodepool": "l4-trainer-2x",
+  "openrl.io/enabled": "true",
+  "openrl.io/trainer": "true"
+ },
+ "gke-open-rl-dra-l4-trainer-2x-ed601d8b-lvw8": {
+  "cloud.google.com/gke-nodepool": "l4-trainer-2x",
+  "openrl.io/enabled": "true",
+  "openrl.io/trainer": "true"
+ }
+}

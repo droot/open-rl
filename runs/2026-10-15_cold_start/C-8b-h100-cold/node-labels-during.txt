@@ -1,0 +1,8 @@
+gke-open-rl-dra-h100-sampler-a721f127-0853    Ready   <none>   9d    v1.35.7-gke.1222000           true
+gke-open-rl-dra-h100-sampler-a721f127-ed3t    Ready   <none>   14d   v1.35.7-gke.1222000           false
+gke-open-rl-dra-h100-trainer-702095b4-1g3a    Ready   <none>   24h   v1.35.8-gke.1380001   true    
+gke-open-rl-dra-h100-trainer-702095b4-tuqu    Ready   <none>   24h   v1.35.8-gke.1380001   false   
+gke-open-rl-dra-l4-sampler-2x-1ad5171e-bs96   Ready   <none>   24d   v1.35.7-gke.1222000           false
+gke-open-rl-dra-l4-sampler-2x-ab5fdc9d-2208   Ready   <none>   24d   v1.35.7-gke.1222000           false
+gke-open-rl-dra-l4-trainer-2x-67d40c4c-sr2c   Ready   <none>   24d   v1.35.7-gke.1222000   false   
+gke-open-rl-dra-l4-trainer-2x-ed601d8b-lvw8   Ready   <none>   24d   v1.35.7-gke.1222000   false   

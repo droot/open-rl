@@ -1,0 +1,31 @@
+device 10.80.45.194:/vol1 mounted on /mnt/shared with fstype nfs statvers=1.1
+	opts:	rw,vers=3,rsize=1048576,wsize=1048576,namlen=255,acregmin=3,acregmax=60,acdirmin=30,acdirmax=60,hard,proto=tcp,timeo=600,retrans=2,sec=sys,mountaddr=10.80.45.194,mountvers=3,mountport=2050,mountproto=tcp,local_lock=none
+	age:	232
+	caps:	caps=0xf,wtmult=4096,dtsize=1048576,bsize=0,namlen=255
+	sec:	flavor=1,pseudoflavor=1
+	events:	31 451 0 0 13 9 518 0 0 3630 0 0 4 0 11 0 0 11 0 0 0 0 0 0 0 0 0 
+	bytes:	3805282304 0 6688223232 0 10494554112 0 929280 0 
+	RPC iostats version: 1.1  p/v: 100003/3 (nfs)
+	xprt:	tcp 961 1 2 0 1 15104 15104 0 30403 0 4 13 15292
+	per-op statistics
+	        NULL: 1 1 0 44 24 3 1 4 0
+	     GETATTR: 33 33 0 4720 3696 0 34 34 0
+	     SETATTR: 0 0 0 0 0 0 0 0 0
+	      LOOKUP: 17 17 0 3100 4012 0 16 17 0
+	      ACCESS: 9 9 0 1324 1080 0 9 9 0
+	    READLINK: 3 3 0 432 588 0 38 38 0
+	        READ: 15033 15033 0 2345148 10496478336 206 346790 347214 0
+	       WRITE: 0 0 0 0 0 0 0 0 0
+	      CREATE: 0 0 0 0 0 0 0 0 0
+	       MKDIR: 0 0 0 0 0 0 0 0 0
+	     SYMLINK: 0 0 0 0 0 0 0 0 0
+	       MKNOD: 0 0 0 0 0 0 0 0 0
+	      REMOVE: 0 0 0 0 0 0 0 0 0
+	       RMDIR: 0 0 0 0 0 0 0 0 0
+	      RENAME: 0 0 0 0 0 0 0 0 0
+	        LINK: 0 0 0 0 0 0 0 0 0
+	     READDIR: 0 0 0 0 0 0 0 0 0
+	 READDIRPLUS: 2 2 0 336 2764 0 2 2 0
+	      FSSTAT: 2 2 0 272 168 0 1 1 0
+	      FSINFO: 2 2 0 272 160 0 2 2 0
+	    PATHCONF: 1 1 0 136 56 0 1 1 0

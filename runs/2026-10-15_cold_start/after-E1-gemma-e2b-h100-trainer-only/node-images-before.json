@@ -1,0 +1,51 @@
+{
+ "gke-open-rl-dra-default-pool-095bf129-0flt": [],
+ "gke-open-rl-dra-default-pool-c19e0101-2bk0": [
+  "us-central1-docker.pkg.dev/cdrollouts-sunilarora/open-rl/open-rl-api-server:agent4-e440b83",
+  "us-central1-docker.pkg.dev/cdrollouts-sunilarora/open-rl/open-rl-api-server:coldstart1-dca985a"
+ ],
+ "gke-open-rl-dra-default-pool-ec729728-6mpx": [],
+ "gke-open-rl-dra-h100-sampler-a721f127-0853": [
+  "ghcr.io/gke-labs/open-rl/server:v0.0.6",
+  "us-central1-docker.pkg.dev/cdrollouts-sunilarora/open-rl/open-rl-server:agent3-9f8dc13",
+  "us-central1-docker.pkg.dev/cdrollouts-sunilarora/open-rl/open-rl-server:coldstart1-dca985a",
+  "us-central1-docker.pkg.dev/cdrollouts-sunilarora/open-rl/open-rl-server:pr271-210aee9"
+ ],
+ "gke-open-rl-dra-h100-sampler-a721f127-ed3t": [
+  "ghcr.io/gke-labs/open-rl/server:v0.0.6",
+  "us-central1-docker.pkg.dev/cdrollouts-sunilarora/open-rl/open-rl-client:pr271-210aee9",
+  "us-central1-docker.pkg.dev/cdrollouts-sunilarora/open-rl/open-rl-server:b95b249",
+  "us-central1-docker.pkg.dev/cdrollouts-sunilarora/open-rl/open-rl-server:pr271-210aee9"
+ ],
+ "gke-open-rl-dra-h100-trainer-702095b4-1g3a": [
+  "ghcr.io/gke-labs/open-rl/server:v0.0.6",
+  "us-central1-docker.pkg.dev/cdrollouts-sunilarora/open-rl/open-rl-server:agent3-9f8dc13",
+  "us-central1-docker.pkg.dev/cdrollouts-sunilarora/open-rl/open-rl-server:coldstart1-dca985a"
+ ],
+ "gke-open-rl-dra-h100-trainer-702095b4-tuqu": [
+  "ghcr.io/gke-labs/open-rl/server:v0.0.6"
+ ],
+ "gke-open-rl-dra-l4-sampler-2x-1ad5171e-bs96": [
+  "ghcr.io/gke-labs/open-rl/server:v0.0.6",
+  "us-central1-docker.pkg.dev/cdrollouts-sunilarora/open-rl/lwr-client:20260920-0009",
+  "us-central1-docker.pkg.dev/cdrollouts-sunilarora/open-rl/open-rl-server:agent3-9f8dc13",
+  "us-central1-docker.pkg.dev/cdrollouts-sunilarora/open-rl/open-rl-server:b95b249",
+  "us-central1-docker.pkg.dev/cdrollouts-sunilarora/open-rl/open-rl-server:pr271-210aee9"
+ ],
+ "gke-open-rl-dra-l4-sampler-2x-ab5fdc9d-2208": [
+  "ghcr.io/gke-labs/open-rl/server:v0.0.6",
+  "us-central1-docker.pkg.dev/cdrollouts-sunilarora/open-rl/open-rl-server:coldstart1-dca985a"
+ ],
+ "gke-open-rl-dra-l4-trainer-2x-67d40c4c-sr2c": [
+  "ghcr.io/gke-labs/open-rl/server:v0.0.6",
+  "us-central1-docker.pkg.dev/cdrollouts-sunilarora/open-rl/lwr-client:20260920-0009",
+  "us-central1-docker.pkg.dev/cdrollouts-sunilarora/open-rl/open-rl-server:agent3-9f8dc13",
+  "us-central1-docker.pkg.dev/cdrollouts-sunilarora/open-rl/open-rl-server:b95b249",
+  "us-central1-docker.pkg.dev/cdrollouts-sunilarora/open-rl/open-rl-server:pr271-210aee9"
+ ],
+ "gke-open-rl-dra-l4-trainer-2x-ed601d8b-lvw8": [
+  "ghcr.io/gke-labs/open-rl/server:v0.0.6",
+  "us-central1-docker.pkg.dev/cdrollouts-sunilarora/open-rl/open-rl-server:agent3-9f8dc13",
+  "us-central1-docker.pkg.dev/cdrollouts-sunilarora/open-rl/open-rl-server:coldstart1-dca985a"
+ ]
+}

@@ -1,0 +1,46 @@
+2026-10-15T03:07:17.253128437Z 
+2026-10-15T03:07:17.253182612Z ==================================================
+2026-10-15T03:07:17.253188083Z       Open-RL PyTorch Training Worker
+2026-10-15T03:07:17.253190172Z ==================================================
+2026-10-15T03:07:17.253192000Z -> Hardware : CUDA_VISIBLE_DEVICES=ALL
+2026-10-15T03:07:17.275476076Z -> Fine-Tuning Type: lora (Is LoRA: True)
+2026-10-15T03:07:17.307183476Z 
+2026-10-15T03:07:17.410020160Z Loading base model Qwen/Qwen2.5-0.5B to cuda:0...
+2026-10-15T03:07:17.543492303Z Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-10-15T03:07:21.568855096Z 
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights:   0%|          | 1/290 [00:00<03:03,  1.58it/s]
+Loading weights:   6%|▌         | 16/290 [00:00<00:09, 28.00it/s]
+Loading weights:  10%|█         | 29/290 [00:00<00:05, 48.56it/s]
+Loading weights:  18%|█▊        | 51/290 [00:00<00:02, 84.38it/s]
+Loading weights:  22%|██▏       | 65/290 [00:01<00:02, 90.46it/s]
+Loading weights:  30%|███       | 87/290 [00:01<00:01, 111.50it/s]
+Loading weights:  35%|███▌      | 102/290 [00:01<00:01, 120.64it/s]
+Loading weights:  42%|████▏     | 123/290 [00:01<00:01, 139.41it/s]
+Loading weights:  48%|████▊     | 139/290 [00:01<00:01, 135.52it/s]
+Loading weights:  55%|█████▍    | 159/290 [00:01<00:00, 146.95it/s]
+Loading weights:  60%|██████    | 175/290 [00:01<00:00, 142.02it/s]
+Loading weights:  67%|██████▋   | 194/290 [00:01<00:00, 148.77it/s]
+Loading weights:  72%|███████▏  | 210/290 [00:02<00:00, 141.02it/s]
+Loading weights:  79%|███████▉  | 230/290 [00:02<00:00, 133.88it/s]
+Loading weights:  88%|████████▊ | 255/290 [00:02<00:00, 139.79it/s]
+Loading weights:  96%|█████████▌| 279/290 [00:02<00:00, 151.81it/s]
+Loading weights: 100%|██████████| 290/290 [00:02<00:00, 113.77it/s]
+2026-10-15T03:07:21.686686387Z Successfully loaded.
+2026-10-15T03:07:21.689422581Z [WORKER] Training requests processor started (model=Qwen/Qwen2.5-0.5B active_set=Qwen/Qwen2.5-0.5B-1).
+2026-10-15T03:07:21.695683756Z 
+2026-10-15T03:07:21.695723874Z [TRAINING REQUESTS] Popped 1 requests for model: ccc385bd-2c80-4be6-9ab7-0625542435ba: create_model:ccc385bd-2c80-4be6-9ab7-0625542435ba
+2026-10-15T03:07:21.696118002Z Base model Qwen/Qwen2.5-0.5B already loaded.
+2026-10-15T03:07:21.696156663Z Creating LoRA adapter 'ccc385bd-2c80-4be6-9ab7-0625542435ba'...
+2026-10-15T03:07:22.069634308Z Gradient checkpointing and input require grads enabled on PEFT model.
+2026-10-15T03:07:22.195916996Z LoRA adapter 'ccc385bd-2c80-4be6-9ab7-0625542435ba' created and set to active.
+2026-10-15T03:07:22.548059905Z Auto-saved adapter 'ccc385bd-2c80-4be6-9ab7-0625542435ba' to /mnt/shared/open-rl/peft/ccc385bd-2c80-4be6-9ab7-0625542435ba
+2026-10-15T03:07:25.481567907Z 
+2026-10-15T03:07:25.781428855Z [TRAINING REQUESTS] Popped 1 requests for model: ccc385bd-2c80-4be6-9ab7-0625542435ba: forward_backward:c9b1b9ba-be87-47ed-8531-402cb2fabb4c
+2026-10-15T03:07:28.906839563Z 
+2026-10-15T03:07:28.906885004Z [TRAINING REQUESTS] Popped 1 requests for model: ccc385bd-2c80-4be6-9ab7-0625542435ba: optim_step:4eed00a3-56a3-46ac-9191-13fd5f7bcf0d
+2026-10-15T03:07:28.915363098Z Initializing AdamW optimizer for 'ccc385bd-2c80-4be6-9ab7-0625542435ba' with lr=0.0001
+2026-10-15T03:07:29.536273071Z Auto-saved adapter 'ccc385bd-2c80-4be6-9ab7-0625542435ba' to /mnt/shared/open-rl/peft/ccc385bd-2c80-4be6-9ab7-0625542435ba
+2026-10-15T03:07:29.698441334Z 
+2026-10-15T03:07:29.698493854Z [TRAINING REQUESTS] Popped 1 requests for model: ccc385bd-2c80-4be6-9ab7-0625542435ba: save_weights_for_sampler:0e4cfa12-b1fd-41e9-8346-b31a02c5d55f
+2026-10-15T03:07:30.138404741Z Auto-saved adapter 'ccc385bd-2c80-4be6-9ab7-0625542435ba' to /mnt/shared/open-rl/peft/ccc385bd-2c80-4be6-9ab7-0625542435ba

@@ -1,0 +1,11 @@
+{"ts": "2026-10-15T02:59:11.608+00:00", "t": 0.0, "phase": "start", "base_model": "Qwen/Qwen2.5-0.5B", "base_url": "http://127.0.0.1:9003"}
+{"ts": "2026-10-15T02:59:11.609+00:00", "t": 0.001, "phase": "create_model.start"}
+{"ts": "2026-10-15T02:59:29.165+00:00", "t": 17.557, "phase": "create_model.done", "model_id": "cc688d59-8147-4315-9236-81ea9296fa1d"}
+{"ts": "2026-10-15T02:59:32.362+00:00", "t": 20.753, "phase": "forward_backward.start"}
+{"ts": "2026-10-15T02:59:35.480+00:00", "t": 23.872, "phase": "forward_backward.done"}
+{"ts": "2026-10-15T02:59:36.339+00:00", "t": 24.731, "phase": "optim_step.done"}
+{"ts": "2026-10-15T02:59:36.340+00:00", "t": 24.732, "phase": "save_weights_and_get_sampling_client.start"}
+{"ts": "2026-10-15T02:59:36.946+00:00", "t": 25.338, "phase": "save_weights_and_get_sampling_client.done"}
+{"ts": "2026-10-15T02:59:36.947+00:00", "t": 25.339, "phase": "sample.start"}
+{"ts": "2026-10-15T03:01:23.638+00:00", "t": 132.029, "phase": "sample.done", "text": " 4"}
+{"ts": "2026-10-15T03:01:23.639+00:00", "t": 132.03, "phase": "end"}

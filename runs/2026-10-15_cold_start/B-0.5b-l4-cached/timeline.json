@@ -1,0 +1,267 @@
+{
+ "case": "B-0.5b-l4-cached",
+ "collected": "2026-10-15T03:38:49.454+00:00",
+ "client": {
+  "client.start": {
+   "ts": "2026-10-15 02:59:11.608000+00:00",
+   "source": "client.jsonl (laptop clock)",
+   "base_model": "Qwen/Qwen2.5-0.5B",
+   "base_url": "http://127.0.0.1:9003"
+  },
+  "client.create_model.start": {
+   "ts": "2026-10-15 02:59:11.609000+00:00",
+   "source": "client.jsonl (laptop clock)"
+  },
+  "client.create_model.done": {
+   "ts": "2026-10-15 02:59:29.165000+00:00",
+   "source": "client.jsonl (laptop clock)",
+   "model_id": "cc688d59-8147-4315-9236-81ea9296fa1d"
+  },
+  "client.forward_backward.start": {
+   "ts": "2026-10-15 02:59:32.362000+00:00",
+   "source": "client.jsonl (laptop clock)"
+  },
+  "client.forward_backward.done": {
+   "ts": "2026-10-15 02:59:35.480000+00:00",
+   "source": "client.jsonl (laptop clock)"
+  },
+  "client.optim_step.done": {
+   "ts": "2026-10-15 02:59:36.339000+00:00",
+   "source": "client.jsonl (laptop clock)"
+  },
+  "client.save_weights_and_get_sampling_client.start": {
+   "ts": "2026-10-15 02:59:36.340000+00:00",
+   "source": "client.jsonl (laptop clock)"
+  },
+  "client.save_weights_and_get_sampling_client.done": {
+   "ts": "2026-10-15 02:59:36.946000+00:00",
+   "source": "client.jsonl (laptop clock)"
+  },
+  "client.sample.start": {
+   "ts": "2026-10-15 02:59:36.947000+00:00",
+   "source": "client.jsonl (laptop clock)"
+  },
+  "client.sample.done": {
+   "ts": "2026-10-15 03:01:23.638000+00:00",
+   "source": "client.jsonl (laptop clock)",
+   "text": " 4"
+  },
+  "client.end": {
+   "ts": "2026-10-15 03:01:23.639000+00:00",
+   "source": "client.jsonl (laptop clock)"
+  }
+ },
+ "workers": {
+  "sampler": {
+   "workload": "lora-qwen-qwen2-5-0-5b-0-sampler",
+   "model_id": "Qwen/Qwen2.5-0.5B",
+   "node": "gke-open-rl-dra-l4-sampler-2x-1ad5171e-bs96",
+   "pod": "orw-lora-qwen-qwen2-5-0-5b-0-sampler",
+   "marks": {
+    "sampler.workload_created": {
+     "ts": "2026-10-15 02:59:36+00:00",
+     "source": "Workload creationTimestamp (apiserver)"
+    },
+    "sampler.workload_first_seen_by_poller": {
+     "ts": "2026-10-15 02:59:35.958000+00:00",
+     "source": "workloads.tsv poller (laptop clock, 1 s)"
+    },
+    "sampler.workload_reports_pod": {
+     "ts": "2026-10-15 02:59:37.643000+00:00",
+     "source": "workloads.tsv poller: status.podName set"
+    },
+    "sampler.workload_reports_node": {
+     "ts": "2026-10-15 02:59:37.643000+00:00",
+     "source": "workloads.tsv poller: status.nodeName set"
+    },
+    "sampler.condition_Placed_True": {
+     "ts": "2026-10-15 02:59:40+00:00",
+     "source": "Workload condition Placed"
+    },
+    "sampler.pod_created": {
+     "ts": "2026-10-15 02:59:36+00:00",
+     "source": "pod creationTimestamp (apiserver)"
+    },
+    "sampler.pod_Initialized": {
+     "ts": "2026-10-15 02:59:36+00:00",
+     "source": "pod condition Initialized"
+    },
+    "sampler.pod_Ready": {
+     "ts": "2026-10-15 02:59:40+00:00",
+     "source": "pod condition Ready"
+    },
+    "sampler.pod_ContainersReady": {
+     "ts": "2026-10-15 02:59:40+00:00",
+     "source": "pod condition ContainersReady"
+    },
+    "sampler.pod_PodScheduled": {
+     "ts": "2026-10-15 02:59:36+00:00",
+     "source": "pod condition PodScheduled"
+    },
+    "sampler.container_started": {
+     "ts": "2026-10-15 02:59:40+00:00",
+     "source": "containerStatuses.state.running.startedAt"
+    },
+    "sampler.event_Scheduled": {
+     "ts": "2026-10-15 02:59:36+00:00",
+     "source": "event: Successfully assigned openrl-system/orw-lora-qwen-qwen2-5-0-5b-0-sampler to gke-open-rl-dra-l4-sampler-2x-1ad5171e-bs96"
+    },
+    "sampler.event_Pulled": {
+     "ts": "2026-10-15 02:59:40+00:00",
+     "source": "event: Container image \"us-central1-docker.pkg.dev/cdrollouts-sunilarora/open-rl/open-rl-server:agent3-9f8dc13\" already present on machine and can ",
+     "kubelet_pull_s": null,
+     "pulled_from_cache": true
+    },
+    "sampler.event_Created": {
+     "ts": "2026-10-15 02:59:40+00:00",
+     "source": "event: Container created"
+    },
+    "sampler.event_Started": {
+     "ts": "2026-10-15 02:59:40+00:00",
+     "source": "event: Container started"
+    },
+    "sampler.process_first_log": {
+     "ts": "2026-10-15 02:59:51.481521+00:00",
+     "source": "container log, first line"
+    },
+    "sampler.engine_init_start": {
+     "ts": "2026-10-15 03:00:18.656636+00:00",
+     "source": "container log: (EngineCore pid=161) INFO 10-15 03:00:18 [core.py:123] Initializing a V1 LLM engine (v0.30.0) with config: model='Qwen/Q"
+    },
+    "sampler.load_start": {
+     "ts": "2026-10-15 03:00:20.368364+00:00",
+     "source": "container log: (EngineCore pid=161) INFO 10-15 03:00:20 [model_runner.py:396] Loading model from scratch..."
+    },
+    "sampler.prefetch_start": {
+     "ts": "2026-10-15 03:00:21.715792+00:00",
+     "source": "container log: (EngineCore pid=161) INFO 10-15 03:00:21 [weight_utils.py:857] Prefetching checkpoint files into page cache started (in "
+    },
+    "sampler.weights_loaded": {
+     "ts": "2026-10-15 03:00:23.366661+00:00",
+     "source": "container log: (EngineCore pid=161) INFO 10-15 03:00:23 [default_loader.py:430] Loading weights took 1.65 seconds",
+     "self_reported_s": 1.65
+    },
+    "sampler.model_loaded": {
+     "ts": "2026-10-15 03:00:24.163833+00:00",
+     "source": "container log: (EngineCore pid=161) INFO 10-15 03:00:24 [model_runner.py:428] Model loading took 1.47 GiB memory and 4.105582 seconds",
+     "self_reported_s": 4.105582
+    },
+    "sampler.compile_done": {
+     "ts": "2026-10-15 03:00:54.727773+00:00",
+     "source": "container log: (EngineCore pid=161) INFO 10-15 03:00:54 [monitor.py:53] torch.compile took 28.38 s in total",
+     "self_reported_s": 28.38
+    },
+    "sampler.graphs_captured": {
+     "ts": "2026-10-15 03:01:10.141242+00:00",
+     "source": "container log: (EngineCore pid=161) INFO 10-15 03:01:10 [model_runner.py:1066] Graph capturing finished in 11 secs, took 0.23 GiB",
+     "self_reported_s": 11.0
+    },
+    "sampler.kv_cache_sized": {
+     "ts": "2026-10-15 03:01:10.683074+00:00",
+     "source": "container log: (EngineCore pid=161) INFO 10-15 03:01:10 [gpu_worker.py:640] Available KV cache memory: 17.33 GiB"
+    },
+    "sampler.engine_init_done": {
+     "ts": "2026-10-15 03:01:21.459118+00:00",
+     "source": "container log: (EngineCore pid=161) INFO 10-15 03:01:21 [core.py:372] init engine (profile, create kv cache, warmup model) took 57.29 s",
+     "self_reported_s": 57.29
+    },
+    "sampler.ready_key": {
+     "ts": "2026-10-15 03:01:23+00:00",
+     "source": "redis poller: open_rl:sampler_ready:Qwen/Qwen2.5-0.5B"
+    }
+   },
+   "image_id": "us-central1-docker.pkg.dev/cdrollouts-sunilarora/open-rl/open-rl-server@sha256:0ae950e226f5400262fc3b207f6bde8d5c02e7d02fb15f6ae1ad9e3d55e034d0"
+  },
+  "trainer": {
+   "workload": "lora-qwen-qwen2-5-0-5b-0-trainer",
+   "model_id": "Qwen/Qwen2.5-0.5B",
+   "node": "gke-open-rl-dra-l4-trainer-2x-67d40c4c-sr2c",
+   "pod": "orw-lora-qwen-qwen2-5-0-5b-0-trainer",
+   "marks": {
+    "trainer.workload_created": {
+     "ts": "2026-10-15 02:59:12+00:00",
+     "source": "Workload creationTimestamp (apiserver)"
+    },
+    "trainer.workload_first_seen_by_poller": {
+     "ts": "2026-10-15 02:59:11.918000+00:00",
+     "source": "workloads.tsv poller (laptop clock, 1 s)"
+    },
+    "trainer.workload_reports_pod": {
+     "ts": "2026-10-15 02:59:13.554000+00:00",
+     "source": "workloads.tsv poller: status.podName set"
+    },
+    "trainer.workload_reports_node": {
+     "ts": "2026-10-15 02:59:13.554000+00:00",
+     "source": "workloads.tsv poller: status.nodeName set"
+    },
+    "trainer.condition_Placed_True": {
+     "ts": "2026-10-15 02:59:18+00:00",
+     "source": "Workload condition Placed"
+    },
+    "trainer.pod_created": {
+     "ts": "2026-10-15 02:59:13+00:00",
+     "source": "pod creationTimestamp (apiserver)"
+    },
+    "trainer.pod_Initialized": {
+     "ts": "2026-10-15 02:59:13+00:00",
+     "source": "pod condition Initialized"
+    },
+    "trainer.pod_Ready": {
+     "ts": "2026-10-15 02:59:18+00:00",
+     "source": "pod condition Ready"
+    },
+    "trainer.pod_ContainersReady": {
+     "ts": "2026-10-15 02:59:18+00:00",
+     "source": "pod condition ContainersReady"
+    },
+    "trainer.pod_PodScheduled": {
+     "ts": "2026-10-15 02:59:13+00:00",
+     "source": "pod condition PodScheduled"
+    },
+    "trainer.container_started": {
+     "ts": "2026-10-15 02:59:17+00:00",
+     "source": "containerStatuses.state.running.startedAt"
+    },
+    "trainer.event_Scheduled": {
+     "ts": "2026-10-15 02:59:13+00:00",
+     "source": "event: Successfully assigned openrl-system/orw-lora-qwen-qwen2-5-0-5b-0-trainer to gke-open-rl-dra-l4-trainer-2x-67d40c4c-sr2c"
+    },
+    "trainer.event_Pulled": {
+     "ts": "2026-10-15 02:59:17+00:00",
+     "source": "event: Container image \"us-central1-docker.pkg.dev/cdrollouts-sunilarora/open-rl/open-rl-server:agent3-9f8dc13\" already present on machine and can ",
+     "kubelet_pull_s": null,
+     "pulled_from_cache": true
+    },
+    "trainer.event_Created": {
+     "ts": "2026-10-15 02:59:17+00:00",
+     "source": "event: Container created"
+    },
+    "trainer.event_Started": {
+     "ts": "2026-10-15 02:59:17+00:00",
+     "source": "event: Container started"
+    },
+    "trainer.process_first_log": {
+     "ts": "2026-10-15 02:59:23.844888+00:00",
+     "source": "container log, first line"
+    },
+    "trainer.load_start": {
+     "ts": "2026-10-15 02:59:23.989922+00:00",
+     "source": "container log: Loading base model Qwen/Qwen2.5-0.5B to cuda:0..."
+    },
+    "trainer.load_done": {
+     "ts": "2026-10-15 02:59:28.232473+00:00",
+     "source": "container log: Successfully loaded."
+    },
+    "trainer.processor_started": {
+     "ts": "2026-10-15 02:59:28.234688+00:00",
+     "source": "container log: [WORKER] Training requests processor started (model=Qwen/Qwen2.5-0.5B active_set=Qwen/Qwen2.5-0.5B-1)."
+    },
+    "trainer.ready_key": {
+     "ts": "2026-10-15 02:59:28+00:00",
+     "source": "redis poller: open_rl:trainer_ready:Qwen/Qwen2.5-0.5B"
+    }
+   },
+   "image_id": "us-central1-docker.pkg.dev/cdrollouts-sunilarora/open-rl/open-rl-server@sha256:0ae950e226f5400262fc3b207f6bde8d5c02e7d02fb15f6ae1ad9e3d55e034d0"
+  }
+ }
+}

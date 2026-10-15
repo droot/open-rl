@@ -1,0 +1,158 @@
+{
+ "read_bytes_count": {
+  "timeSeries": [
+   {
+    "metric": {
+     "labels": {
+      "file_share": "vol1"
+     },
+     "type": "file.googleapis.com/nfs/server/read_bytes_count"
+    },
+    "resource": {
+     "type": "filestore_instance",
+     "labels": {
+      "project_id": "cdrollouts-sunilarora",
+      "instance_name": "pvc-b69fc9c0-172e-4423-a7bf-abc5d69a95c1",
+      "location": "us-central1-b"
+     }
+    },
+    "metricKind": "GAUGE",
+    "valueType": "DOUBLE",
+    "points": [
+     {
+      "interval": {
+       "startTime": "2026-10-15T05:20:45Z",
+       "endTime": "2026-10-15T05:20:45Z"
+      },
+      "value": {
+       "doubleValue": 60396414.6
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T05:19:45Z",
+       "endTime": "2026-10-15T05:19:45Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T05:18:45Z",
+       "endTime": "2026-10-15T05:18:45Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     }
+    ]
+   }
+  ],
+  "unit": "By/s"
+ },
+ "read_ops_count": {
+  "timeSeries": [
+   {
+    "metric": {
+     "labels": {
+      "file_share": "vol1"
+     },
+     "type": "file.googleapis.com/nfs/server/read_ops_count"
+    },
+    "resource": {
+     "type": "filestore_instance",
+     "labels": {
+      "instance_name": "pvc-b69fc9c0-172e-4423-a7bf-abc5d69a95c1",
+      "location": "us-central1-b",
+      "project_id": "cdrollouts-sunilarora"
+     }
+    },
+    "metricKind": "GAUGE",
+    "valueType": "DOUBLE",
+    "points": [
+     {
+      "interval": {
+       "startTime": "2026-10-15T05:20:45Z",
+       "endTime": "2026-10-15T05:20:45Z"
+      },
+      "value": {
+       "doubleValue": 888.6833333333333
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T05:19:45Z",
+       "endTime": "2026-10-15T05:19:45Z"
+      },
+      "value": {
+       "doubleValue": 4.666666666666667
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T05:18:45Z",
+       "endTime": "2026-10-15T05:18:45Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     }
+    ]
+   }
+  ],
+  "unit": "{operation}/s"
+ },
+ "write_bytes_count": {
+  "timeSeries": [
+   {
+    "metric": {
+     "labels": {
+      "file_share": "vol1"
+     },
+     "type": "file.googleapis.com/nfs/server/write_bytes_count"
+    },
+    "resource": {
+     "type": "filestore_instance",
+     "labels": {
+      "project_id": "cdrollouts-sunilarora",
+      "location": "us-central1-b",
+      "instance_name": "pvc-b69fc9c0-172e-4423-a7bf-abc5d69a95c1"
+     }
+    },
+    "metricKind": "GAUGE",
+    "valueType": "DOUBLE",
+    "points": [
+     {
+      "interval": {
+       "startTime": "2026-10-15T05:20:45Z",
+       "endTime": "2026-10-15T05:20:45Z"
+      },
+      "value": {
+       "doubleValue": 419.01666666666665
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T05:19:45Z",
+       "endTime": "2026-10-15T05:19:45Z"
+      },
+      "value": {
+       "doubleValue": 273.06666666666666
+      }
+     },
+     {
+      "interval": {
+       "startTime": "2026-10-15T05:18:45Z",
+       "endTime": "2026-10-15T05:18:45Z"
+      },
+      "value": {
+       "doubleValue": 0
+      }
+     }
+    ]
+   }
+  ],
+  "unit": "By/s"
+ }
+}

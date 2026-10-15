@@ -118,15 +118,23 @@ def cmd_watch(out: Path) -> None:
     poll_loop(["kubectl", "-n", NS, "get", "pods", "-o", f"jsonpath={POD_JSONPATH}"], out / "pods.tsv"),
     stamped_follower(
       [
-        "kubectl", "-n", NS, "exec", "deploy/redis-store", "--", "sh", "-c",
-        'while true; do t=$(date -u +%Y-%m-%dT%H:%M:%SZ); for k in $(redis-cli --scan --pattern "open_rl:*_ready:*"); do echo "$t $k"; done; sleep 1; done',
+        "kubectl",
+        "-n",
+        NS,
+        "exec",
+        "deploy/redis-store",
+        "--",
+        "sh",
+        "-c",
+        "while true; do t=$(date -u +%Y-%m-%dT%H:%M:%SZ); "
+        'for k in $(redis-cli --scan --pattern "open_rl:*_ready:*"); do echo "$t $k"; done; sleep 1; done',
       ],
       out / "redis-ready.log",
     ),
     stamped_follower(["kubectl", "-n", NS, "logs", "-f", "--timestamps", "--tail=0", "deploy/open-rl-api-server"], out / "api-server.log"),
     stamped_follower(["kubectl", "-n", NS, "logs", "-f", "--timestamps", "--tail=0", "deploy/open-rl-scheduler"], out / "scheduler.log"),
   ]
-  pids = [p.pid for p in procs] + [getattr(p, "producer").pid for p in procs if hasattr(p, "producer")]
+  pids = [p.pid for p in procs] + [p.producer.pid for p in procs if hasattr(p, "producer")]  # type: ignore[attr-defined]
   (out / "watch.pids").write_text("\n".join(map(str, pids)) + "\n")
   print(f"watching; recorders {pids} write into {out}")
 
@@ -194,6 +202,9 @@ def duration_s(text: str) -> float | None:
 
 SAMPLER_MARKS = [
   ("sampler.process_first_log", None),
+  ("sampler.engine_init_start", r"Initializing a V1 LLM engine"),
+  ("sampler.load_start", r"Loading model from scratch"),
+  ("sampler.prefetch_start", r"Prefetching checkpoint files into page cache started"),
   ("sampler.weights_loaded", r"Loading weights took ([\d.]+) seconds"),
   ("sampler.model_loaded", r"Model loading took .* and ([\d.]+) seconds"),
   ("sampler.compile_done", r"torch\.compile took ([\d.]+) s"),
@@ -266,20 +277,28 @@ def ready_keys(path: Path) -> dict[str, datetime]:
   return seen
 
 
-def pod_events(events: dict[str, Any], pod: str) -> list[dict[str, Any]]:
+def pod_events(events: dict[str, Any], pod: dict[str, Any]) -> list[dict[str, Any]]:
+  """Events for this pod object, not for an earlier pod of the same name: the
+  workload names repeat across runs, so match the pod's uid."""
+  name, uid = pod["metadata"]["name"], pod["metadata"].get("uid")
   rows = []
   for e in events.get("items", []):
-    if e["involvedObject"].get("name") != pod:
+    obj = e["involvedObject"]
+    if obj.get("name") != name or (uid and obj.get("uid") and obj["uid"] != uid):
       continue
     rows.append({"reason": e["reason"], "ts": parse_ts(e.get("firstTimestamp") or e.get("eventTime")), "message": e.get("message", "")})
-  return sorted(rows, key=lambda r: (r["ts"] or datetime.min.replace(tzinfo=UTC)))
+  return sorted(rows, key=lambda r: r["ts"] or datetime.min.replace(tzinfo=UTC))
 
 
 def cmd_timeline(out: Path) -> None:
   client = [json.loads(l) for l in (out / "client.jsonl").read_text().splitlines() if l.strip()] if (out / "client.jsonl").exists() else []
   marks: dict[str, dict[str, Any]] = {}
   for row in client:
-    marks[f"client.{row['phase']}"] = {"ts": parse_ts(row["ts"]), "source": "client.jsonl (laptop clock)", **{k: v for k, v in row.items() if k not in ("ts", "t", "phase")}}
+    marks[f"client.{row['phase']}"] = {
+      "ts": parse_ts(row["ts"]),
+      "source": "client.jsonl (laptop clock)",
+      **{k: v for k, v in row.items() if k not in ("ts", "t", "phase")},
+    }
 
   pods = json.loads((out / "pods.json").read_text()) if (out / "pods.json").exists() else {"items": []}
   events = json.loads((out / "events.json").read_text()) if (out / "events.json").exists() else {"items": []}
@@ -293,7 +312,13 @@ def cmd_timeline(out: Path) -> None:
   for wl in workloads.get("items", []):
     role = wl["spec"]["role"]
     name = wl["metadata"]["name"]
-    w: dict[str, Any] = {"workload": name, "model_id": wl["spec"].get("modelID"), "node": wl.get("status", {}).get("nodeName"), "pod": wl.get("status", {}).get("podName"), "marks": {}}
+    w: dict[str, Any] = {
+      "workload": name,
+      "model_id": wl["spec"].get("modelID"),
+      "node": wl.get("status", {}).get("nodeName"),
+      "pod": wl.get("status", {}).get("podName"),
+      "marks": {},
+    }
     w["marks"][f"{role}.workload_created"] = {"ts": parse_ts(wl["metadata"]["creationTimestamp"]), "source": "Workload creationTimestamp (apiserver)"}
     if name in wl_first_seen:
       w["marks"][f"{role}.workload_first_seen_by_poller"] = {"ts": wl_first_seen[name], "source": "workloads.tsv poller (laptop clock, 1 s)"}
@@ -302,7 +327,10 @@ def cmd_timeline(out: Path) -> None:
     if name in wl_first_node:
       w["marks"][f"{role}.workload_reports_node"] = {"ts": wl_first_node[name], "source": "workloads.tsv poller: status.nodeName set"}
     for cond in wl.get("status", {}).get("conditions", []):
-      w["marks"][f"{role}.condition_{cond['type']}_{cond['status']}"] = {"ts": parse_ts(cond.get("lastTransitionTime")), "source": f"Workload condition {cond.get('reason', '')}"}
+      w["marks"][f"{role}.condition_{cond['type']}_{cond['status']}"] = {
+        "ts": parse_ts(cond.get("lastTransitionTime")),
+        "source": f"Workload condition {cond.get('reason', '')}",
+      }
     workers[role] = w
 
   for pod in pods.get("items", []):
@@ -322,7 +350,7 @@ def cmd_timeline(out: Path) -> None:
       if running.get("startedAt"):
         w["marks"][f"{role}.container_started"] = {"ts": parse_ts(running["startedAt"]), "source": "containerStatuses.state.running.startedAt"}
       w["image_id"] = cs.get("imageID")
-    for ev in pod_events(events, name):
+    for ev in pod_events(events, pod):
       key = f"{role}.event_{ev['reason']}"
       if key in w["marks"]:
         continue
@@ -333,7 +361,6 @@ def cmd_timeline(out: Path) -> None:
       w["marks"][key] = entry
     log = out / f"log-{name}.txt"
     w["marks"].update(scan_log(log, SAMPLER_MARKS if role == "sampler" else TRAINER_MARKS))
-    model_id = w.get("model_id") or (workers.get("trainer", {}).get("model_id"))
     for key, when in ready.items():
       if key.startswith(f"open_rl:{role}_ready:"):
         w["marks"][f"{role}.ready_key"] = {"ts": when, "source": f"redis poller: {key}"}
@@ -353,14 +380,22 @@ def render(report: dict[str, Any]) -> str:
   t0 = client.get("client.create_model.start", {}).get("ts")
   lines = [f"# Cold start timeline: {report['case']}", ""]
   if t0:
-    lines.append(f"t=0 is the client's `create_model` call at {t0.isoformat(timespec='milliseconds')} UTC. Offsets are seconds after t=0; a negative offset is before it.")
+    lines.append(
+      f"t=0 is the client's `create_model` call at {t0.isoformat(timespec='milliseconds')} UTC. "
+      "Offsets are seconds after t=0; a negative offset is before it."
+    )
   lines.append("")
   for role in ("trainer", "sampler"):
     w = report["workers"].get(role)
     if not w:
       lines += [f"## {role}", "", "no worker observed", ""]
       continue
-    lines += [f"## {role}: `{w.get('pod')}` on `{w.get('node')}`", "", "| Mark | Clock (UTC) | t+ s | Self-reported s | Source |", "|---|---|---|---|---|"]
+    lines += [
+      f"## {role}: `{w.get('pod')}` on `{w.get('node')}`",
+      "",
+      "| Mark | Clock (UTC) | t+ s | Self-reported s | Source |",
+      "|---|---|---|---|---|",
+    ]
     rows = sorted(w["marks"].items(), key=lambda kv: (kv[1].get("ts") is None, kv[1].get("ts") or datetime.max.replace(tzinfo=UTC)))
     for name, m in rows:
       ts = m.get("ts")
@@ -398,7 +433,9 @@ def critical_path(report: dict[str, Any]) -> list[str]:
       ("sampler.pod_PodScheduled", "sampler.event_Pulled", "image pull (0 if cached)"),
       ("sampler.event_Pulled", "sampler.container_started", "container create"),
       ("sampler.container_started", "sampler.process_first_log", "process start to first log"),
-      ("sampler.process_first_log", "sampler.weights_loaded", "imports and engine setup until weights read"),
+      ("sampler.process_first_log", "sampler.engine_init_start", "imports until engine init"),
+      ("sampler.engine_init_start", "sampler.load_start", "engine init until load start"),
+      ("sampler.load_start", "sampler.weights_loaded", "weights load (vLLM prefetch into page cache + load)"),
       ("sampler.weights_loaded", "sampler.compile_done", "torch.compile"),
       ("sampler.compile_done", "sampler.engine_init_done", "profiling, KV cache, graph capture"),
       ("sampler.engine_init_done", "sampler.ready_key", "ready key"),

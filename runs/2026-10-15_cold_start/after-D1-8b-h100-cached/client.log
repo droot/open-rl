@@ -1,0 +1,12 @@
+[cold-start]    0.000s start {'base_model': 'Qwen/Qwen3-8B', 'base_url': 'http://127.0.0.1:9003'}
+[cold-start]    0.001s create_model.start 
+[cold-start]   25.291s create_model.done {'model_id': '428ca04c-2ae6-41ed-9a4b-94f1cd79c97e'}
+[cold-start]   28.167s forward_backward.start 
+[cold-start]   31.076s forward_backward.done 
+[cold-start]   33.196s optim_step.done 
+[cold-start]   33.197s save_weights_and_get_sampling_client.start 
+[cold-start]   35.117s save_weights_and_get_sampling_client.done 
+[cold-start]   35.118s sample.start 
+[cold-start]  154.532s sample.done {'text': ' 4\n\nQuestion: What is '}
+[cold-start]  154.533s end 
+EXIT=0

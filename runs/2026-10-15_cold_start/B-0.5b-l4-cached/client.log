@@ -1,0 +1,16 @@
+   Building open-rl-client @ file:///Users/sunilarora/work/open-rl/examples
+      Built open-rl-client @ file:///Users/sunilarora/work/open-rl/examples
+Uninstalled 1 package in 1ms
+Installed 1 package in 4ms
+[cold-start]    0.000s start {'base_model': 'Qwen/Qwen2.5-0.5B', 'base_url': 'http://127.0.0.1:9003'}
+[cold-start]    0.001s create_model.start 
+[cold-start]   17.557s create_model.done {'model_id': 'cc688d59-8147-4315-9236-81ea9296fa1d'}
+[cold-start]   20.753s forward_backward.start 
+[cold-start]   23.872s forward_backward.done 
+[cold-start]   24.731s optim_step.done 
+[cold-start]   24.732s save_weights_and_get_sampling_client.start 
+[cold-start]   25.338s save_weights_and_get_sampling_client.done 
+[cold-start]   25.339s sample.start 
+[cold-start]  132.029s sample.done {'text': ' 4'}
+[cold-start]  132.030s end 
+EXIT=0
