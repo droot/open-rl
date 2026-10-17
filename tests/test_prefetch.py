@@ -64,3 +64,33 @@ class PrefetchTest(unittest.TestCase):
 
 if __name__ == "__main__":
   unittest.main()
+
+
+class TrainTokenBudgetTest(unittest.TestCase):
+  """The per-pass token budget follows the vocabulary and the free memory unless pinned."""
+
+  def setUp(self):
+    from training.trainer_worker import BaseTrainerWorker
+
+    self.worker = BaseTrainerWorker()
+    self.model = type("Model", (), {"config": type("Config", (), {"vocab_size": 262144})()})()
+
+  def test_auto_is_the_logits_cap(self):
+    with patch.dict(os.environ, {"OPEN_RL_TRAIN_TOKEN_BUDGET": "auto"}), patch.object(type(self.worker), "logits_token_cap", return_value=7000):
+      self.assertEqual(self.worker.train_token_budget(self.model), 7000)
+    with patch.dict(os.environ, {}, clear=False), patch.object(type(self.worker), "logits_token_cap", return_value=7000):
+      os.environ.pop("OPEN_RL_TRAIN_TOKEN_BUDGET", None)
+      self.assertEqual(self.worker.train_token_budget(self.model), 7000)
+
+  def test_a_number_is_capped_by_what_the_logits_fit(self):
+    with patch.dict(os.environ, {"OPEN_RL_TRAIN_TOKEN_BUDGET": "65536"}), patch.object(type(self.worker), "logits_token_cap", return_value=7000):
+      self.assertEqual(self.worker.train_token_budget(self.model), 7000)
+    with patch.dict(os.environ, {"OPEN_RL_TRAIN_TOKEN_BUDGET": "4096"}), patch.object(type(self.worker), "logits_token_cap", return_value=7000):
+      self.assertEqual(self.worker.train_token_budget(self.model), 4096)
+
+  def test_zero_keeps_one_sequence_per_pass(self):
+    with patch.dict(os.environ, {"OPEN_RL_TRAIN_TOKEN_BUDGET": "0"}):
+      self.assertEqual(self.worker.train_token_budget(self.model), 0)
+
+  def test_cap_without_cuda_or_vocabulary_is_the_default(self):
+    self.assertEqual(self.worker.logits_token_cap(object()), self.worker.DEFAULT_TOKEN_CAP)
