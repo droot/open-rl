@@ -126,8 +126,14 @@ def pod_env(worker: Worker) -> list[dict[str, Any]]:
   # No other worker shares an exclusive worker's GPUs, so it never parks.
   if worker.exclusive:
     values["OPEN_RL_TIME_SLICING"] = "off"
-  if worker.role == "sampler" and vllm_cache_hostpath():
-    values["VLLM_CACHE_ROOT"] = VLLM_CACHE_MOUNT
+  if worker.role == "sampler":
+    # OPEN_RL_VLLM_CACHE_DIR names a directory the worker already sees, such
+    # as one on the shared volume, so a cache can be fleet-wide; otherwise the
+    # node-local hostPath mounted below.
+    if shared := os.getenv("OPEN_RL_VLLM_CACHE_DIR"):
+      values["VLLM_CACHE_ROOT"] = shared
+    elif vllm_cache_hostpath():
+      values["VLLM_CACHE_ROOT"] = VLLM_CACHE_MOUNT
   env: list[dict[str, Any]] = [{"name": name, "value": value} for name, value in values.items()]
   env.append({"name": "OPEN_RL_ACCEL_TIMESLICER_HOST", "valueFrom": {"fieldRef": {"fieldPath": "status.hostIP"}}})
   return env
@@ -183,7 +189,9 @@ def pod_template(worker: Worker) -> dict[str, Any]:
   # worker start would then re-pull. The prepull DaemonSet puts the image on
   # the node ahead of time; IfNotPresent is what makes that count.
   template["spec"]["containers"][0]["imagePullPolicy"] = os.getenv("OPEN_RL_WORKER_IMAGE_PULL_POLICY", "IfNotPresent")
-  if worker.role == "sampler" and (cache_dir := vllm_cache_hostpath()):
+  if worker.role == "sampler" and os.getenv("OPEN_RL_VLLM_CACHE_DIR"):
+    pass  # a path inside an existing mount, typically the shared volume; nothing to add
+  elif worker.role == "sampler" and (cache_dir := vllm_cache_hostpath()):
     # vLLM keeps its torch.compile artifacts and kernel autotune results under
     # VLLM_CACHE_ROOT, keyed by model, GPU and engine config. In the container
     # they die with the pod and every sampler start compiles again: measured

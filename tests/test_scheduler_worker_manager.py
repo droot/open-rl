@@ -153,6 +153,18 @@ class SchedulerWorkerManagerTest(unittest.TestCase):
     self.assertNotIn("VLLM_CACHE_ROOT", {e["name"] for e in trainer["containers"][0]["env"]})
     self.assertNotIn("vllm-cache", {v["name"] for v in trainer["volumes"]})
 
+  def test_the_compile_cache_can_live_on_the_shared_volume_instead(self) -> None:
+    s = self.store_with("job-lora-1", {"base_model": "Qwen/Qwen2.5-0.5B", "fine_tuning_type": "lora"})
+    with (
+      patch("server.worker_manager.get_state_store", return_value=s),
+      patch.dict(os.environ, {"OPEN_RL_VLLM_CACHE_DIR": "/mnt/shared/open-rl/vllm-cache"}),
+    ):
+      self.manager.ensure("job-lora-1", "sampler")
+    spec = self.api.created[0]["spec"]["template"]["spec"]
+    env = {e["name"]: e.get("value") for e in spec["containers"][0]["env"]}
+    self.assertEqual(env["VLLM_CACHE_ROOT"], "/mnt/shared/open-rl/vllm-cache")
+    self.assertNotIn("vllm-cache", {v["name"] for v in spec["volumes"]})
+
   def test_the_compile_cache_can_be_turned_off(self) -> None:
     s = self.store_with("job-lora-1", {"base_model": "Qwen/Qwen2.5-0.5B", "fine_tuning_type": "lora"})
     with patch("server.worker_manager.get_state_store", return_value=s), patch.dict(os.environ, {"OPEN_RL_VLLM_CACHE_HOSTPATH": "off"}):
