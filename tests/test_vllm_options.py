@@ -2,6 +2,7 @@ import os
 import unittest
 from unittest.mock import patch
 
+from server import vllm_options
 from server.vllm_options import gpu_memory_utilization, split_stop
 
 
@@ -46,3 +47,21 @@ class GpuMemoryUtilizationTest(unittest.TestCase):
   def test_without_a_budget_the_default_holds(self) -> None:
     with patch.dict(os.environ, {}, clear=True):
       self.assertEqual(gpu_memory_utilization(), 0.90)
+
+
+class CudagraphCaptureSizesTest(unittest.TestCase):
+  def test_powers_of_two_up_to_the_sequence_limit_by_default(self):
+    with patch.dict(os.environ, {}, clear=False):
+      os.environ.pop("VLLM_CUDAGRAPH_CAPTURE_SIZES", None)
+      self.assertEqual(vllm_options.cudagraph_capture_sizes(64), [1, 2, 4, 8, 16, 32, 64])
+      self.assertEqual(vllm_options.cudagraph_capture_sizes(256)[-1], 256)
+      self.assertEqual(vllm_options.compilation_kwargs(8), {"compilation_config": {"cudagraph_capture_sizes": [1, 2, 4, 8]}})
+
+  def test_an_explicit_list_is_sorted_and_capped(self):
+    with patch.dict(os.environ, {"VLLM_CUDAGRAPH_CAPTURE_SIZES": "64, 8,16,512"}):
+      self.assertEqual(vllm_options.cudagraph_capture_sizes(128), [8, 16, 64])
+
+  def test_default_keeps_vllms_own_list(self):
+    with patch.dict(os.environ, {"VLLM_CUDAGRAPH_CAPTURE_SIZES": "default"}):
+      self.assertIsNone(vllm_options.cudagraph_capture_sizes(64))
+      self.assertEqual(vllm_options.compilation_kwargs(64), {})

@@ -2,6 +2,7 @@
 
 import os
 from collections.abc import Sequence
+from typing import Any
 
 
 def text_only_engine_kwargs() -> dict:
@@ -83,3 +84,28 @@ def detected_device_memory_bytes() -> int:
   except Exception:
     pass
   return 0
+
+
+# Batch sizes vLLM records a CUDA graph for. Its default list has dozens of
+# entries up to max_num_seqs and capturing them took 12-40 s on every sampler
+# start (runs/2026-10-17_demo_baselines). A GRPO step sends a handful of
+# shapes; powers of two up to max_num_seqs cover them with padding and cut the
+# capture to a few sizes. VLLM_CUDAGRAPH_CAPTURE_SIZES: "default" keeps vLLM's
+# list, otherwise a comma-separated list of sizes.
+def cudagraph_capture_sizes(max_num_seqs: int) -> list[int] | None:
+  raw = os.getenv("VLLM_CUDAGRAPH_CAPTURE_SIZES", "").strip().lower()
+  if raw == "default":
+    return None
+  if raw:
+    sizes = sorted({int(s) for s in raw.split(",") if s.strip()})
+  else:
+    sizes, size = [], 1
+    while size <= max_num_seqs:
+      sizes.append(size)
+      size *= 2
+  return [s for s in sizes if s <= max_num_seqs] or [max_num_seqs]
+
+
+def compilation_kwargs(max_num_seqs: int) -> dict[str, Any]:
+  sizes = cudagraph_capture_sizes(max_num_seqs)
+  return {} if sizes is None else {"compilation_config": {"cudagraph_capture_sizes": sizes}}

@@ -27,7 +27,7 @@ from vllm.sampling_params import RequestOutputKind
 from accel_timeslicer.time_slicer import TimeSlicerClient, time_slicer_client_from_env, time_slicing_enabled, workload_from_env
 from accel_timeslicer.workload import SAMPLER_CLAIM, WorkloadRef, local_workload_name
 from server.store import RequestStore, StateStore, get_state_store, get_store
-from server.vllm_options import gpu_memory_utilization, sampler_batch_limits, split_stop, text_only_engine_kwargs
+from server.vllm_options import compilation_kwargs, gpu_memory_utilization, sampler_batch_limits, split_stop, text_only_engine_kwargs
 
 tracer = trace.get_tracer("vllm.inference.worker")
 SHUTDOWN_SENTINEL = "SHUTDOWN_SENTINEL"
@@ -52,6 +52,7 @@ def engine_kwargs_from_env(fft_enabled: bool) -> dict[str, Any]:
     "max_model_len": int(os.getenv("VLLM_MAX_MODEL_LEN", "8192")),
     **sampler_batch_limits(),
     "gpu_memory_utilization": gpu_memory_utilization(),
+    **compilation_kwargs(sampler_batch_limits()["max_num_seqs"]),
     "enable_prefix_caching": False,
     "enforce_eager": os.getenv("VLLM_ENFORCE_EAGER", "0") == "1",
     **text_only_engine_kwargs(),
