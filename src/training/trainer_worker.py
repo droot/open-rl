@@ -30,6 +30,7 @@ class BaseTrainerWorker:
     # When the model load started and finished, and what the page-cache
     # prefetch did; the request processor publishes it with the ready key.
     self.load_phases: dict[str, Any] = {}
+    self.token_budget_logged = False
 
     if torch.cuda.is_available():
       self.device = torch.device("cuda", local_rank())
@@ -107,7 +108,11 @@ class BaseTrainerWorker:
     shard_count = self.shard_count()
     local_indices = shard_datum_indices(len(data), self.shard_rank(), shard_count)
     local_data = [data[idx] for idx in local_indices]
-    local_batches = self.make_training_batches(local_data, self.train_token_budget(model))
+    token_budget = self.train_token_budget(model)
+    local_batches = self.make_training_batches(local_data, token_budget)
+    if not self.token_budget_logged:
+      print(f"[trainer] token budget per pass: {token_budget or 'one sequence'}; {len(local_data)} sequences in {len(local_batches)} pass(es)")
+      self.token_budget_logged = True
     if shard_count > 1 and self.backward_runs_collectives:
       filler_passes = self.shard_all_reduce_max(len(local_batches)) - len(local_batches)
       filler = local_data[0] if local_data else data[0]
