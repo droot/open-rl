@@ -29,6 +29,7 @@ def main() -> None:
   parser.add_argument("--namespace", default="openrl-system")
   parser.add_argument("--budget", type=float, default=180.0, help="seconds from pod start for the finish-rate line")
   parser.add_argument("--steps", type=int, default=2, help="steps that count as finished for the finish-rate line")
+  parser.add_argument("--per-step", action="store_true", help="also print every step of every job")
   args = parser.parse_args()
   ns = args.namespace
   jobs = json.loads(sh("kubectl", "-n", ns, "get", "jobs", "-l", f"openrl.io/demo-run={args.run}", "-o", "json"))["items"]
@@ -86,6 +87,15 @@ def main() -> None:
     )
   if jobs:
     print(f"\n{finished}/{len(jobs)} jobs reached step {args.steps} within {args.budget:.0f} s of pod start ({100 * finished / len(jobs):.0f}%).")
+  if args.per_step:
+    print("\n| job | step | sampling s | train s | save s | total s |")
+    print("|---|---|---|---|---|---|")
+    for name in sorted(metrics):
+      for i, r in enumerate([r for r in metrics[name] if "time/total" in r], 1):
+        print(
+          f"| {name} | {i} | {float(r.get('time/sampling', 0)):.1f} | {float(r.get('time/train_step', 0)):.1f} | "
+          f"{float(r.get('time/save_checkpoint', 0)):.1f} | {float(r.get('time/total', 0)):.1f} |"
+        )
 
 
 if __name__ == "__main__":
