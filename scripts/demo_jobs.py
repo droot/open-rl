@@ -61,7 +61,7 @@ spec:
         - name: PYTHONUNBUFFERED
           value: "1"
         - name: HF_HOME
-          value: "/mnt/shared/open-rl/huggingface"
+          value: "/hf"
         resources:
           requests:
             cpu: "1"
@@ -71,10 +71,41 @@ spec:
         volumeMounts:
         - name: shared-storage
           mountPath: /mnt/shared
+        - name: hf-cache
+          mountPath: /hf
+      # Each client gets its own Hugging Face cache on an emptyDir, seeded from the
+      # shared one. Twelve clients locking one cache directory on NFS at the same
+      # time lost a client to "Stale file handle" in filelock (drill 2). The seed
+      # is the dataset plus the model's tokenizer and config files; weight files
+      # (anything over 64 MiB) are skipped, the client never reads them.
+      initContainers:
+      - name: seed-hf-cache
+        image: busybox:1.36
+        command: ["sh", "-c"]
+        args:
+        - |
+          set -e
+          S=/mnt/shared/open-rl/huggingface; D=/hf; M={hub_dir}
+          mkdir -p $D/hub $D/datasets
+          [ -d $S/datasets ] && cp -a $S/datasets/. $D/datasets/
+          [ -d $S/hub/datasets--openai--gsm8k ] && cp -a $S/hub/datasets--openai--gsm8k $D/hub/
+          if [ -d $S/hub/$M ]; then
+            cd $S/hub
+            find $M -type d -exec mkdir -p $D/hub/{{}} \\;
+            find $M \\( -type l -o \\( -type f -size -65536k \\) \\) -exec cp -a {{}} $D/hub/{{}} \\;
+          fi
+          du -sh $D
+        volumeMounts:
+        - name: shared-storage
+          mountPath: /mnt/shared
+        - name: hf-cache
+          mountPath: /hf
       volumes:
       - name: shared-storage
         persistentVolumeClaim:
           claimName: open-rl-shared-pvc
+      - name: hf-cache
+        emptyDir: {{}}
 """
 
 
@@ -110,6 +141,7 @@ def main() -> None:
           image=args.image,
           scenario=f"{kind}-gsm8k-rl",
           model=model,
+          hub_dir="models--" + model.replace("/", "--"),
           steps=args.steps,
           group_size=args.group_size,
           groups_per_batch=args.groups_per_batch,

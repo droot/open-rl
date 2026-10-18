@@ -37,12 +37,10 @@ def main() -> None:
   pod_by_job = {p["metadata"]["labels"].get("job-name"): p for p in pods}
   # One cat per job through the API server pod, which mounts the volume.
   names = [j["metadata"]["name"] for j in jobs]
+  job_list = " ".join(names)
   script = (
-    'for n in %s; do for f in /mnt/shared/open-rl/runs/demo/%s/$n/open-rl-tmp/*_gsm8k_rl/metrics.jsonl; do [ -f "$f" ] && { echo "== $n"; cat "$f"; }; done; done'
-    % (
-      " ".join(names),
-      args.run,
-    )
+    f"for n in {job_list}; do for f in /mnt/shared/open-rl/runs/demo/{args.run}/$n/open-rl-tmp/*_gsm8k_rl/metrics.jsonl; "
+    'do [ -f "$f" ] && { echo "== $n"; cat "$f"; }; done; done'
   )
   raw = sh("kubectl", "-n", ns, "exec", "deploy/open-rl-api-server", "--", "sh", "-c", script) if names else ""
   metrics: dict[str, list[dict]] = {}
@@ -80,7 +78,10 @@ def main() -> None:
           step_n = elapsed
     if step_n is not None and step_n <= args.budget:
       finished += 1
-    mean = lambda key: f"{sum(float(r.get(key, 0)) for r in rows) / len(rows):.1f}" if rows else ""
+
+    def mean(key: str, rows=rows) -> str:
+      return f"{sum(float(r.get(key, 0)) for r in rows) / len(rows):.1f}" if rows else ""
+
     print(
       f"| {name} | {start.strftime('%H:%M:%S') if start else ''} | {status} | {len(rows)} | {'' if first is None else f'{first:.0f}'} | "
       f"{'' if step_n is None else f'{step_n:.0f}'} | {mean('time/sampling')} | {mean('time/train_step')} | {mean('time/total')} |"
