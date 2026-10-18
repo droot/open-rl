@@ -2,7 +2,16 @@ import sys
 import unittest
 from unittest.mock import patch
 
-from server.estimator import GIB, MODEL_TO_KV_BYTES_PER_TOKEN, SAMPLER_KV_TOKENS, footprint, normalize_model_id, parameter_count
+from server.estimator import (
+  GIB,
+  MODEL_TO_KV_BYTES_PER_TOKEN,
+  MODEL_TO_LARGEST_TENSOR_ELEMENTS,
+  SAMPLER_KV_TOKENS,
+  footprint,
+  normalize_model_id,
+  parameter_count,
+  weight_update_bytes,
+)
 
 
 def kv_cache_bytes(model: str) -> int:
@@ -34,6 +43,22 @@ class FootprintTest(unittest.TestCase):
       fp = footprint(model, "lora", "sampler")
       predicted_kv = kv_cache_bytes(model) - (fp.accelerator_bytes - budget * GIB)
       self.assertAlmostEqual(predicted_kv / GIB, kv, delta=0.3, msg=model)
+
+  def test_fft_sampler_keeps_room_for_its_weight_update(self) -> None:
+    # gemma-4-e2b's sparse update stages its 4.38 GiB per-layer embedding
+    # densely on the device; sized without it the sampler landed on an L4 and
+    # died at the first update. The claim carries it, and still fits the L4
+    # (so does vLLM's share once it is told to leave the room, see
+    # vllm_options.gpu_memory_utilization). LoRA samplers never update base
+    # weights and pay nothing.
+    room = weight_update_bytes(MODEL_TO_LARGEST_TENSOR_ELEMENTS["gemma-4-e2b"])
+    self.assertGreater(room, 4 * GIB)
+    full = footprint("google/gemma-4-e2b", "full", "sampler").accelerator_bytes
+    self.assertGreater(full, 16 * GIB)
+    self.assertLess(full, 22 * GIB)
+    self.assertLess(
+      footprint("Qwen/Qwen3-0.6B", "full", "sampler").accelerator_bytes, footprint("Qwen/Qwen3-0.6B", "lora", "sampler").accelerator_bytes
+    )
 
   def test_sampler_kv_cache_grows_with_the_model(self) -> None:
     # An 8B LoRA sampler sized at 22Gi landed on an L4 with 0.23 GiB of KV

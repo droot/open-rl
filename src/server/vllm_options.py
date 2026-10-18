@@ -1,6 +1,8 @@
 """Engine and sampling options shared by the two vLLM sampler workers."""
 
+import json
 import os
+import struct
 from collections.abc import Sequence
 from typing import Any
 
@@ -37,8 +39,32 @@ def split_stop(stop: str | Sequence[str] | Sequence[int] | None) -> tuple[list[s
   return (strings or None), (token_ids or None)
 
 
-def gpu_memory_utilization() -> float:
-  """vLLM's share of the device: an explicit VLLM_GPU_MEMORY_UTILIZATION, else 0.90.
+DEFAULT_GPU_MEMORY_UTILIZATION = 0.90
+# vLLM must keep at least this much of the device, whatever the headroom asks.
+MIN_GPU_MEMORY_UTILIZATION = 0.40
+# What a weight update needs beyond the largest staged tensor: the sparse
+# delta's values and indices, and the loader's working set.
+WEIGHT_UPDATE_MARGIN_BYTES = 512 * 2**20
+SAFETENSORS_DTYPE_BYTES = {
+  "F64": 8,
+  "I64": 8,
+  "U64": 8,
+  "F32": 4,
+  "I32": 4,
+  "U32": 4,
+  "BF16": 2,
+  "F16": 2,
+  "I16": 2,
+  "U16": 2,
+  "I8": 1,
+  "U8": 1,
+  "BOOL": 1,
+}
+
+
+def gpu_memory_utilization(headroom_bytes: int = 0, device_memory_bytes: int | None = None) -> float:
+  """vLLM's share of the device: an explicit VLLM_GPU_MEMORY_UTILIZATION, else 0.90
+  less whatever headroom the caller must keep free.
 
   OPEN_RL_ACCELERATOR_MEMORY is deliberately not consulted. It is the placement
   claim the scheduler sized this worker for, not a runtime cap: workers that
@@ -46,11 +72,86 @@ def gpu_memory_utilization() -> float:
   use all of it. Sizing vLLM from the claim starved the sampler of KV cache on
   large devices and made Gemma-4's first engine init fail when the cold
   torch.compile transient did not fit in the claim.
+
+  Headroom is different: it is memory a later transient needs that vLLM's own
+  profiling never sees. An FFT sampler applies each weight update through
+  vLLM's checkpoint patch loader, which stages a dense copy of every patched
+  checkpoint tensor on the device; gemma-4-e2b's per-layer embedding is 4.4 GiB
+  of that, and on an L4 the 10% vLLM leaves free is 2.2 GiB. The sampler died at
+  its first update (runs/2026-10-17_demo_baselines). The headroom comes off
+  vLLM's share so the update fits, and never pushes the share below the floor.
   """
   explicit = os.getenv("VLLM_GPU_MEMORY_UTILIZATION")
   if explicit:
     return float(explicit)
-  return 0.90
+  if headroom_bytes <= 0:
+    return DEFAULT_GPU_MEMORY_UTILIZATION
+  if device_memory_bytes is None:
+    device_memory_bytes = detected_device_memory_bytes()
+  if device_memory_bytes <= 0:
+    return DEFAULT_GPU_MEMORY_UTILIZATION
+  share = DEFAULT_GPU_MEMORY_UTILIZATION - headroom_bytes / device_memory_bytes
+  return round(max(MIN_GPU_MEMORY_UTILIZATION, min(DEFAULT_GPU_MEMORY_UTILIZATION, share)), 4)
+
+
+def weight_update_headroom_bytes(model: str) -> int:
+  """Device memory a full-fine-tuning sampler must keep free for weight updates.
+
+  OPEN_RL_WEIGHT_UPDATE_HEADROOM_GIB overrides the estimate; "0" disables it.
+  Otherwise it is the largest tensor in the model's checkpoint, the dense
+  staging copy the patch loader allocates, plus a fixed margin. The checkpoint
+  is already in the local Hugging Face cache because the engine loads from it.
+  """
+  explicit = os.getenv("OPEN_RL_WEIGHT_UPDATE_HEADROOM_GIB")
+  if explicit:
+    return int(float(explicit) * 2**30)
+  largest = largest_checkpoint_tensor_bytes(model)
+  if largest <= 0:
+    return 0
+  return largest + WEIGHT_UPDATE_MARGIN_BYTES
+
+
+def largest_checkpoint_tensor_bytes(model: str) -> int:
+  """The biggest tensor in the model's safetensors files, from their headers only.
+
+  Returns 0 when the checkpoint cannot be found locally or holds no safetensors.
+  """
+  directory = model if os.path.isdir(model) else local_snapshot(model)
+  if not directory:
+    return 0
+  largest = 0
+  for name in sorted(os.listdir(directory)):
+    if not name.endswith(".safetensors"):
+      continue
+    try:
+      largest = max(largest, largest_tensor_in_header(os.path.join(directory, name)))
+    except (OSError, ValueError, KeyError):
+      continue
+  return largest
+
+
+def local_snapshot(model: str) -> str | None:
+  try:
+    from huggingface_hub import snapshot_download
+
+    return snapshot_download(model, local_files_only=True, allow_patterns=["*.safetensors"])
+  except Exception:
+    return None
+
+
+def largest_tensor_in_header(path: str) -> int:
+  with open(path, "rb") as f:
+    (header_len,) = struct.unpack("<Q", f.read(8))
+    header = json.loads(f.read(header_len))
+  largest = 0
+  for name, info in header.items():
+    if name == "__metadata__":
+      continue
+    numel = 1
+    for dim in info["shape"]:
+      numel *= dim
+    largest = max(largest, numel * SAFETENSORS_DTYPE_BYTES.get(info["dtype"], 2))
+  return largest
 
 
 def sampler_batch_limits(device_memory_bytes: int | None = None) -> dict[str, int]:
