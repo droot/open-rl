@@ -99,12 +99,15 @@ SAMPLER_OVERHEAD_BYTES_PER_PARAM = 0.125
 SAMPLER_LORA_SLOT_BYTES = GIB
 SAMPLER_LORA_SLOT_BYTES_PER_PARAM = 0.25
 SAMPLER_KV_TOKENS = 8 * 8192  # eight max-length requests in flight
-# A full-fine-tuning sampler's weight update: the largest checkpoint tensor
-# staged densely in bf16, plus the sparse delta and the loader's working set.
-# Measured: gemma-4-e2b's update asked for 4.38 GiB on an L4 that had 1.86 GiB
-# free and died (runs/2026-10-17_demo_baselines).
-SAMPLER_WEIGHT_UPDATE_BYTES_PER_ELEMENT = 2
-SAMPLER_WEIGHT_UPDATE_MARGIN_BYTES = GIB // 2
+# A full-fine-tuning sampler's weight update: vLLM's patch loader stages the
+# largest checkpoint tensor densely in bf16 (2 B/element), and its NaN-masked
+# copy adds a bool mask (1 B) and the merged result (2 B), all live at once;
+# plus the sparse delta and the loader's working set. Measured on gemma-4-e2b's
+# 2.35 B-element per-layer embedding: the update died on an L4 with 1.9 and
+# then 5.7 GiB free, and went through with 10.7 GiB free
+# (runs/2026-10-17_demo_baselines).
+SAMPLER_WEIGHT_UPDATE_BYTES_PER_ELEMENT = 5
+SAMPLER_WEIGHT_UPDATE_MARGIN_BYTES = GIB
 # Parked in host memory: fft trainer 12 B/param + a weight copy in flight;
 # plus process overhead. Measured: 0.5B trainer 28Gi, sampler 20Gi; 8B FFT
 # sampler 39Gi steady; 7B FFT trainer OOM-killed at 110Gi.

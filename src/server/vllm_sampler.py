@@ -28,6 +28,7 @@ from accel_timeslicer.time_slicer import TimeSlicerClient, time_slicer_client_fr
 from accel_timeslicer.workload import SAMPLER_CLAIM, WorkloadRef, local_workload_name
 from server.store import RequestStore, StateStore, get_state_store, get_store
 from server.vllm_options import (
+  checkpoint_tensor_bytes,
   compilation_kwargs,
   gpu_memory_utilization,
   sampler_batch_limits,
@@ -60,7 +61,10 @@ def engine_kwargs_from_env(fft_enabled: bool) -> dict[str, Any]:
     **sampler_batch_limits(),
     # An FFT sampler keeps room for the dense staging copy each weight update
     # allocates; a LoRA sampler never updates base weights.
-    "gpu_memory_utilization": gpu_memory_utilization(weight_update_headroom_bytes(model_name) if fft_enabled else 0),
+    "gpu_memory_utilization": gpu_memory_utilization(
+      headroom_bytes=weight_update_headroom_bytes(model_name) if fft_enabled else 0,
+      resident_bytes=checkpoint_tensor_bytes(model_name)[1] if fft_enabled else 0,
+    ),
     **compilation_kwargs(sampler_batch_limits()["max_num_seqs"]),
     "enable_prefix_caching": False,
     "enforce_eager": os.getenv("VLLM_ENFORCE_EAGER", "0") == "1",
@@ -128,31 +132,48 @@ class Sampler:
     self.engine = engine
     self.weights_path: str | None = None
     self.update_failed = False
+    # A fresh engine is fully awake; sleep() parks weights and KV cache both.
+    self.kv_cache_awake = True
 
   async def wake(self) -> None:
-    await self.engine.wake_up(tags=["weights", "kv_cache"])
+    """Bring the weights back; the KV cache follows once the weights are current.
+
+    A weight update stages dense copies of the patched tensors on the device
+    (gemma-4-e2b: 11 GiB for its per-layer embedding). With the KV cache still
+    parked that memory is free; woken first, it is not, and the update died on
+    an L4 (runs/2026-10-17_demo_baselines). This is vLLM's documented order for
+    RL weight updates: wake weights, update, wake the KV cache.
+    """
+    await self.engine.wake_up(tags=["weights"])
+    self.kv_cache_awake = False
+
+  async def wake_kv_cache(self) -> None:
+    if not self.kv_cache_awake:
+      await self.engine.wake_up(tags=["kv_cache"])
+      self.kv_cache_awake = True
 
   async def sleep(self) -> None:
     await self.engine.sleep(level=1)
+    self.kv_cache_awake = False
 
   async def ensure_weights(self, weights_path: str | None) -> None:
-    """Make the engine hold weights_path; None keeps whatever it holds."""
+    """Make the engine hold weights_path and be ready to generate; None keeps whatever it holds."""
     if self.update_failed:
       raise RuntimeError("Weight update failed; restart the sampler before serving")
-    if weights_path is None or weights_path == self.weights_path:
-      return
-    # No finally/resume on failure: partially updated weights must not be served.
-    try:
-      await self.engine.pause_generation(mode="wait", clear_cache=True)
-      await self.engine.start_weight_update()
-      await self.engine.update_weights(WeightTransferUpdateRequest(update_info={"target_weights_path": weights_path}))
-      await self.engine.finish_weight_update(weight_version=weights_path)
-      await self.engine.reset_encoder_cache()
-      await self.engine.resume_generation()
-    except BaseException:
-      self.update_failed = True
-      raise
-    self.weights_path = weights_path
+    if weights_path is not None and weights_path != self.weights_path:
+      # No finally/resume on failure: partially updated weights must not be served.
+      try:
+        await self.engine.pause_generation(mode="wait", clear_cache=True)
+        await self.engine.start_weight_update()
+        await self.engine.update_weights(WeightTransferUpdateRequest(update_info={"target_weights_path": weights_path}))
+        await self.engine.finish_weight_update(weight_version=weights_path)
+        await self.engine.reset_encoder_cache()
+        await self.engine.resume_generation()
+      except BaseException:
+        self.update_failed = True
+        raise
+      self.weights_path = weights_path
+    await self.wake_kv_cache()
 
   async def generate(self, request: dict[str, Any]) -> dict[str, Any]:
     request_id = request["request_id"]

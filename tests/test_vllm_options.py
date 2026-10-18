@@ -63,6 +63,13 @@ class GpuMemoryUtilizationTest(unittest.TestCase):
     self.assertAlmostEqual(h100, 0.90 - 4.88 / 80, places=3)
     self.assertLess((0.90 - l4) * 22.03, 4.88 + 0.01)
 
+  def test_the_share_still_holds_the_resident_weights(self) -> None:
+    # gemma-4-e2b on an L4: 11 GiB of headroom would leave 0.40 of 22 GiB, less
+    # than the 9 GiB of weights vLLM must load. The resident weights win.
+    with patch.dict(os.environ, {}, clear=True):
+      share = gpu_memory_utilization(headroom_bytes=12 * GIB, device_memory_bytes=22 * GIB, resident_bytes=9 * GIB)
+    self.assertAlmostEqual(share, 10 / 22, places=3)
+
   def test_headroom_never_pushes_the_share_below_the_floor(self) -> None:
     with patch.dict(os.environ, {}, clear=True):
       self.assertEqual(gpu_memory_utilization(headroom_bytes=20 * GIB, device_memory_bytes=22 * GIB), vllm_options.MIN_GPU_MEMORY_UTILIZATION)
@@ -99,8 +106,12 @@ class WeightUpdateHeadroomTest(unittest.TestCase):
       write_safetensors(os.path.join(d, "model-00001.safetensors"), {"embed": ("BF16", [1024, 64]), "norm": ("F32", [64])})
       write_safetensors(os.path.join(d, "model-00002.safetensors"), {"head": ("BF16", [2048, 64])})
       self.assertEqual(vllm_options.largest_checkpoint_tensor_bytes(d), 2048 * 64 * 2)
+      self.assertEqual(vllm_options.checkpoint_tensor_bytes(d), (2048 * 64 * 2, 1024 * 64 * 2 + 64 * 4 + 2048 * 64 * 2))
       with patch.dict(os.environ, {}, clear=True):
-        self.assertEqual(vllm_options.weight_update_headroom_bytes(d), 2048 * 64 * 2 + vllm_options.WEIGHT_UPDATE_MARGIN_BYTES)
+        self.assertEqual(
+          vllm_options.weight_update_headroom_bytes(d),
+          int(2048 * 64 * 2 * vllm_options.WEIGHT_UPDATE_STAGING_FACTOR) + vllm_options.WEIGHT_UPDATE_MARGIN_BYTES,
+        )
 
   def test_missing_checkpoint_means_no_headroom(self) -> None:
     with patch.dict(os.environ, {}, clear=True), patch.object(vllm_options, "local_snapshot", return_value=None):

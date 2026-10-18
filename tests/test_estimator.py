@@ -45,20 +45,18 @@ class FootprintTest(unittest.TestCase):
       self.assertAlmostEqual(predicted_kv / GIB, kv, delta=0.3, msg=model)
 
   def test_fft_sampler_keeps_room_for_its_weight_update(self) -> None:
-    # gemma-4-e2b's sparse update stages its 4.38 GiB per-layer embedding
-    # densely on the device; sized without it the sampler landed on an L4 and
-    # died at the first update. The claim carries it, and still fits the L4
-    # (so does vLLM's share once it is told to leave the room, see
-    # vllm_options.gpu_memory_utilization). LoRA samplers never update base
-    # weights and pay nothing.
+    # gemma-4-e2b's sparse update stages its 2.35 B-element per-layer embedding
+    # densely on the device, 11 GiB at the peak; sized without it the sampler
+    # landed on an L4 and died at the first update. With it the claim no longer
+    # fits a 24 GB device, so gemma FFT sampling belongs on the 80 GB tier. A
+    # 0.6B model's update is small and its FFT sampler still fits an L4. LoRA
+    # samplers never update base weights and pay nothing.
     room = weight_update_bytes(MODEL_TO_LARGEST_TENSOR_ELEMENTS["gemma-4-e2b"])
-    self.assertGreater(room, 4 * GIB)
-    full = footprint("google/gemma-4-e2b", "full", "sampler").accelerator_bytes
-    self.assertGreater(full, 16 * GIB)
-    self.assertLess(full, 22 * GIB)
-    self.assertLess(
-      footprint("Qwen/Qwen3-0.6B", "full", "sampler").accelerator_bytes, footprint("Qwen/Qwen3-0.6B", "lora", "sampler").accelerator_bytes
-    )
+    self.assertGreater(room, 11 * GIB)
+    self.assertGreater(footprint("google/gemma-4-e2b", "full", "sampler").accelerator_bytes, 22 * GIB)
+    self.assertLess(footprint("google/gemma-4-e2b", "full", "sampler").accelerator_bytes, 79 * GIB)
+    self.assertLess(footprint("Qwen/Qwen3-0.6B", "full", "sampler").accelerator_bytes, 22 * GIB)
+    self.assertEqual(weight_update_bytes(0), 0)
 
   def test_sampler_kv_cache_grows_with_the_model(self) -> None:
     # An 8B LoRA sampler sized at 22Gi landed on an L4 with 0.23 GiB of KV
