@@ -60,6 +60,10 @@ spec:
         env:
         - name: PYTHONUNBUFFERED
           value: "1"
+        # openrl.* session settings, e.g. openrl.sampler_replicas=2; the SDK
+        # sends TINKER_TAGS as the session's tags and the API server reads them.
+        - name: TINKER_TAGS
+          value: "{tags}"
         - name: HF_HOME
           value: "/hf"
         resources:
@@ -123,6 +127,8 @@ def main() -> None:
   parser.add_argument("--groups-per-batch", type=int, default=8)
   parser.add_argument("--max-tokens", type=int, default=512)
   parser.add_argument("--namespace", default="openrl-system")
+  parser.add_argument("--lora-tags", default="", help="TINKER_TAGS for the LoRA jobs, e.g. openrl.sampler_replicas=2")
+  parser.add_argument("--fft-tags", default="", help="TINKER_TAGS for the FFT jobs")
   args = parser.parse_args()
   out = []
   for spec in args.job:
@@ -146,6 +152,7 @@ def main() -> None:
           group_size=args.group_size,
           groups_per_batch=args.groups_per_batch,
           max_tokens=args.max_tokens,
+          tags=args.lora_tags if kind == "lora" else args.fft_tags,
         )
       )
   sys.stdout.write("".join(out))
