@@ -1,7 +1,0 @@
-{"ts": "2026-10-15T05:19:16.955+00:00", "t": 0.0, "phase": "start", "base_model": "google/gemma-4-e2b", "base_url": "http://127.0.0.1:9003"}
-{"ts": "2026-10-15T05:19:16.956+00:00", "t": 0.001, "phase": "create_model.start"}
-{"ts": "2026-10-15T05:21:00.658+00:00", "t": 103.703, "phase": "create_model.done", "model_id": "c0c2205d-aa11-49f3-9bfe-4dafd98e0314"}
-{"ts": "2026-10-15T05:21:04.495+00:00", "t": 107.54, "phase": "forward_backward.start"}
-{"ts": "2026-10-15T05:21:08.031+00:00", "t": 111.076, "phase": "forward_backward.done"}
-{"ts": "2026-10-15T05:21:09.190+00:00", "t": 112.235, "phase": "optim_step.done"}
-{"ts": "2026-10-15T05:21:09.196+00:00", "t": 112.241, "phase": "end"}

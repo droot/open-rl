@@ -1,4 +1,0 @@
-{"ts": "2026-10-15T03:39:03.686+00:00", "t": 0.0, "phase": "start", "base_model": "Qwen/Qwen3-8B", "base_url": "http://127.0.0.1:9003"}
-{"ts": "2026-10-15T03:39:03.686+00:00", "t": 0.001, "phase": "create_model.start"}
-{"ts": "2026-10-15T03:48:18.935+00:00", "t": 555.249, "phase": "create_model.done", "model_id": "ddb4615c-4bb0-44b0-92a1-c79e668c7324"}
-{"ts": "2026-10-15T03:48:21.731+00:00", "t": 558.046, "phase": "forward_backward.start"}

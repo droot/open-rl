@@ -1,8 +1,0 @@
-[cold-start]    0.000s start {'base_model': 'google/gemma-4-e2b', 'base_url': 'http://127.0.0.1:9003'}
-[cold-start]    0.001s create_model.start 
-[cold-start]  103.703s create_model.done {'model_id': 'c0c2205d-aa11-49f3-9bfe-4dafd98e0314'}
-[cold-start]  107.540s forward_backward.start 
-[cold-start]  111.076s forward_backward.done 
-[cold-start]  112.235s optim_step.done 
-[cold-start]  112.241s end 
-EXIT=0

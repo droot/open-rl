@@ -1,6 +1,0 @@
-[cold-start]    0.000s start {'base_model': 'Qwen/Qwen3-8B', 'base_url': 'http://127.0.0.1:9003'}
-[cold-start]    0.001s create_model.start 
-[cold-start]  555.249s create_model.done {'model_id': 'ddb4615c-4bb0-44b0-92a1-c79e668c7324'}
-[cold-start]  558.046s forward_backward.start 
-Retrying request self.request_id='fc48f953-c5c6-4169-b997-c905ba50b668' because of try_again
-EXIT=143

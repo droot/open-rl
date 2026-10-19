@@ -1,7 +1,0 @@
-after-A1-0.5b-l4-cold DONE=0 04:56:11
-after-B1-0.5b-l4-cached DONE=0 05:00:05
-after-B2-0.5b-l4-cached DONE=0 05:03:35
-after-C1-8b-h100-cold DONE=0 05:10:35
-after-D1-8b-h100-cached DONE=0 05:14:27
-after-D2-8b-h100-cached DONE=0 05:18:18
-ALL DONE 05:18:18
