@@ -89,6 +89,61 @@ async def reap_owner(owner: str) -> None:
     await session_registry.forget(owner)
 
 
+# Counting a base model's runtimes and claiming a place on one take turns, so two
+# jobs created at once cannot both take a runtime's last place.
+slot_locks: defaultdict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
+
+
+def runtime_jobs_key(runtime: str) -> str:
+  return f"open_rl:runtime_jobs:{runtime}"
+
+
+async def job_is_live(model_id: str) -> bool:
+  """A job holds its place on a shared runtime until it is deleted or every
+  session it was bound to has expired. A job bound to no session holds it until
+  it is deleted."""
+  meta = await get_model_metadata(state, model_id)
+  if meta is None or meta.status != "active":
+    return False
+  for session_id in meta.session_ids:
+    if await session_registry.live(session_id):
+      return True
+  return not meta.session_ids
+
+
+async def prune_runtime_jobs(runtime: str) -> int:
+  """Drop the jobs that no longer hold a place on a shared runtime, and return
+  how many still do."""
+  key = runtime_jobs_key(runtime)
+  live = 0
+  for job in await state.set_members(key):
+    if await job_is_live(job):
+      live += 1
+    else:
+      await state.remove_from_set(key, job)
+  return live
+
+
+async def assign_runtime_slot(model_id: str, meta: TrainingModelMetadata) -> None:
+  """Put a shared LoRA job on the base model's first runtime that has room.
+
+  Every LoRA job on a base model otherwise shares one trainer and one sampler,
+  and the trainer takes the jobs one at a time, so step time grows with each
+  job. OPEN_RL_LORA_JOBS_PER_RUNTIME caps the jobs per runtime; the next job
+  starts another one, which waits for GPUs of its own if none are free. Unset
+  or 0 keeps a single runtime.
+  """
+  cap = int(os.getenv("OPEN_RL_LORA_JOBS_PER_RUNTIME", "0") or 0)
+  if cap <= 0 or worker_manager is None or not meta.shares_runtime():
+    return
+  async with slot_locks[meta.shared_runtime(0)]:
+    slot = 0
+    while await prune_runtime_jobs(meta.shared_runtime(slot)) >= cap:
+      slot += 1
+    meta.runtime_slot = slot
+    await state.add_to_set(runtime_jobs_key(meta.runtime(model_id)), model_id)
+
+
 provider = TracerProvider()
 trace.set_tracer_provider(provider)
 
@@ -539,6 +594,7 @@ async def _extract_and_persist_model_metadata(
   )
   if meta_obj.sampler_replicas > 1 and meta_obj.shares_gpu():
     raise ValueError("openrl.sampler_replicas above 1 needs samplers on GPUs of their own; set openrl.exclusive=true")
+  await assign_runtime_slot(model_id, meta_obj)
   await persist_model_metadata(state, model_id, meta_obj)
 
   return model_id, meta_obj
