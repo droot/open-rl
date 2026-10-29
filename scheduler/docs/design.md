@@ -513,29 +513,21 @@ memory are read from its owned `ResourceClaim` and the DRA inventory.
 
 ### Seat limit
 
-Host memory is the natural limit on parked workers: every seat costs host
-memory even while its worker is off the GPU -- a suspended worker parks its
-state in node RAM -- so admission sums the seats' pod requests against the
-node's allocatable memory (section 6), and kube-scheduler enforces those
-same requests for real when the pod binds. The two checks split the roles a
-seat count used to conflate: the advisory sum steers workers away from full
-nodes, and the bind is the hard cap. A join that slips past the advisory
-check on a stale snapshot produces an unschedulable pod, which the
-wedged-claim path unwinds.
+Host memory is the limit on parked
+workers: every seat costs host memory even while its worker is off the GPU
+-- a suspended worker parks its state in node RAM -- so admission sums the
+seats' pod requests against the node's allocatable memory (section 6), and
+kube-scheduler enforces those same requests for real when the pod binds.
+The two checks split the roles a seat count used to conflate: the advisory
+sum steers workers away from full nodes, and the bind is the hard cap. A
+join that slips past the advisory check on a stale snapshot produces an
+unschedulable pod, which the wedged-claim path unwinds.
 
-Host memory says nothing about time, and a time-sliced claim with six seats
-runs each worker's step six times slower. `--max-seats-per-claim`
-(`OPEN_RL_MAX_SEATS_PER_CLAIM`, default 0 for no limit) is the policy limit
-on top: a ledger holding that many workers is not a candidate for selection,
-and the ledger CAS loop refuses a join that would exceed it, so two joiners
-working from one snapshot cannot both take the last seat. A worker that
-finds every eligible ledger at the limit cuts a claim of its own; if no
-device is free the claim stands pending, the status reason names the
-limit, and the worker waits until a node arrives or a seat frees. It is
-deliberately a hard limit rather than a preference: the bound on step time
-holds, and a full fleet shows as standing claims an autoscaler can act on.
-The limit is fleet policy and lives on the controller, not on nodes or
-workloads; a per-device-tier form is a natural extension.
+`--max-seats-per-claim` (`OPEN_RL_MAX_SEATS_PER_CLAIM`, default 0 for no
+limit) also caps the workers on one claim. A ledger at the limit is not
+eligible, and the ledger CAS loop refuses a join past it. A worker that finds
+every eligible ledger full cuts its own claim and, if no device is free,
+stays Pending until a seat or a device frees up.
 
 An unallocated ledger contains only its dedicated workload and is not
 joinable: its node is unknown, so nothing about it can be checked against
