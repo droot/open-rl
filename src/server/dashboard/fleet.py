@@ -167,7 +167,9 @@ async def activity(fleet: dict, low: float, high: float, run_id: str | None = No
       # A sample lands on the replica pod that answered it.
       if r.get("role") == lane["role"] and r.get("pod") in (None, lane["pod"]) and start < min(hi, r["at"]):
         ops.setdefault(r["operation"], []).append([start, min(hi, r["at"])])
-    lane.update(ops={n: merge(s) for n, s in ops.items()}, exact=bool(turns), intervals=merge(turns + [s for group in ops.values() for s in group]))
+    # A lane with turns was held only during them: an offloaded trainer saves off the GPU, so its ops alone do not mean occupancy.
+    occupied = turns or [s for group in ops.values() for s in group]
+    lane.update(ops={n: merge(s) for n, s in ops.items()}, exact=bool(turns), intervals=merge(occupied))
     lane["waits"] = merge(waits)
   return shown
 
