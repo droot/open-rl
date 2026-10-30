@@ -9,6 +9,9 @@ Two FFT jobs and two LoRA jobs on the same base model come in:
   fft-job 3c4d     3c4d                fft-3c4d-trainer            nothing
   lora-job 5e6f    qwen-qwen2-5-0-5b-<hash>   lora-qwen-qwen2-5-0-5b-<hash>-0-trainer   one runtime
   lora-job 7a8b    qwen-qwen2-5-0-5b-<hash>   lora-qwen-qwen2-5-0-5b-<hash>-0-trainer   with 5e6f
+  lora-job 9b0c    qwen-qwen2-5-0-5b-slot1-<hash>   lora-qwen-qwen2-5-0-5b-slot1-<hash>-0-trainer   a second runtime, once
+                                                                                  OPEN_RL_LORA_JOBS_PER_RUNTIME
+                                                                                  fills the first
   automodel 9c0d   automodel-qwen-qwen2-5-0-5b-<hash>   lora-automodel-qwen-qwen2-5-0-5b-<hash>-0-trainer   one Automodel
                                                                                   runtime, apart from PyTorch's
   image 1d2e       image-<hash>-qwen-qwen2-5-0-5b-<hash>   lora-image-<hash>-qwen-qwen2-5-0-5b-<hash>-0-trainer   one runtime

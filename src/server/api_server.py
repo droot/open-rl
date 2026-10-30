@@ -67,14 +67,16 @@ async def bind_session(session_id: str | None, model_id: str) -> None:
   run_records.session_seen(session_id)
   owner = await asyncio.to_thread(owner_of, model_id)
   async with owner_locks[owner]:
+    # On the owner, for the reaper: workers stay while any attached session lives.
+    if worker_manager is not None:
+      await session_registry.attach(session_id, owner)
     # On the model, for the model view: which sessions are this model's own.
+    # After the attach, so the session is live by the time the model lists it;
+    # a job whose listed sessions are all dead loses its place on a shared runtime.
     meta = await get_model_metadata(state, model_id)
     if meta is not None and session_id not in meta.session_ids:
       meta.session_ids.append(session_id)
       await persist_model_metadata(state, model_id, meta)
-    # On the owner, for the reaper: workers stay while any attached session lives.
-    if worker_manager is not None:
-      await session_registry.attach(session_id, owner)
 
 
 async def reap_owner(owner: str) -> None:
@@ -87,6 +89,67 @@ async def reap_owner(owner: str) -> None:
       if get_sampler_backend() == "vllm":
         await SamplingStore(store.redis).delete_if_empty(pool_name(model))
     await session_registry.forget(owner)
+
+
+# Counting a base model's runtimes and claiming a place on one take turns, so two
+# jobs created at once cannot both take a runtime's last place.
+slot_locks: defaultdict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
+
+
+def runtime_jobs_key(runtime: str) -> str:
+  return f"open_rl:runtime_jobs:{runtime}"
+
+
+async def job_is_live(model_id: str) -> bool:
+  """A job holds its place on a shared runtime until it is deleted or every
+  session it was bound to has expired. A job bound to no session holds it until
+  it is deleted."""
+  meta = await get_model_metadata(state, model_id)
+  if meta is None or meta.status != "active":
+    return False
+  for session_id in meta.session_ids:
+    if await session_registry.live(session_id):
+      return True
+  return not meta.session_ids
+
+
+async def prune_runtime_jobs(runtime: str) -> int:
+  """Drop the jobs that no longer hold a place on a shared runtime, and return
+  how many still do."""
+  key = runtime_jobs_key(runtime)
+  live = 0
+  for job in await state.set_members(key):
+    if await job_is_live(job):
+      live += 1
+    else:
+      await state.remove_from_set(key, job)
+  return live
+
+
+async def persist_on_runtime_slot(model_id: str, meta: TrainingModelMetadata) -> None:
+  """Persist a new job's metadata, on the base model's first shared runtime
+  that has room when the job is a shared LoRA job.
+
+  Every LoRA job on a base model otherwise shares one trainer and one sampler,
+  and the trainer takes the jobs one at a time, so step time grows with each
+  job. OPEN_RL_LORA_JOBS_PER_RUNTIME caps the jobs per runtime; the next job
+  starts another one, placed like any LoRA runtime: it waits for GPUs up to the
+  scheduler's placement timeout, and may share a GPU unless the scheduler's
+  seat limit is set. Unset or 0 keeps a single runtime.
+  """
+  cap = env_int("OPEN_RL_LORA_JOBS_PER_RUNTIME") or 0
+  if cap <= 0 or worker_manager is None or not meta.shares_runtime():
+    await persist_model_metadata(state, model_id, meta)
+    return
+  async with slot_locks[meta.shared_runtime(0)]:
+    slot = 0
+    while await prune_runtime_jobs(meta.shared_runtime(slot)) >= cap:
+      slot += 1
+    meta.runtime_slot = slot
+    # The metadata lands before the job claims its place, so a prune that runs
+    # before this request finishes finds the job live rather than unknown.
+    await persist_model_metadata(state, model_id, meta)
+    await state.add_to_set(runtime_jobs_key(meta.runtime(model_id)), model_id)
 
 
 provider = TracerProvider()
@@ -539,7 +602,7 @@ async def _extract_and_persist_model_metadata(
   )
   if meta_obj.sampler_replicas > 1 and meta_obj.shares_gpu():
     raise ValueError("openrl.sampler_replicas above 1 needs samplers on GPUs of their own; set openrl.exclusive=true")
-  await persist_model_metadata(state, model_id, meta_obj)
+  await persist_on_runtime_slot(model_id, meta_obj)
 
   return model_id, meta_obj
 
@@ -618,6 +681,12 @@ def check_sampler_backend() -> None:
       "Sampling pools need REDIS_URL, because vLLM sampling requests wait in a Redis stream for each pool's dispatcher. "
       "Set REDIS_URL (for example redis://127.0.0.1:6379/0), or set BASE_MODEL and unset SAMPLING_BACKEND to sample with torch in one process."
     )
+
+
+def check_lora_jobs_per_runtime() -> None:
+  value = os.getenv("OPEN_RL_LORA_JOBS_PER_RUNTIME", "")
+  if value and not value.isdigit():
+    raise RuntimeError(f"OPEN_RL_LORA_JOBS_PER_RUNTIME is {value!r}; it must be 0 (one runtime) or a positive number of jobs")
 
 
 def translate_future_result(result: dict) -> dict:
@@ -748,6 +817,7 @@ async def lifespan(_: FastAPI):
   global worker_manager
   task = None
   check_sampler_backend()
+  check_lora_jobs_per_runtime()
   # The in-process trainer's records, and the requests this server enqueues, are written from here.
   run_records.start("api_server", worker_record=False)
   if is_fft_enabled() or os.getenv("REDIS_URL") or os.getenv("OPEN_RL_WORKER_MANAGER"):
