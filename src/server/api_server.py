@@ -67,14 +67,16 @@ async def bind_session(session_id: str | None, model_id: str) -> None:
   run_records.session_seen(session_id)
   owner = await asyncio.to_thread(owner_of, model_id)
   async with owner_locks[owner]:
+    # On the owner, for the reaper: workers stay while any attached session lives.
+    if worker_manager is not None:
+      await session_registry.attach(session_id, owner)
     # On the model, for the model view: which sessions are this model's own.
+    # After the attach, so the session is live by the time the model lists it;
+    # a job whose listed sessions are all dead loses its place on a shared runtime.
     meta = await get_model_metadata(state, model_id)
     if meta is not None and session_id not in meta.session_ids:
       meta.session_ids.append(session_id)
       await persist_model_metadata(state, model_id, meta)
-    # On the owner, for the reaper: workers stay while any attached session lives.
-    if worker_manager is not None:
-      await session_registry.attach(session_id, owner)
 
 
 async def reap_owner(owner: str) -> None:
@@ -124,23 +126,28 @@ async def prune_runtime_jobs(runtime: str) -> int:
   return live
 
 
-async def assign_runtime_slot(model_id: str, meta: TrainingModelMetadata) -> None:
-  """Put a shared LoRA job on the base model's first runtime that has room.
+async def persist_on_runtime_slot(model_id: str, meta: TrainingModelMetadata) -> None:
+  """Persist a new job's metadata, on the base model's first shared runtime
+  that has room when the job is a shared LoRA job.
 
   Every LoRA job on a base model otherwise shares one trainer and one sampler,
   and the trainer takes the jobs one at a time, so step time grows with each
   job. OPEN_RL_LORA_JOBS_PER_RUNTIME caps the jobs per runtime; the next job
-  starts another one, which waits for GPUs of its own if none are free. Unset
-  or 0 keeps a single runtime.
+  starts another one, which waits for GPUs of its own if none are free. Unset,
+  0 or not a number keeps a single runtime.
   """
-  cap = int(os.getenv("OPEN_RL_LORA_JOBS_PER_RUNTIME", "0") or 0)
+  cap = env_int("OPEN_RL_LORA_JOBS_PER_RUNTIME") or 0
   if cap <= 0 or worker_manager is None or not meta.shares_runtime():
+    await persist_model_metadata(state, model_id, meta)
     return
   async with slot_locks[meta.shared_runtime(0)]:
     slot = 0
     while await prune_runtime_jobs(meta.shared_runtime(slot)) >= cap:
       slot += 1
     meta.runtime_slot = slot
+    # The metadata lands before the job claims its place, so a prune that runs
+    # before this request finishes finds the job live rather than unknown.
+    await persist_model_metadata(state, model_id, meta)
     await state.add_to_set(runtime_jobs_key(meta.runtime(model_id)), model_id)
 
 
@@ -594,8 +601,7 @@ async def _extract_and_persist_model_metadata(
   )
   if meta_obj.sampler_replicas > 1 and meta_obj.shares_gpu():
     raise ValueError("openrl.sampler_replicas above 1 needs samplers on GPUs of their own; set openrl.exclusive=true")
-  await assign_runtime_slot(model_id, meta_obj)
-  await persist_model_metadata(state, model_id, meta_obj)
+  await persist_on_runtime_slot(model_id, meta_obj)
 
   return model_id, meta_obj
 

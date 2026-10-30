@@ -13,12 +13,20 @@ from tests.api_client import asgi_client, post_json
 from tests.test_session_lifecycle import RuntimeManager
 
 
+class YieldingStateStore(InMemoryStateStore):
+  """Every write gives the event loop a turn before it lands, as a write to Redis does."""
+
+  async def set_value(self, key, value, ttl_seconds=None):
+    await asyncio.sleep(0)
+    await super().set_value(key, value, ttl_seconds)
+
+
 class LoraRuntimeSlotsTest(unittest.IsolatedAsyncioTestCase):
   """OPEN_RL_LORA_JOBS_PER_RUNTIME caps the LoRA jobs on one runtime; the next job starts another."""
 
   def setUp(self):
     self.store = InMemoryStore()
-    self.state = InMemoryStateStore()
+    self.state = YieldingStateStore()
     self.manager = RuntimeManager()
     self.registry = SessionRegistry(self.state)
     self.enterContext(patch.object(api_server, "state", self.state))
@@ -87,6 +95,32 @@ class LoraRuntimeSlotsTest(unittest.IsolatedAsyncioTestCase):
       jobs = [await self.create() for _ in range(3)]
 
     self.assertEqual({await self.runtime(job) for job in jobs}, {"test-base"})
+
+  async def test_jobs_created_at_once_take_distinct_places(self):
+    with patch.dict(os.environ, {"OPEN_RL_LORA_JOBS_PER_RUNTIME": "1"}):
+      jobs = await asyncio.gather(self.create(), self.create())
+
+    self.assertEqual(sorted([await self.runtime(job) for job in jobs]), ["test-base", "test-base#slot1"])
+    for job in jobs:
+      self.assertIn(job, await self.state.set_members(api_server.runtime_jobs_key(await self.runtime(job))))
+
+  async def test_binding_a_session_the_server_has_not_seen_keeps_the_place(self):
+    job = (await self.post("create_model", {"base_model": "test-base"}))["request_id"]
+
+    async def prune_once_the_session_is_bound():
+      while "sess-cold" not in (await get_model_metadata(self.state, job)).session_ids:
+        await asyncio.sleep(0)
+      await api_server.prune_runtime_jobs("test-base")
+
+    await asyncio.gather(api_server.bind_session("sess-cold", job), prune_once_the_session_is_bound())
+
+    self.assertTrue(await self.registry.live("sess-cold"))
+    self.assertEqual(await self.state.set_members(api_server.runtime_jobs_key("test-base")), {job})
+
+  async def test_a_malformed_cap_leaves_every_job_on_one_runtime(self):
+    for value in ("  ", "two", "-1"):
+      with patch.dict(os.environ, {"OPEN_RL_LORA_JOBS_PER_RUNTIME": value}):
+        self.assertEqual(await self.runtime(await self.create()), "test-base", value)
 
   async def test_fft_and_exclusive_jobs_take_no_slot(self):
     for flag in ({"openrl.exclusive": "true"}, {"openrl.fine_tuning_type": "full"}):
