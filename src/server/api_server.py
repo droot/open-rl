@@ -133,8 +133,9 @@ async def persist_on_runtime_slot(model_id: str, meta: TrainingModelMetadata) ->
   Every LoRA job on a base model otherwise shares one trainer and one sampler,
   and the trainer takes the jobs one at a time, so step time grows with each
   job. OPEN_RL_LORA_JOBS_PER_RUNTIME caps the jobs per runtime; the next job
-  starts another one, which waits for GPUs of its own if none are free. Unset,
-  0 or not a number keeps a single runtime.
+  starts another one, placed like any LoRA runtime: it waits for GPUs up to the
+  scheduler's placement timeout, and may share a GPU unless the scheduler's
+  seat limit is set. Unset or 0 keeps a single runtime.
   """
   cap = env_int("OPEN_RL_LORA_JOBS_PER_RUNTIME") or 0
   if cap <= 0 or worker_manager is None or not meta.shares_runtime():
@@ -682,6 +683,12 @@ def check_sampler_backend() -> None:
     )
 
 
+def check_lora_jobs_per_runtime() -> None:
+  value = os.getenv("OPEN_RL_LORA_JOBS_PER_RUNTIME", "")
+  if value and not value.isdigit():
+    raise RuntimeError(f"OPEN_RL_LORA_JOBS_PER_RUNTIME is {value!r}; it must be 0 (one runtime) or a positive number of jobs")
+
+
 def translate_future_result(result: dict) -> dict:
   result_type = result.get("type")
   if result_type in {"model_created", "model_loaded_from_state"}:
@@ -810,6 +817,7 @@ async def lifespan(_: FastAPI):
   global worker_manager
   task = None
   check_sampler_backend()
+  check_lora_jobs_per_runtime()
   # The in-process trainer's records, and the requests this server enqueues, are written from here.
   run_records.start("api_server", worker_record=False)
   if is_fft_enabled() or os.getenv("REDIS_URL") or os.getenv("OPEN_RL_WORKER_MANAGER"):

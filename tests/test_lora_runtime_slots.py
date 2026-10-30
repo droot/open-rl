@@ -117,10 +117,13 @@ class LoraRuntimeSlotsTest(unittest.IsolatedAsyncioTestCase):
     self.assertTrue(await self.registry.live("sess-cold"))
     self.assertEqual(await self.state.set_members(api_server.runtime_jobs_key("test-base")), {job})
 
-  async def test_a_malformed_cap_leaves_every_job_on_one_runtime(self):
+  def test_the_server_refuses_to_start_with_a_cap_that_is_not_a_count(self):
     for value in ("  ", "two", "-1"):
+      with patch.dict(os.environ, {"OPEN_RL_LORA_JOBS_PER_RUNTIME": value}), self.assertRaisesRegex(RuntimeError, "OPEN_RL_LORA_JOBS_PER_RUNTIME"):
+        api_server.check_lora_jobs_per_runtime()
+    for value in ("", "0", "4"):
       with patch.dict(os.environ, {"OPEN_RL_LORA_JOBS_PER_RUNTIME": value}):
-        self.assertEqual(await self.runtime(await self.create()), "test-base", value)
+        api_server.check_lora_jobs_per_runtime()
 
   async def test_fft_and_exclusive_jobs_take_no_slot(self):
     for flag in ({"openrl.exclusive": "true"}, {"openrl.fine_tuning_type": "full"}):
