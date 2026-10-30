@@ -7,6 +7,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"strconv"
 	"time"
@@ -64,7 +65,7 @@ func main() {
 	flag.StringVar(&strategy, "placement-strategy", env("OPEN_RL_PLACEMENT_STRATEGY", string(placement.StrategyBinPack)),
 		"binpack shares eligible FFT claims first; spread requests a GPU first, then falls back to FFT sharing. LoRA never shares.")
 	flag.IntVar(&maxSeats, "max-seats-per-claim", envInt("OPEN_RL_MAX_SEATS_PER_CLAIM", 0),
-		"Most workers that may share one claim; 0 is no limit. A worker that finds every eligible claim full cuts its own and waits Pending until a GPU is added or a seat frees.")
+		"Most workers that may share one claim; 0 is no limit, 1 is exclusive placement. A worker that finds every eligible claim full cuts its own and waits Pending until a GPU is added or a seat frees, or fails at the placement timeout.")
 	flag.IntVar(&maxConcurrent, "max-concurrent-reconciles", envInt("OPEN_RL_MAX_CONCURRENT_RECONCILES", 4),
 		"How many workers place at once. Seat booking is CAS-arbitrated, so concurrency risks only transient over-cut claims, which the sharing fallback drains.")
 
@@ -81,6 +82,10 @@ func main() {
 	parsedStrategy, err := placement.ParseStrategy(strategy)
 	if err != nil {
 		setupLog.Error(err, "invalid placement strategy")
+		os.Exit(1)
+	}
+	if maxSeats < 0 {
+		setupLog.Error(fmt.Errorf("max-seats-per-claim is %d", maxSeats), "the seat limit must be 0 (no limit) or positive")
 		os.Exit(1)
 	}
 

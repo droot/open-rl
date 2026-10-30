@@ -208,6 +208,11 @@ func TestSelectClaimSkipsLedgersAtTheSeatLimit(t *testing.T) {
 	if reason := Explain(req, fleet, ""); !strings.Contains(reason, "at most 2 workers") {
 		t.Errorf("reason does not name the limit: %q", reason)
 	}
+	// A worker that never shares is not waiting on the limit.
+	exclusive := Request{Shareable: false, Role: "trainer", Memory: 24 << 30, WorkerID: "w6", MaxSeats: 2}
+	if reason := Explain(exclusive, fleet, ""); strings.Contains(reason, "at most") {
+		t.Errorf("exclusive worker's reason names the seat limit: %q", reason)
+	}
 }
 
 // Tight fit lives in the tier order: the tier wasting the least device

@@ -45,8 +45,9 @@ func newSeat(worker *openrlv1alpha1.Workload, request placement.Request) openrlv
 
 // ensureSeat books the seat on the claim's ClaimLedger via one CAS loop. A seat
 // held by the same incarnation is adopted and a predecessor's is replaced.
-// There is no seat ceiling: host memory is the limit on parked workers,
-// checked at selection and verified against a fresh fleet read after booking.
+// Host memory is the node-wide limit on parked workers, checked at selection
+// and verified against a fresh fleet read after booking; MaxSeatsPerClaim,
+// when set, is the per-claim limit and is re-checked here.
 //
 // createMissing is true only for a worker's own claim: the founder books its
 // ClaimLedger before the claim exists, and a re-book heals the ledger under a
@@ -98,8 +99,10 @@ func (r *WorkloadReconciler) ensureSeat(ctx context.Context, claimName string, s
 			}
 		}
 		// The seat limit is re-checked here for the same reason: two joiners
-		// selecting from one snapshot must not both land the last seat.
-		if existing == nil && !createMissing && r.MaxSeatsPerClaim > 0 && len(claimLedger.Spec.Seats) >= r.MaxSeatsPerClaim {
+		// selecting from one snapshot must not both land the last seat. It
+		// gates every write that adds a seat, a re-book whose seat is gone
+		// included; adopting or replacing a seat adds none.
+		if existing == nil && r.MaxSeatsPerClaim > 0 && len(claimLedger.Spec.Seats) >= r.MaxSeatsPerClaim {
 			return nil, nil, errBookingContended
 		}
 		if existing != nil {

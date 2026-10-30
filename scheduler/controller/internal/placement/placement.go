@@ -292,10 +292,10 @@ func candidateNodes(req Request, fleet *Fleet) map[string]int {
 }
 
 // SelectClaim picks the allocated claim a worker should join, or nil:
-// single-device only, role and host-memory checked -- host memory is the one
-// ceiling on how many workers may park on a node -- preferring fewest owners,
-// then fewest workers, then name. Advisory -- the ledger's CAS booking is what
-// makes it stick.
+// single-device only, role, seat limit and host memory checked -- host memory
+// is the node-wide ceiling on parked workers, MaxSeats the per-claim one --
+// preferring fewest owners, then fewest workers, then name. Advisory -- the
+// ledger's CAS booking is what makes it stick.
 func SelectClaim(req Request, fleet *Fleet) *Claim {
 	if !req.Shareable || req.Devices > 0 {
 		return nil
@@ -373,7 +373,8 @@ func Explain(req Request, fleet *Fleet, detail string) string {
 	case len(candidateNodes(req, fleet)) > 0:
 		// The hardware exists; it is busy. Retrying is the right move.
 		reason = "WaitingForCapacity: a pool fits this workload but none has a free seat or a free accelerator"
-		if req.MaxSeats > 0 {
+		// Only a worker that could have shared is waiting on the limit.
+		if req.MaxSeats > 0 && req.Shareable && req.Devices == 0 {
 			reason += fmt.Sprintf("; shared claims hold at most %d workers", req.MaxSeats)
 		}
 	default:

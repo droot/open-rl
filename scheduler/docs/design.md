@@ -525,9 +525,13 @@ unschedulable pod, which the wedged-claim path unwinds.
 
 `--max-seats-per-claim` (`OPEN_RL_MAX_SEATS_PER_CLAIM`, default 0 for no
 limit) also caps the workers on one claim. A ledger at the limit is not
-eligible, and the ledger CAS loop refuses a join past it. A worker that finds
-every eligible ledger full cuts its own claim and, if no device is free,
-stays Pending until a seat or a device frees up.
+eligible, and the ledger CAS loop refuses any write that would add a seat
+past it. A worker that finds every eligible ledger full cuts its own claim
+and, if no device is free, waits on capacity like any other worker: Pending
+until a seat or a device frees up, Failed if `--placement-timeout` runs out
+first. A limit of 1 is exclusive placement, since every allocated ledger
+already holds its founder. A seat released on a ledger wakes the waiting
+workers, as a freed claim or node does.
 
 An unallocated ledger contains only its dedicated workload and is not
 joinable: its node is unknown, so nothing about it can be checked against
@@ -792,7 +796,8 @@ the dedicated-first arc described above.
   before cutting a claim at all; only a workload no ledger can seat cuts a
   dedicated claim. FFT can share; LoRA always cuts its own claim. Eligibility and
   preference are the shared-ledger rules below, unchanged; a booking that
-  loses the last seat to a race falls through to a dedicated claim. With
+  loses the last seat to a race moves on to the next eligible ledger, and
+  only when none accepts it falls through to a dedicated claim. With
   `--max-seats-per-claim` set, a ledger at the limit is not eligible, so
   binpack fills one claim to the limit and then moves to the next free
   device (section 4, "Seat limit").
@@ -821,8 +826,8 @@ A workload may join a ledger when:
   the fleet contains only `openrl.io/enabled` nodes);
 * the ledger holds fewer seats than `--max-seats-per-claim`, when set
   (section 4, "Seat limit");
-* the advisory host-memory check passes -- the one ceiling on how many
-  workers may park on the node.
+* the advisory host-memory check passes -- the node-wide ceiling on how
+  many workers may park there.
 
 Among eligible ledgers, the controller prefers, packing tightly while
 keeping turn queues short:
