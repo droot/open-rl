@@ -29,7 +29,7 @@ images:
     newTag: pr383-pools-c0cd426  # try/pr-383-rebased-3: #383 + our commits rebased on upstream 163533d (#388 #389 #391 #380)
   - name: ghcr.io/gke-labs/open-rl/api-server
     newName: us-east5-docker.pkg.dev/cdrollouts-sunilarora/open-rl/open-rl-api-server
-    newTag: pr383-pools-c0cd426
+    newTag: pr383-pools-886bd93  # carries the dashboard's lane-occupancy fix (finding 14); server and client unchanged since c0cd426
   - name: ghcr.io/gke-labs/open-rl/scheduler
     newName: us-east5-docker.pkg.dev/cdrollouts-sunilarora/open-rl/open-rl-scheduler
     newTag: pr383-844424a

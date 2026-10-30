@@ -234,6 +234,32 @@ Verified on the cluster: a three-step Qwen3-0.6B run reported 11.6 %,
 7.8 % and 6.0 % of 596 M elements per step through `/runs/{id}/steps`,
 and the recipe client ran unchanged.
 
+### 14. Off-GPU ops are painted as GPU occupancy
+
+**Seen:** on the accelerator timeline for gpu-4 during a 14-job sweep, a
+0.7 s turn of the gemma trainer (its `save_weights_for_sampler`) sits
+inside another trainer's 2.6 s hold of the same GPU. Two holders at once
+on a time-sliced claim.
+
+**Checked:** the time-slicer daemon's log (with `--timestamps`) has the
+claim held by one worker from 01:44:29.04 to 01:44:33.66 with no hand-off
+in between, so the inner turn is not a real hold. The three trainers
+share one claim (`claim-fft-…-93124282`, the scheduler moved two of them
+onto it). An FFT trainer that is not exclusive runs with CPU offload
+(`api_server.py`: `cpu_offload = … or not settings.exclusive`), and
+`handle_batch` then runs saves without a time-slicer turn. The saves are
+real ops, just not on the GPU.
+
+**Cause:** `fleet.activity` builds a lane's `intervals` as
+`merge(turns + every op span)`, so an op outside every turn counts as
+occupancy, and `exact` is true as soon as the lane has any turn.
+
+**Fix on the review branch (886bd93):** a lane with turns is occupied
+only during them; its ops still show. A lane without turns keeps the ops
+as the stand-in. Test `tests/test_dashboard_lanes.py`. The same reasoning
+applies to the per-holder shares and the union in any view built on
+`intervals`.
+
 ### Small things
 
 - For up to a minute after the dashboard pod starts, `/inventory` can

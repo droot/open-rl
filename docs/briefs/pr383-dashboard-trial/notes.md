@@ -1072,3 +1072,23 @@ Screenshots on the new stack: `shots/demo-weights-pools3.png` (deltas 12 %
 and 7.8 %, 58.4 M of 596 M elements per sync), `shots/demo-timeline-pools3.png`
 (sampler on gpu-1, trainer on gpu-7, spread placement), `shots/demo-fleet-pools3.png`
 (30 of 30 done, five sweeps lettered A–E).
+
+01:50 UTC: user ran a 14-job sweep (`demo-014306`) and saw two trainers'
+turns overlapping on gpu-4 in the accelerator timeline (A14 hold
+01:44:29.04 → 01:44:31.65 with a 0.7 s A11 gemma turn inside it at
+01:44:30.68). The daemon's timestamped log settles it: Snapshot A13 at
+28.04, checkpointed 29.04, A14 granted; Snapshot A14 at 31.65,
+checkpointed 33.66. One holder throughout. The inner "turn" is the gemma
+trainer's `save_weights_for_sampler` op, run off the GPU because
+non-exclusive FFT trainers are CPU-offloaded and `handle_batch` saves
+without a turn then; `fleet.activity` unions op spans into `intervals`.
+Same for the 0.014 s "turns" of the other two trainers' saves. Finding 14.
+Fixed in `fleet.activity` (turns only when the lane has turns), test
+`tests/test_dashboard_lanes.py`, commit 886bd93; api-server image
+`pr383-pools-886bd93` building.
+
+01:55 UTC: api-server `pr383-pools-886bd93` applied (api-server, dashboard,
+demo). The same gpu-4 window re-read through the fixed activity route:
+three holds, one per trainer (01:43:45.6–01:44:22.2, 01:44:24.2–28.0,
+01:44:29.0–31.7), no overlaps; the saves remain as ops on each lane.
+`shots/demo-timeline-gpu4-fixed.png`.
